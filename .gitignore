@@ -1,0 +1,26 @@
+node_modules/
+dist/
+.env
+*.tsbuildinfo
+coverage/
+*.log
+.DS_Store
+
+# Generated documentation output
+docs/api/
+docs/.vitepress/cache/
+docs/.vitepress/.temp/
+docs/.vitepress/dist/
+docs/public/api/
+
+# Generated knowledge graph (rebuilt on demand via npm run graph:update)
+graphify-out/
+
+# Live test cache data written during integration test runs
+.agentcraft/
+
+# Temporary workspace created during tests
+test-ws/
+
+# Added by code-review-graph
+.code-review-graph/

@@ -1,0 +1,4 @@
+You are preparing launch communication for {{product}}.
+
+Use this brand voice: {{config.brand.voice}}
+Release channel: {{config.release.channel}}

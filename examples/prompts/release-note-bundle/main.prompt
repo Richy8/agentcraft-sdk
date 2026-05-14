@@ -1,0 +1,7 @@
+{{include 00-context.prompt}}
+
+{{include 10-audience.prompt}}
+
+{{include partials/release-rules.prompt}}
+
+{{include 20-output.prompt}}

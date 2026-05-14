@@ -1,0 +1,23 @@
+{
+  "name": "external-write-skill",
+  "description": "External write-capable skill.",
+  "directive": "external-write",
+  "creator": {
+    "name": "external-write-skill",
+    "directive": "external-write",
+    "category": "operations",
+    "stage": "operations",
+    "priority": 90,
+    "description": "External write-capable skill.",
+    "docsPath": "docs/skills/external.md#external-write-skill",
+    "requiredCapabilities": [],
+    "optionalCapabilities": ["publish.draft"],
+    "consumesArtifacts": ["Draft"],
+    "producesArtifacts": ["PublishPackage"],
+    "sideEffectRisk": "write",
+    "outputOwner": "publish-package",
+    "composesWith": [],
+    "readiness": "production-ready",
+    "promptVersion": "fixture"
+  }
+}

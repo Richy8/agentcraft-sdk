@@ -1,0 +1,16 @@
+{
+  "entryPoints": [
+    "src/index.ts",
+    "src/adapters.ts",
+    "src/skills.ts",
+    "src/mcp.ts",
+    "src/team.ts"
+  ],
+  "out": "docs/public/api",
+  "tsconfig": "tsconfig.json",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "readme": "README.md",
+  "plugin": [],
+  "treatWarningsAsErrors": false
+}

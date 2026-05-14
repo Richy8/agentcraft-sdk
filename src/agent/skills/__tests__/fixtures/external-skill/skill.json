@@ -1,0 +1,23 @@
+{
+  "name": "external-medium-skill",
+  "description": "External Medium workflow skill.",
+  "directive": "external-medium",
+  "creator": {
+    "name": "external-medium-skill",
+    "directive": "external-medium",
+    "category": "creation",
+    "stage": "creation",
+    "priority": 50,
+    "description": "External Medium workflow skill.",
+    "docsPath": "docs/skills/external.md#external-medium-skill",
+    "requiredCapabilities": [],
+    "optionalCapabilities": ["filesystem.read"],
+    "consumesArtifacts": ["ContentBrief"],
+    "producesArtifacts": ["Draft"],
+    "sideEffectRisk": "read",
+    "outputOwner": "primary-draft",
+    "composesWith": ["blog-writer"],
+    "readiness": "production-ready",
+    "promptVersion": "fixture"
+  }
+}

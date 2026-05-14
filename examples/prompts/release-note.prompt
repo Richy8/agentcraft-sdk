@@ -1,0 +1,10 @@
+Write a concise release note for {{product}}.
+
+Audience: {{audience}}
+Brand voice: {{config.brand.voice}}
+Release channel: {{config.release.channel}}
+
+Include:
+- one headline
+- three value bullets
+- one migration note

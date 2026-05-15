@@ -27,7 +27,7 @@
   },
   "homepage": "https://agentcraft-sdk.vercel.app",
   "bugs": {
-    "url": "https://github.com/agentcraft-ai/agentcraft/issues"
+    "url": "https://github.com/Richy8/agentcraft-sdk/issues"
   },
   "engines": {
     "node": ">=20.0.0"

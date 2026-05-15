@@ -102,7 +102,7 @@
     "@google/genai": "^1.0.0",
     "cohere-ai": "^7.0.0",
     "openai": "^4.0.0",
-    "zod": "^3.22.0"
+    "zod": "^4.4.3"
   },
   "peerDependencies": {
     "better-sqlite3": ">=9.0.0"

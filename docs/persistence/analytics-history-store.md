@@ -19,7 +19,9 @@ import { AnalyticsAdapter } from "agentcraft/adapters";
 import { CreatorPacks } from "agentcraft/packs";
 
 // Constructor takes a root directory path (created if missing)
-const history = new FileSystemAnalyticsHistoryStore("./.agentcraft/analytics-history");
+const history = new FileSystemAnalyticsHistoryStore(
+  "./.agentcraft/analytics-history",
+);
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

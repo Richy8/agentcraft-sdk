@@ -221,13 +221,13 @@ console.log(response.content);
 
 ## Config Reference
 
-| Field                  | Default        | Purpose                                                                      |
-| ---------------------- | -------------- | ---------------------------------------------------------------------------- |
-| `requiresConfirmation` | `false`        | Declared on the tool — marks it as confirmation-gated.                       |
-| `approvedTools`        | `[]`           | Static list of tool names that bypass the approval gate.                     |
-| `allowSideEffects`     | `false`        | Globally bypasses confirmation for all tools. Use only in trusted contexts.  |
+| Field                  | Default         | Purpose                                                                     |
+| ---------------------- | --------------- | --------------------------------------------------------------------------- |
+| `requiresConfirmation` | `false`         | Declared on the tool — marks it as confirmation-gated.                      |
+| `approvedTools`        | `[]`            | Static list of tool names that bypass the approval gate.                    |
+| `allowSideEffects`     | `false`         | Globally bypasses confirmation for all tools. Use only in trusted contexts. |
 | `onApprovalRequired`   | Deny by default | `(context) => boolean` callback for dynamic per-call approval decisions.    |
-| `readOnly`             | `false`        | Blocks all write and confirmation-gated tools. Overrides `approvedTools`.    |
+| `readOnly`             | `false`         | Blocks all write and confirmation-gated tools. Overrides `approvedTools`.   |
 
 ## Related
 

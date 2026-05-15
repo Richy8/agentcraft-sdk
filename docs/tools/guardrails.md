@@ -4,13 +4,13 @@ Guardrails are functions that inspect tool inputs (before execution) or outputs 
 
 ## Built-In Guardrails
 
-| Guardrail                         | Checks                                                   | Common use case           |
-| --------------------------------- | -------------------------------------------------------- | ------------------------- |
-| `blockPromptInjectionGuardrail`   | Detects "ignore previous instructions" patterns.         | Web fetch, MCP content.   |
-| `blockSecretsGuardrail`           | Detects API keys, Bearer tokens, password patterns.      | Logs, external API calls. |
-| `blockPiiGuardrail`               | Detects SSNs, email addresses, phone numbers.            | Customer-facing workflows.|
-| `blockUnsafeUrlGuardrail`         | Detects `localhost`, `127.0.0.1`, `*.local` URLs.        | Fetch / browser tools.    |
-| `blockDestructiveActionGuardrail` | Blocks write tools that don't require confirmation.      | Admin / database tools.   |
+| Guardrail                         | Checks                                              | Common use case            |
+| --------------------------------- | --------------------------------------------------- | -------------------------- |
+| `blockPromptInjectionGuardrail`   | Detects "ignore previous instructions" patterns.    | Web fetch, MCP content.    |
+| `blockSecretsGuardrail`           | Detects API keys, Bearer tokens, password patterns. | Logs, external API calls.  |
+| `blockPiiGuardrail`               | Detects SSNs, email addresses, phone numbers.       | Customer-facing workflows. |
+| `blockUnsafeUrlGuardrail`         | Detects `localhost`, `127.0.0.1`, `*.local` URLs.   | Fetch / browser tools.     |
+| `blockDestructiveActionGuardrail` | Blocks write tools that don't require confirmation. | Admin / database tools.    |
 
 All built-in guardrails are exported from `"agentcraft"`.
 
@@ -42,12 +42,14 @@ console.log(response.content);
 A guardrail is a function that receives a `ToolGuardrailContext` and returns `{ allowed: boolean; reason?: string }`.
 
 ```ts
-type ToolGuardrail = (context: ToolGuardrailContext) => ToolGuardrailResult | Promise<ToolGuardrailResult>;
+type ToolGuardrail = (
+  context: ToolGuardrailContext,
+) => ToolGuardrailResult | Promise<ToolGuardrailResult>;
 
 interface ToolGuardrailContext {
-  tool: ToolDefinition;           // the tool being called
+  tool: ToolDefinition; // the tool being called
   args?: Record<string, unknown>; // input args (present for input guardrails)
-  result?: unknown;               // tool result (present for output guardrails)
+  result?: unknown; // tool result (present for output guardrails)
 }
 
 interface ToolGuardrailResult {
@@ -162,7 +164,9 @@ const agent = Agent.create({
     onAuditEvent: (event) => {
       if (event.type === "guardrail_blocked") {
         blocked.push(event);
-        console.warn(`[guardrail] ${event.phase} blocked: ${event.toolName} — ${event.reason}`);
+        console.warn(
+          `[guardrail] ${event.phase} blocked: ${event.toolName} — ${event.reason}`,
+        );
       }
     },
   },
@@ -249,10 +253,10 @@ console.log(response.content);
 
 ## Guardrail Mode
 
-| Mode        | Behavior when blocked                                      |
-| ----------- | ---------------------------------------------------------- |
-| `"enforce"` | Throws `ToolExecutionError`. The run fails immediately.    |
-| `"warn"`    | Emits an audit event and continues. The tool still runs.  |
+| Mode        | Behavior when blocked                                    |
+| ----------- | -------------------------------------------------------- |
+| `"enforce"` | Throws `ToolExecutionError`. The run fails immediately.  |
+| `"warn"`    | Emits an audit event and continues. The tool still runs. |
 
 ## Related
 

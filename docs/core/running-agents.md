@@ -26,45 +26,45 @@ All fields passed to `agent.run()` belong to `AgentRunParams`.
 
 ### Prompt Fields
 
-| Field        | Required              | Default | Purpose                                                                              |
-| ------------ | --------------------- | ------- | ------------------------------------------------------------------------------------ |
-| `prompt`     | Usually               | None    | Inline task text. Supports `&#123;&#123;variable&#125;&#125;` and `&#123;&#123;config.path&#125;&#125;` placeholders.    |
-| `promptFile` | One of prompt/file    | None    | Path to a `.prompt` (or any ext) file. Supports `&#123;&#123;include path&#125;&#125;` composition. |
-| `vars`       | No                    | `{}`    | Values injected into `&#123;&#123;variable&#125;&#125;` placeholders in prompt or prompt file.     |
-| `assembly`   | No                    | `{}`    | Prompt assembly options: config injection, strict mode, include depth, root dir.     |
-| `system`     | No                    | None    | Additional system instruction (appended to agent-level system prompt if set).        |
+| Field        | Required           | Default | Purpose                                                                                                               |
+| ------------ | ------------------ | ------- | --------------------------------------------------------------------------------------------------------------------- |
+| `prompt`     | Usually            | None    | Inline task text. Supports `&#123;&#123;variable&#125;&#125;` and `&#123;&#123;config.path&#125;&#125;` placeholders. |
+| `promptFile` | One of prompt/file | None    | Path to a `.prompt` (or any ext) file. Supports `&#123;&#123;include path&#125;&#125;` composition.                   |
+| `vars`       | No                 | `{}`    | Values injected into `&#123;&#123;variable&#125;&#125;` placeholders in prompt or prompt file.                        |
+| `assembly`   | No                 | `{}`    | Prompt assembly options: config injection, strict mode, include depth, root dir.                                      |
+| `system`     | No                 | None    | Additional system instruction (appended to agent-level system prompt if set).                                         |
 
 ### Generation Overrides
 
 Per-run overrides for any generation parameter set on the agent. If not provided, the agent-level value is used.
 
-| Field              | Default          | Purpose                                  |
-| ------------------ | ---------------- | ---------------------------------------- |
-| `temperature`      | Agent default    | Sampling temperature (0–2).              |
-| `maxTokens`        | Agent default    | Maximum completion tokens.               |
-| `topP`             | Agent default    | Nucleus sampling probability (0–1).      |
-| `frequencyPenalty` | Agent default    | Repeated-token penalty (-2–2).           |
-| `presencePenalty`  | Agent default    | Token-presence penalty (-2–2).           |
-| `stopSequences`    | Agent default    | Up to 4 stop strings.                    |
-| `responseFormat`   | Agent default    | `"text"` or `"json_object"`.             |
+| Field              | Default       | Purpose                             |
+| ------------------ | ------------- | ----------------------------------- |
+| `temperature`      | Agent default | Sampling temperature (0–2).         |
+| `maxTokens`        | Agent default | Maximum completion tokens.          |
+| `topP`             | Agent default | Nucleus sampling probability (0–1). |
+| `frequencyPenalty` | Agent default | Repeated-token penalty (-2–2).      |
+| `presencePenalty`  | Agent default | Token-presence penalty (-2–2).      |
+| `stopSequences`    | Agent default | Up to 4 stop strings.               |
+| `responseFormat`   | Agent default | `"text"` or `"json_object"`.        |
 
 ### Multimodal Inputs
 
-| Field    | Required | Type            | Purpose                                  |
-| -------- | -------- | --------------- | ---------------------------------------- |
-| `images` | No       | `AgentImage[]`  | Images passed as base64 or URL.          |
-| `audio`  | No       | `AgentAudio[]`  | Audio clips passed as base64 or URL.     |
-| `video`  | No       | `AgentVideo[]`  | Video clips passed as base64 or URL.     |
-| `files`  | No       | `AgentFile[]`   | Documents passed as base64 or URL.       |
+| Field    | Required | Type           | Purpose                              |
+| -------- | -------- | -------------- | ------------------------------------ |
+| `images` | No       | `AgentImage[]` | Images passed as base64 or URL.      |
+| `audio`  | No       | `AgentAudio[]` | Audio clips passed as base64 or URL. |
+| `video`  | No       | `AgentVideo[]` | Video clips passed as base64 or URL. |
+| `files`  | No       | `AgentFile[]`  | Documents passed as base64 or URL.   |
 
 **`AgentFile` shape:**
 
 ```ts
 interface AgentFile {
-  type: "base64" | "url";  // how data is delivered
-  filename: string;         // original file name (e.g. "report.pdf")
-  mediaType: string;        // MIME type (e.g. "application/pdf", "text/plain")
-  data: string;             // base64-encoded content or a URL
+  type: "base64" | "url"; // how data is delivered
+  filename: string; // original file name (e.g. "report.pdf")
+  mediaType: string; // MIME type (e.g. "application/pdf", "text/plain")
+  data: string; // base64-encoded content or a URL
 }
 ```
 
@@ -80,48 +80,48 @@ interface AgentImage {
 
 ### Tools
 
-| Field        | Default               | Purpose                                                                          |
-| ------------ | --------------------- | -------------------------------------------------------------------------------- |
-| `tools`      | Agent attached tools  | Run-specific tool definitions (merged with agent-level tools).                   |
-| `use`        | None                  | Attach adapters, skills, or creator packs for this run only. Cleaned up after.  |
-| `toolPolicy` | Agent policy          | Per-run override or merge of tool approval, guardrails, and limits.              |
+| Field        | Default              | Purpose                                                                        |
+| ------------ | -------------------- | ------------------------------------------------------------------------------ |
+| `tools`      | Agent attached tools | Run-specific tool definitions (merged with agent-level tools).                 |
+| `use`        | None                 | Attach adapters, skills, or creator packs for this run only. Cleaned up after. |
+| `toolPolicy` | Agent policy         | Per-run override or merge of tool approval, guardrails, and limits.            |
 
 ### Structured Output
 
-| Field             | Default | Purpose                                                                        |
-| ----------------- | ------- | ------------------------------------------------------------------------------ |
-| `responseSchema`  | None    | JSON schema or Zod schema. Forces structured output and validates the response. |
-| `structuredOutput`| None    | Options: `retries` (parse retry count), `toolFallback` (use tool for extraction). |
+| Field              | Default | Purpose                                                                           |
+| ------------------ | ------- | --------------------------------------------------------------------------------- |
+| `responseSchema`   | None    | JSON schema or Zod schema. Forces structured output and validates the response.   |
+| `structuredOutput` | None    | Options: `retries` (parse retry count), `toolFallback` (use tool for extraction). |
 
 ### Budget and Control
 
-| Field    | Default | Purpose                                                                                   |
-| -------- | ------- | ----------------------------------------------------------------------------------------- |
+| Field    | Default | Purpose                                                                                                  |
+| -------- | ------- | -------------------------------------------------------------------------------------------------------- |
 | `budget` | None    | `RunBudget`: `maxTokens`, `maxInputTokens`, `maxOutputTokens`, `maxCost`, `maxToolCalls`, `cachePolicy`. |
-| `signal` | None    | `AbortSignal` for cancellation.                                                           |
-| `trace`  | None    | `true` to enable tracing, or a `TraceSink` to receive trace spans.                        |
-| `cache`  | None    | `false` to disable cache for this run, or `{ bypass: true }` to skip cache reads/writes.  |
-| `replay` | None    | Replay a previous `AgentResponse` or a list of responses without calling the LLM.         |
+| `signal` | None    | `AbortSignal` for cancellation.                                                                          |
+| `trace`  | None    | `true` to enable tracing, or a `TraceSink` to receive trace spans.                                       |
+| `cache`  | None    | `false` to disable cache for this run, or `{ bypass: true }` to skip cache reads/writes.                 |
+| `replay` | None    | Replay a previous `AgentResponse` or a list of responses without calling the LLM.                        |
 
 ## Response Fields
 
 `agent.run()` returns `AgentResponse`:
 
-| Field               | Type            | Purpose                                                                   |
-| ------------------- | --------------- | ------------------------------------------------------------------------- |
-| `content`           | `string`        | The model's text response.                                                |
-| `structuredResponse`| `unknown`       | Parsed structured value when `responseSchema` is set.                     |
-| `tokensUsed`        | `TokenUsage`    | `{ prompt, completion, total }` token counts.                             |
-| `cost`              | `number`        | Estimated run cost in USD.                                                |
-| `finishReason`      | `FinishReason`  | `"stop"`, `"length"`, `"tool_calls"`, `"content_filter"`, etc.           |
-| `toolCalls`         | `ToolCall[]`    | Tool invocations made during the run (if any).                            |
-| `model`             | `string`        | Model that handled the run.                                               |
-| `provider`          | `string`        | Provider that handled the run.                                            |
-| `runId`             | `string`        | Unique run identifier for correlation.                                    |
-| `trace`             | `unknown[]`     | Trace spans (only populated if `trace` was enabled).                      |
-| `promptProvenance`  | `object`        | `{ source, promptFile?, assembled }` — how the prompt was resolved.       |
-| `selection`         | `object`        | Which skills/tools were active: `activeSkills`, `exposedTools`, `executedToolCalls`. |
-| `cache`             | `object`        | Cache stats: `hits`, `misses`, `writes`, `bypassed`, `toolCallsAvoided`, `estimatedSavedTokens`. |
+| Field                | Type           | Purpose                                                                                          |
+| -------------------- | -------------- | ------------------------------------------------------------------------------------------------ |
+| `content`            | `string`       | The model's text response.                                                                       |
+| `structuredResponse` | `unknown`      | Parsed structured value when `responseSchema` is set.                                            |
+| `tokensUsed`         | `TokenUsage`   | `{ prompt, completion, total }` token counts.                                                    |
+| `cost`               | `number`       | Estimated run cost in USD.                                                                       |
+| `finishReason`       | `FinishReason` | `"stop"`, `"length"`, `"tool_calls"`, `"content_filter"`, etc.                                   |
+| `toolCalls`          | `ToolCall[]`   | Tool invocations made during the run (if any).                                                   |
+| `model`              | `string`       | Model that handled the run.                                                                      |
+| `provider`           | `string`       | Provider that handled the run.                                                                   |
+| `runId`              | `string`       | Unique run identifier for correlation.                                                           |
+| `trace`              | `unknown[]`    | Trace spans (only populated if `trace` was enabled).                                             |
+| `promptProvenance`   | `object`       | `{ source, promptFile?, assembled }` — how the prompt was resolved.                              |
+| `selection`          | `object`       | Which skills/tools were active: `activeSkills`, `exposedTools`, `executedToolCalls`.             |
+| `cache`              | `object`       | Cache stats: `hits`, `misses`, `writes`, `bypassed`, `toolCallsAvoided`, `estimatedSavedTokens`. |
 
 ## Patterns
 
@@ -192,8 +192,8 @@ const response = await agent.run({
       brand: { voice: "clear and practical" },
       release: { channel: "public-beta" },
     },
-    strict: true,   // throw if any placeholder is unresolved
-    minify: true,   // trim whitespace before sending
+    strict: true, // throw if any placeholder is unresolved
+    minify: true, // trim whitespace before sending
   },
 });
 
@@ -236,9 +236,9 @@ const agent = Agent.create({
 const response = await agent.run({
   prompt: "Research and draft an outline.",
   budget: {
-    maxToolCalls: 5,      // model may invoke at most 5 tools
-    maxTokens: 3_000,     // total token budget (input + output)
-    maxCost: 0.05,        // abort if estimated cost exceeds $0.05
+    maxToolCalls: 5, // model may invoke at most 5 tools
+    maxTokens: 3_000, // total token budget (input + output)
+    maxCost: 0.05, // abort if estimated cost exceeds $0.05
   },
 });
 
@@ -316,7 +316,8 @@ const SentimentSchema = z.object({
 });
 
 const response = await agent.run({
-  prompt: "Analyze the sentiment of: 'AgentCraft makes AI agents delightful to build.'",
+  prompt:
+    "Analyze the sentiment of: 'AgentCraft makes AI agents delightful to build.'",
   responseSchema: SentimentSchema,
   structuredOutput: {
     retries: 2, // retry parsing up to 2 times if validation fails
@@ -325,9 +326,9 @@ const response = await agent.run({
 
 // structuredResponse is typed as the Zod inferred type
 const result = response.structuredResponse as z.infer<typeof SentimentSchema>;
-console.log(result.sentiment);   // → "positive"
-console.log(result.confidence);  // → 0.95
-console.log(result.summary);     // → "..."
+console.log(result.sentiment); // → "positive"
+console.log(result.confidence); // → 0.95
+console.log(result.summary); // → "..."
 ```
 
 ### Run With Files (Document Input)
@@ -347,10 +348,10 @@ const response = await agent.run({
   prompt: "Summarize the key findings from this PDF report.",
   files: [
     {
-      type: "base64",                           // how the data is encoded
-      filename: "report.pdf",                   // original filename
-      mediaType: "application/pdf",             // MIME type
-      data: pdfBytes.toString("base64"),        // base64-encoded bytes
+      type: "base64", // how the data is encoded
+      filename: "report.pdf", // original filename
+      mediaType: "application/pdf", // MIME type
+      data: pdfBytes.toString("base64"), // base64-encoded bytes
     },
   ],
 });
@@ -364,7 +365,7 @@ console.log(response.content);
 import { Agent, Provider } from "agentcraft";
 
 const agent = Agent.create({
-  model: Provider.openai["gpt-4o"],     // must support vision
+  model: Provider.openai["gpt-4o"], // must support vision
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
@@ -398,7 +399,9 @@ const agent = Agent.create({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-const search = TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! });
+const search = TavilySearchAdapter.connect({
+  apiKey: process.env.TAVILY_API_KEY!,
+});
 
 // Attach Tavily only for this run — it is cleaned up automatically after
 const response = await agent.run({
@@ -433,7 +436,7 @@ const recorded: AgentResponse = {
 
 const response = await agent.run({
   prompt: "What is TypeScript?",
-  replay: recorded,  // returned as-is, model is never called
+  replay: recorded, // returned as-is, model is never called
 });
 
 console.log(response.content); // → "TypeScript is a typed superset of JavaScript."
@@ -456,30 +459,30 @@ const response = await agent.run({
 });
 
 // Core output
-console.log(response.content);          // model text
-console.log(response.finishReason);     // "stop" | "length" | "tool_calls" | ...
+console.log(response.content); // model text
+console.log(response.finishReason); // "stop" | "length" | "tool_calls" | ...
 
 // Cost and tokens
-console.log(response.cost);             // USD
+console.log(response.cost); // USD
 console.log(response.tokensUsed.total); // prompt + completion
 
 // Metadata
-console.log(response.model);            // "gpt-4o-mini"
-console.log(response.provider);         // "openai"
-console.log(response.runId);            // unique ID for this run
+console.log(response.model); // "gpt-4o-mini"
+console.log(response.provider); // "openai"
+console.log(response.runId); // unique ID for this run
 
 // Prompt assembly provenance
-console.log(response.promptProvenance?.source);     // "inline" | "file"
-console.log(response.promptProvenance?.assembled);  // true if vars/config were injected
+console.log(response.promptProvenance?.source); // "inline" | "file"
+console.log(response.promptProvenance?.assembled); // true if vars/config were injected
 
 // Skill and tool selection metadata
-console.log(response.selection?.activeSkills);      // which skills were active
-console.log(response.selection?.exposedTools);      // which tools were exposed
+console.log(response.selection?.activeSkills); // which skills were active
+console.log(response.selection?.exposedTools); // which tools were exposed
 console.log(response.selection?.executedToolCalls); // how many tool calls were made
 
 // Cache stats (only populated if cache is configured)
-console.log(response.cache?.hits);                 // tool result cache hits
-console.log(response.cache?.toolCallsAvoided);     // calls skipped due to cache
+console.log(response.cache?.hits); // tool result cache hits
+console.log(response.cache?.toolCallsAvoided); // calls skipped due to cache
 console.log(response.cache?.estimatedSavedTokens); // estimated token savings
 
 // Trace (only populated if trace: true)

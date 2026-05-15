@@ -24,11 +24,11 @@ console.log(response.content);
 
 ## Methods
 
-| Method                             | Returns              | Purpose                                                             |
-| ---------------------------------- | -------------------- | ------------------------------------------------------------------- |
-| `loadLocal(directory, trust?)`     | `Promise<AgentSkill>`| Load one skill from a local directory.                             |
-| `loadManyLocal(directories)`       | `Promise<AgentSkill[]>`| Load multiple local skills. Throws on duplicate names.            |
-| `load(config)`                     | `Promise<AgentSkill>`| Load from a local path or a pinned GitHub repository URL.          |
+| Method                         | Returns                 | Purpose                                                   |
+| ------------------------------ | ----------------------- | --------------------------------------------------------- |
+| `loadLocal(directory, trust?)` | `Promise<AgentSkill>`   | Load one skill from a local directory.                    |
+| `loadManyLocal(directories)`   | `Promise<AgentSkill[]>` | Load multiple local skills. Throws on duplicate names.    |
+| `load(config)`                 | `Promise<AgentSkill>`   | Load from a local path or a pinned GitHub repository URL. |
 
 ## `loadLocal(directory, trustOrOptions?)`
 
@@ -39,13 +39,16 @@ Reads `skill.json` and `SKILL.md` from the given directory. Trust defaults to `"
 const skill = await GitHubSkillLoader.loadLocal("./skills/my-skill");
 
 // Explicit trust level (string shorthand)
-const reviewed = await GitHubSkillLoader.loadLocal("./skills/my-skill", "reviewed");
+const reviewed = await GitHubSkillLoader.loadLocal(
+  "./skills/my-skill",
+  "reviewed",
+);
 
 // Options object — trust + optional checksum verification
 const verified = await GitHubSkillLoader.loadLocal("./skills/my-skill", {
   trust: "workspace",
   checksums: {
-    "skill.json": "abc123...",      // sha256 hex digest (with or without "sha256:" prefix)
+    "skill.json": "abc123...", // sha256 hex digest (with or without "sha256:" prefix)
     "SKILL.md": "sha256:def456...", // optional — verify SKILL.md too
   },
 });
@@ -53,10 +56,10 @@ const verified = await GitHubSkillLoader.loadLocal("./skills/my-skill", {
 
 ### `LocalSkillLoaderOptions`
 
-| Field       | Required | Default       | Purpose                                                                    |
-| ----------- | -------- | ------------- | -------------------------------------------------------------------------- |
-| `trust`     | No       | `"workspace"` | Trust level applied to the skill. Controls write-capable skill blocking.   |
-| `checksums` | No       | None          | SHA-256 digests for `skill.json` and/or `SKILL.md`. Throws on mismatch.   |
+| Field       | Required | Default       | Purpose                                                                  |
+| ----------- | -------- | ------------- | ------------------------------------------------------------------------ |
+| `trust`     | No       | `"workspace"` | Trust level applied to the skill. Controls write-capable skill blocking. |
+| `checksums` | No       | None          | SHA-256 digests for `skill.json` and/or `SKILL.md`. Throws on mismatch.  |
 
 ## `loadManyLocal(directories)`
 
@@ -92,15 +95,15 @@ console.log(response.content);
 
 The general loader works for both local paths and remote GitHub URLs.
 
-| Field          | Required                   | Default       | Purpose                                                                     |
-| -------------- | -------------------------- | ------------- | --------------------------------------------------------------------------- |
-| `repo`         | Yes                        | None          | Local directory path (`.` or `/` prefix) or `https://github.com/owner/repo` URL. |
-| `ref`          | For GitHub repos           | None          | Pinned commit SHA or tag. **Required for GitHub repos — prevents supply chain attacks.** |
-| `path`         | No                         | Repo root     | Subdirectory within the repo where `skill.json` and `SKILL.md` live.       |
-| `trust`        | No                         | `"workspace"` | Trust level for the loaded skill.                                           |
-| `token`        | No                         | None          | GitHub personal access token for private repos.                             |
-| `allowedRepos` | No                         | Allow all     | Allowlist of GitHub repo URLs. Throws if `repo` is not in this list.        |
-| `checksums`    | No                         | None          | SHA-256 digests to verify `skill.json` and/or `SKILL.md` before loading.   |
+| Field          | Required         | Default       | Purpose                                                                                  |
+| -------------- | ---------------- | ------------- | ---------------------------------------------------------------------------------------- |
+| `repo`         | Yes              | None          | Local directory path (`.` or `/` prefix) or `https://github.com/owner/repo` URL.         |
+| `ref`          | For GitHub repos | None          | Pinned commit SHA or tag. **Required for GitHub repos — prevents supply chain attacks.** |
+| `path`         | No               | Repo root     | Subdirectory within the repo where `skill.json` and `SKILL.md` live.                     |
+| `trust`        | No               | `"workspace"` | Trust level for the loaded skill.                                                        |
+| `token`        | No               | None          | GitHub personal access token for private repos.                                          |
+| `allowedRepos` | No               | Allow all     | Allowlist of GitHub repo URLs. Throws if `repo` is not in this list.                     |
+| `checksums`    | No               | None          | SHA-256 digests to verify `skill.json` and/or `SKILL.md` before loading.                 |
 
 ```ts
 // Load from a local path (same as loadLocal)
@@ -113,7 +116,7 @@ const localSkill = await GitHubSkillLoader.load({
 const remoteSkill = await GitHubSkillLoader.load({
   repo: "https://github.com/acme/agentcraft-skills",
   ref: "a1b2c3d4e5f6...", // pinned commit SHA — never use a branch name
-  path: "skills/writer",  // subdirectory in the repo
+  path: "skills/writer", // subdirectory in the repo
   trust: "reviewed",
 });
 
@@ -140,12 +143,12 @@ const strictSkill = await GitHubSkillLoader.load({
 
 ## Trust Levels
 
-| Level         | Write-capable skills | Use when                                        |
-| ------------- | -------------------- | ----------------------------------------------- |
-| `"untrusted"` | Blocked              | Public or unknown skills you haven't reviewed.  |
-| `"reviewed"`  | Allowed              | Skills you've audited and approved.             |
-| `"workspace"` | Allowed (default)    | Internal team skills in your own repository.    |
-| `"official"`  | Allowed              | First-party AgentCraft skills.                  |
+| Level         | Write-capable skills | Use when                                       |
+| ------------- | -------------------- | ---------------------------------------------- |
+| `"untrusted"` | Blocked              | Public or unknown skills you haven't reviewed. |
+| `"reviewed"`  | Allowed              | Skills you've audited and approved.            |
+| `"workspace"` | Allowed (default)    | Internal team skills in your own repository.   |
+| `"official"`  | Allowed              | First-party AgentCraft skills.                 |
 
 Write-capable skills (those with `sideEffectRisk: "write"` or `"external"`) are blocked when `trust` is `"untrusted"`. This prevents an unreviewed remote skill from publishing, deleting, or sending data.
 
@@ -191,24 +194,24 @@ The top-level fields are `name`, `description`, `directive`, and `creator`. The 
 
 ### `creator` Block Fields
 
-| Field                  | Type       | Allowed values                                                                           | Purpose                                         |
-| ---------------------- | ---------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `name`                 | `string`   | Any                                                                                      | Stable skill identifier.                        |
-| `directive`            | `string`   | Any (matches top-level `directive`)                                                      | Slash command trigger.                          |
-| `category`             | `string`   | `"strategy-and-research"`, `"seo"`, `"creation"`, `"review-and-governance"`, `"operations"` | Skill category for routing and filtering.   |
-| `stage`                | `string`   | `"context"`, `"strategy"`, `"creation"`, `"review"`, `"operations"`                    | Workflow stage this skill belongs to.           |
-| `priority`             | `number`   | Integer (higher = higher priority)                                                      | Selection order when multiple skills match.     |
-| `description`          | `string`   | Any                                                                                      | Human-readable skill description.               |
-| `docsPath`             | `string`   | Any path or URL                                                                          | Link to docs or `SKILL.md`.                    |
-| `requiredCapabilities` | `string[]` | Capability strings or `{ oneOf: [...] }` / `{ allOf: [...] }` expressions               | Model capabilities this skill needs.            |
-| `optionalCapabilities` | `string[]` | Same as required                                                                         | Capabilities used if available.                 |
-| `consumesArtifacts`    | `string[]` | Artifact type names (e.g. `"ContentBrief"`)                                             | Input artifact types this skill reads.          |
-| `producesArtifacts`    | `string[]` | Artifact type names (e.g. `"Draft"`)                                                    | Output artifact types this skill writes.        |
-| `sideEffectRisk`       | `string`   | `"none"`, `"read"`, `"write"`, `"external"`                                             | Highest side-effect level of this skill.        |
-| `outputOwner`          | `string`   | `"supporting-context"`, `"plan"`, `"primary-draft"`, `"review-report"`, `"publish-package"` | What the skill's output is used for.        |
-| `composesWith`         | `string[]` | Skill names                                                                              | Skills this one is designed to work alongside. |
-| `readiness`            | `string`   | `"metadata-only"`, `"preview"`, `"production-ready"`                                   | Maturity level of this skill.                   |
-| `promptVersion`        | `string`   | Any version string (e.g. `"2026-05-01"`)                                               | Cache invalidation key for prompt changes.      |
+| Field                  | Type       | Allowed values                                                                              | Purpose                                        |
+| ---------------------- | ---------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `name`                 | `string`   | Any                                                                                         | Stable skill identifier.                       |
+| `directive`            | `string`   | Any (matches top-level `directive`)                                                         | Slash command trigger.                         |
+| `category`             | `string`   | `"strategy-and-research"`, `"seo"`, `"creation"`, `"review-and-governance"`, `"operations"` | Skill category for routing and filtering.      |
+| `stage`                | `string`   | `"context"`, `"strategy"`, `"creation"`, `"review"`, `"operations"`                         | Workflow stage this skill belongs to.          |
+| `priority`             | `number`   | Integer (higher = higher priority)                                                          | Selection order when multiple skills match.    |
+| `description`          | `string`   | Any                                                                                         | Human-readable skill description.              |
+| `docsPath`             | `string`   | Any path or URL                                                                             | Link to docs or `SKILL.md`.                    |
+| `requiredCapabilities` | `string[]` | Capability strings or `{ oneOf: [...] }` / `{ allOf: [...] }` expressions                   | Model capabilities this skill needs.           |
+| `optionalCapabilities` | `string[]` | Same as required                                                                            | Capabilities used if available.                |
+| `consumesArtifacts`    | `string[]` | Artifact type names (e.g. `"ContentBrief"`)                                                 | Input artifact types this skill reads.         |
+| `producesArtifacts`    | `string[]` | Artifact type names (e.g. `"Draft"`)                                                        | Output artifact types this skill writes.       |
+| `sideEffectRisk`       | `string`   | `"none"`, `"read"`, `"write"`, `"external"`                                                 | Highest side-effect level of this skill.       |
+| `outputOwner`          | `string`   | `"supporting-context"`, `"plan"`, `"primary-draft"`, `"review-report"`, `"publish-package"` | What the skill's output is used for.           |
+| `composesWith`         | `string[]` | Skill names                                                                                 | Skills this one is designed to work alongside. |
+| `readiness`            | `string`   | `"metadata-only"`, `"preview"`, `"production-ready"`                                        | Maturity level of this skill.                  |
+| `promptVersion`        | `string`   | Any version string (e.g. `"2026-05-01"`)                                                    | Cache invalidation key for prompt changes.     |
 
 ### `SKILL.md` Format
 
@@ -218,6 +221,7 @@ The top-level fields are `name`, `description`, `directive`, and `creator`. The 
 You are a long-form content writer specializing in Medium articles.
 
 When writing:
+
 - Open with a hook that frames the problem clearly.
 - Use subheadings every 300–400 words.
 - End with a concrete takeaway.
@@ -277,8 +281,12 @@ const agent = Agent.create({
   .use(researchSkill)
   .use(writerSkill);
 
-const r1 = await agent.run({ prompt: "/research Find sources about AI caching." });
-const r2 = await agent.run({ prompt: "/writer Draft a post using those sources." });
+const r1 = await agent.run({
+  prompt: "/research Find sources about AI caching.",
+});
+const r2 = await agent.run({
+  prompt: "/writer Draft a post using those sources.",
+});
 
 console.log(r1.selection?.activeSkills); // → ["research"]
 console.log(r2.selection?.activeSkills); // → ["writer"]
@@ -307,7 +315,9 @@ const agent = Agent.create({
   apiKey: process.env.OPENAI_API_KEY!,
 }).use(skill);
 
-const response = await agent.run({ prompt: "/writer Draft a launch announcement." });
+const response = await agent.run({
+  prompt: "/writer Draft a launch announcement.",
+});
 console.log(response.content);
 ```
 
@@ -317,7 +327,10 @@ console.log(response.content);
 import { GitHubSkillLoader } from "agentcraft/skills";
 
 // Blocks any skill with sideEffectRisk "write" or "external"
-const skill = await GitHubSkillLoader.loadLocal("./skills/unreviewed", "untrusted");
+const skill = await GitHubSkillLoader.loadLocal(
+  "./skills/unreviewed",
+  "untrusted",
+);
 
 // If the skill has sideEffectRisk "write", this will throw:
 // "External skill '...' requires elevated trust for write side effects"

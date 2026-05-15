@@ -4,11 +4,11 @@ Use `MCPAdapter.connect()` to connect to any MCP server — internal, self-hoste
 
 ## Transports
 
-| Transport | When to use                                                   | Required config          |
-| --------- | ------------------------------------------------------------- | ------------------------ |
-| `stdio`   | Local MCP process spawned as a child process.                 | `command`, `args?`       |
-| `http`    | Hosted MCP server over HTTP/JSON-RPC.                         | `url`                    |
-| `sse`     | Hosted MCP server over Server-Sent Events (streaming).        | `url`                    |
+| Transport | When to use                                            | Required config    |
+| --------- | ------------------------------------------------------ | ------------------ |
+| `stdio`   | Local MCP process spawned as a child process.          | `command`, `args?` |
+| `http`    | Hosted MCP server over HTTP/JSON-RPC.                  | `url`              |
+| `sse`     | Hosted MCP server over Server-Sent Events (streaming). | `url`              |
 
 ## Stdio Server
 
@@ -33,7 +33,9 @@ const agent = Agent.create({
   }),
 );
 
-const response = await agent.run({ prompt: "Search the docs for AgentCraft streaming." });
+const response = await agent.run({
+  prompt: "Search the docs for AgentCraft streaming.",
+});
 console.log(response.content);
 ```
 
@@ -47,10 +49,10 @@ const filesystemMcp = MCPAdapter.connect({
   transport: "stdio",
   command: "npx",
   args: ["-y", "@modelcontextprotocol/server-filesystem@2026.1.14", "./docs"],
-  allowedCommands: ["npx"],             // allowlist which commands may be spawned
-  rejectUnpinnedPackage: true,          // throw if no exact version is pinned
+  allowedCommands: ["npx"], // allowlist which commands may be spawned
+  rejectUnpinnedPackage: true, // throw if no exact version is pinned
   allowedTools: ["read_file", "list_directory"],
-  roots: ["./docs"],                    // restrict filesystem access to ./docs
+  roots: ["./docs"], // restrict filesystem access to ./docs
   metadata: {
     trustLevel: "review-required",
     sideEffects: ["read"],
@@ -108,7 +110,9 @@ const agent = Agent.create({
   }),
 );
 
-const response = await agent.run({ prompt: "Search the knowledge base for GDPR requirements." });
+const response = await agent.run({
+  prompt: "Search the knowledge base for GDPR requirements.",
+});
 console.log(response.content);
 ```
 
@@ -166,7 +170,9 @@ const tracedMcp = MCPAdapter.connect({
   onTrace: (event: McpTraceEvent) => {
     switch (event.type) {
       case "mcp_start":
-        console.log(`[mcp] connected: ${event.serverName} via ${event.transport}`);
+        console.log(
+          `[mcp] connected: ${event.serverName} via ${event.transport}`,
+        );
         break;
       case "mcp_request":
         console.log(`[mcp] → ${event.method}`);
@@ -210,36 +216,36 @@ const restricted = MCPAdapter.connect({
 
 ### Shared Fields (All Transports)
 
-| Field              | Required | Default  | Purpose                                                   |
-| ------------------ | -------- | -------- | --------------------------------------------------------- |
-| `transport`        | Yes      | None     | `"stdio"`, `"http"`, or `"sse"`.                          |
-| `name`             | No       | Derived  | Custom adapter name for traces.                           |
-| `allowedTools`     | No       | All      | Restrict which server tools the model can call.           |
-| `allowedResources` | No       | All      | Restrict which server resources are accessible.           |
-| `roots`            | No       | None     | Filesystem or resource root boundaries.                   |
+| Field              | Required | Default  | Purpose                                                           |
+| ------------------ | -------- | -------- | ----------------------------------------------------------------- |
+| `transport`        | Yes      | None     | `"stdio"`, `"http"`, or `"sse"`.                                  |
+| `name`             | No       | Derived  | Custom adapter name for traces.                                   |
+| `allowedTools`     | No       | All      | Restrict which server tools the model can call.                   |
+| `allowedResources` | No       | All      | Restrict which server resources are accessible.                   |
+| `roots`            | No       | None     | Filesystem or resource root boundaries.                           |
 | `discovery`        | No       | `"lazy"` | `"lazy"` — connect on first run. `"eager"` — connect immediately. |
-| `timeoutMs`        | No       | None     | Request timeout in milliseconds.                          |
-| `signal`           | No       | None     | `AbortSignal` for cancellation.                           |
-| `metadata`         | No       | None     | Trust level, side effects, scopes, required secrets.      |
-| `onTrace`          | No       | None     | Callback for MCP lifecycle events.                        |
+| `timeoutMs`        | No       | None     | Request timeout in milliseconds.                                  |
+| `signal`           | No       | None     | `AbortSignal` for cancellation.                                   |
+| `metadata`         | No       | None     | Trust level, side effects, scopes, required secrets.              |
+| `onTrace`          | No       | None     | Callback for MCP lifecycle events.                                |
 
 ### Stdio-Only Fields
 
-| Field                   | Required | Purpose                                                      |
-| ----------------------- | -------- | ------------------------------------------------------------ |
-| `command`               | Yes      | Command to spawn (e.g. `"node"`, `"npx"`, `"python3"`).     |
-| `args`                  | No       | Arguments passed to the command.                             |
-| `env`                   | No       | Environment variables passed to the child process.           |
-| `allowedCommands`       | No       | Allowlist of commands that may be spawned.                   |
-| `rejectUnpinnedPackage` | No       | Throw if the spawned package has no pinned version.          |
-| `onSecurityWarning`     | No       | Callback when a security warning is detected.                |
+| Field                   | Required | Purpose                                                 |
+| ----------------------- | -------- | ------------------------------------------------------- |
+| `command`               | Yes      | Command to spawn (e.g. `"node"`, `"npx"`, `"python3"`). |
+| `args`                  | No       | Arguments passed to the command.                        |
+| `env`                   | No       | Environment variables passed to the child process.      |
+| `allowedCommands`       | No       | Allowlist of commands that may be spawned.              |
+| `rejectUnpinnedPackage` | No       | Throw if the spawned package has no pinned version.     |
+| `onSecurityWarning`     | No       | Callback when a security warning is detected.           |
 
 ### HTTP and SSE Fields
 
-| Field     | Required | Purpose                                          |
-| --------- | -------- | ------------------------------------------------ |
-| `url`     | Yes      | MCP server endpoint URL.                         |
-| `headers` | No       | Additional HTTP headers (e.g. Authorization).    |
+| Field     | Required | Purpose                                       |
+| --------- | -------- | --------------------------------------------- |
+| `url`     | Yes      | MCP server endpoint URL.                      |
+| `headers` | No       | Additional HTTP headers (e.g. Authorization). |
 
 ## Related
 

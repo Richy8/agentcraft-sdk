@@ -19,7 +19,9 @@ const agent = Agent.create({
   },
 }).use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
 
-const response = await agent.run({ prompt: "Research the latest TypeScript release." });
+const response = await agent.run({
+  prompt: "Research the latest TypeScript release.",
+});
 console.log(response.content);
 ```
 
@@ -27,22 +29,22 @@ console.log(response.content);
 
 All fields are optional.
 
-| Field               | Default         | Purpose                                                                           |
-| ------------------- | --------------- | --------------------------------------------------------------------------------- |
-| `readOnly`          | `false`         | Blocks any tool with `sideEffect: "write"` or `requiresConfirmation: true`.       |
-| `allowSideEffects`  | `false`         | Globally allows all confirmation-gated tools without per-tool approval.            |
-| `approvedTools`     | `[]`            | Explicitly approve named tools that require confirmation.                          |
-| `dryRun`            | `false`         | Returns the planned tool call without executing it.                                |
-| `timeoutMs`         | None            | Aborts a tool call after this many milliseconds.                                   |
-| `maxResultBytes`    | None            | Throws if a tool result exceeds this byte size.                                    |
-| `redactSecrets`     | `true`          | Strips API keys, tokens, and secrets from tool results and error messages.         |
-| `secretPatterns`    | Built-in        | Custom `RegExp[]` to extend secret redaction beyond the built-in patterns.         |
-| `guardrailMode`     | `"enforce"`     | `"enforce"` — blocked calls throw. `"warn"` — blocked calls are logged but proceed. |
-| `retry`             | None            | `{ attempts: number; delayMs?: number }` — retry failed tool calls.               |
-| `onApprovalRequired`| Deny by default | `(context) => boolean` — runtime callback to approve or deny a tool call.          |
-| `onAuditEvent`      | None            | `(event) => void` — receives every policy lifecycle event.                         |
-| `inputGuardrails`   | `[]`            | Array of `ToolGuardrail` functions run before execution.                           |
-| `outputGuardrails`  | `[]`            | Array of `ToolGuardrail` functions run after execution.                            |
+| Field                | Default         | Purpose                                                                             |
+| -------------------- | --------------- | ----------------------------------------------------------------------------------- |
+| `readOnly`           | `false`         | Blocks any tool with `sideEffect: "write"` or `requiresConfirmation: true`.         |
+| `allowSideEffects`   | `false`         | Globally allows all confirmation-gated tools without per-tool approval.             |
+| `approvedTools`      | `[]`            | Explicitly approve named tools that require confirmation.                           |
+| `dryRun`             | `false`         | Returns the planned tool call without executing it.                                 |
+| `timeoutMs`          | None            | Aborts a tool call after this many milliseconds.                                    |
+| `maxResultBytes`     | None            | Throws if a tool result exceeds this byte size.                                     |
+| `redactSecrets`      | `true`          | Strips API keys, tokens, and secrets from tool results and error messages.          |
+| `secretPatterns`     | Built-in        | Custom `RegExp[]` to extend secret redaction beyond the built-in patterns.          |
+| `guardrailMode`      | `"enforce"`     | `"enforce"` — blocked calls throw. `"warn"` — blocked calls are logged but proceed. |
+| `retry`              | None            | `{ attempts: number; delayMs?: number }` — retry failed tool calls.                 |
+| `onApprovalRequired` | Deny by default | `(context) => boolean` — runtime callback to approve or deny a tool call.           |
+| `onAuditEvent`       | None            | `(event) => void` — receives every policy lifecycle event.                          |
+| `inputGuardrails`    | `[]`            | Array of `ToolGuardrail` functions run before execution.                            |
+| `outputGuardrails`   | `[]`            | Array of `ToolGuardrail` functions run after execution.                             |
 
 ## Patterns
 
@@ -57,13 +59,15 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
-    readOnly: true,           // blocks sideEffect:"write" and requiresConfirmation tools
-    maxResultBytes: 50_000,   // cap result size to 50KB
-    redactSecrets: true,      // strip any tokens/keys from results
+    readOnly: true, // blocks sideEffect:"write" and requiresConfirmation tools
+    maxResultBytes: 50_000, // cap result size to 50KB
+    redactSecrets: true, // strip any tokens/keys from results
   },
 }).use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
 
-const response = await agent.run({ prompt: "Find recent TypeScript release notes." });
+const response = await agent.run({
+  prompt: "Find recent TypeScript release notes.",
+});
 console.log(response.content);
 ```
 
@@ -198,7 +202,9 @@ const agent = Agent.create({
           console.log(`[audit] starting: ${event.toolName}`);
           break;
         case "tool_success":
-          console.log(`[audit] success: ${event.toolName} (${event.resultBytes} bytes)`);
+          console.log(
+            `[audit] success: ${event.toolName} (${event.resultBytes} bytes)`,
+          );
           break;
         case "tool_error":
           console.error(`[audit] error: ${event.toolName} — ${event.error}`);
@@ -210,7 +216,9 @@ const agent = Agent.create({
           console.warn(`[audit] denied: ${event.toolName}`);
           break;
         case "guardrail_blocked":
-          console.warn(`[audit] blocked by ${event.phase} guardrail: ${event.toolName} — ${event.reason}`);
+          console.warn(
+            `[audit] blocked by ${event.phase} guardrail: ${event.toolName} — ${event.reason}`,
+          );
           break;
         case "dry_run":
           console.log(`[audit] dry-run: ${event.toolName}`);
@@ -269,8 +277,8 @@ const agent = Agent.create({
   toolPolicy: {
     redactSecrets: true,
     secretPatterns: [
-      /\b[A-Z]{2}\d{6}\b/g,          // passport-number-like strings
-      /(ssn["']?\s*[:=]\s*)\S+/gi,   // SSN field patterns
+      /\b[A-Z]{2}\d{6}\b/g, // passport-number-like strings
+      /(ssn["']?\s*[:=]\s*)\S+/gi, // SSN field patterns
     ],
   },
 });
@@ -295,9 +303,9 @@ const agent = Agent.create({
 const response = await agent.run({
   prompt: "Update the record.",
   toolPolicy: {
-    readOnly: false,                          // override for this run
-    approvedTools: ["update_record"],         // explicitly allow this one tool
-    timeoutMs: 10_000,                        // add a timeout for this run
+    readOnly: false, // override for this run
+    approvedTools: ["update_record"], // explicitly allow this one tool
+    timeoutMs: 10_000, // add a timeout for this run
   },
 });
 console.log(response.content);

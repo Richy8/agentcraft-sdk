@@ -4,22 +4,22 @@
 
 ## All Fields
 
-| Field               | Default        | Purpose                                                                        |
-| ------------------- | -------------- | ------------------------------------------------------------------------------ |
-| `approvedTools`     | `[]`           | Tool names that bypass the confirmation gate without a callback.               |
-| `allowSideEffects`  | `false`        | Globally approve all confirmation-gated tools. Use only in trusted contexts.   |
-| `readOnly`          | `false`        | Block all write and confirmation-gated tools. Overrides `approvedTools`.       |
-| `dryRun`            | `false`        | Allow tool calls to be planned but not executed.                               |
-| `timeoutMs`         | None           | Maximum milliseconds for a single tool call. Throws if exceeded.               |
-| `maxResultBytes`    | None           | Reject tool results larger than this byte count.                               |
-| `redactSecrets`     | `true`         | Scan tool results for secrets and redact them before returning to the model.   |
-| `secretPatterns`    | Built-in set   | Additional regex patterns for secret redaction (used with `redactSecrets`).    |
-| `guardrailMode`     | `"enforce"`    | `"enforce"` blocks tool calls that fail guardrails; `"warn"` logs and proceeds. |
-| `retry`             | None           | `{ attempts: number, delayMs?: number }` — retry failed tool calls.           |
-| `onApprovalRequired`| Deny by default| `(context) => boolean` callback for dynamic per-call approval decisions.       |
-| `onAuditEvent`      | None           | Callback fired for every tool audit event (called, approved, denied, etc.).    |
-| `inputGuardrails`   | `[]`           | `ToolGuardrail[]` run before tool execution — block unsafe inputs.             |
-| `outputGuardrails`  | `[]`           | `ToolGuardrail[]` run after tool execution — block unsafe outputs.             |
+| Field                | Default         | Purpose                                                                         |
+| -------------------- | --------------- | ------------------------------------------------------------------------------- |
+| `approvedTools`      | `[]`            | Tool names that bypass the confirmation gate without a callback.                |
+| `allowSideEffects`   | `false`         | Globally approve all confirmation-gated tools. Use only in trusted contexts.    |
+| `readOnly`           | `false`         | Block all write and confirmation-gated tools. Overrides `approvedTools`.        |
+| `dryRun`             | `false`         | Allow tool calls to be planned but not executed.                                |
+| `timeoutMs`          | None            | Maximum milliseconds for a single tool call. Throws if exceeded.                |
+| `maxResultBytes`     | None            | Reject tool results larger than this byte count.                                |
+| `redactSecrets`      | `true`          | Scan tool results for secrets and redact them before returning to the model.    |
+| `secretPatterns`     | Built-in set    | Additional regex patterns for secret redaction (used with `redactSecrets`).     |
+| `guardrailMode`      | `"enforce"`     | `"enforce"` blocks tool calls that fail guardrails; `"warn"` logs and proceeds. |
+| `retry`              | None            | `{ attempts: number, delayMs?: number }` — retry failed tool calls.             |
+| `onApprovalRequired` | Deny by default | `(context) => boolean` callback for dynamic per-call approval decisions.        |
+| `onAuditEvent`       | None            | Callback fired for every tool audit event (called, approved, denied, etc.).     |
+| `inputGuardrails`    | `[]`            | `ToolGuardrail[]` run before tool execution — block unsafe inputs.              |
+| `outputGuardrails`   | `[]`            | `ToolGuardrail[]` run after tool execution — block unsafe outputs.              |
 
 ## Patterns
 
@@ -39,7 +39,9 @@ const agent = Agent.create({
   },
 }).use(FileSystemAdapter.connect({ rootPath: "./docs", readOnly: true }));
 
-const response = await agent.run({ prompt: "List all markdown files in docs." });
+const response = await agent.run({
+  prompt: "List all markdown files in docs.",
+});
 console.log(response.content);
 ```
 
@@ -95,8 +97,8 @@ const agent = Agent.create({
   toolPolicy: {
     redactSecrets: true,
     secretPatterns: [
-      /sk-[a-zA-Z0-9]{32,}/g,   // custom API key pattern
-      /ghp_[a-zA-Z0-9]{36}/g,    // GitHub personal access tokens
+      /sk-[a-zA-Z0-9]{32,}/g, // custom API key pattern
+      /ghp_[a-zA-Z0-9]{36}/g, // GitHub personal access tokens
     ],
   },
 });
@@ -111,8 +113,8 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
-    timeoutMs: 5_000,        // abort tool calls after 5 seconds
-    maxResultBytes: 50_000,  // reject tool results over 50 KB
+    timeoutMs: 5_000, // abort tool calls after 5 seconds
+    maxResultBytes: 50_000, // reject tool results over 50 KB
   },
 });
 ```
@@ -153,7 +155,7 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
-    guardrailMode: "enforce",  // "enforce" throws on violation; "warn" logs and proceeds
+    guardrailMode: "enforce", // "enforce" throws on violation; "warn" logs and proceeds
     inputGuardrails: [blockPromptInjectionGuardrail],
   },
 });
@@ -171,8 +173,8 @@ const agent = Agent.create({
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
     retry: {
-      attempts: 3,     // max retry attempts per failed tool call
-      delayMs: 500,    // wait 500ms between attempts
+      attempts: 3, // max retry attempts per failed tool call
+      delayMs: 500, // wait 500ms between attempts
     },
   },
 });

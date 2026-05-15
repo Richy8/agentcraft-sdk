@@ -32,7 +32,11 @@ const team = AgentTeam.create({
   orchestrator,
   members: [
     { role: "writer", agent: writer, description: "Draft the content." },
-    { role: "reviewer", agent: reviewer, description: "Review quality and evidence." },
+    {
+      role: "reviewer",
+      agent: reviewer,
+      description: "Review quality and evidence.",
+    },
   ],
 });
 
@@ -46,32 +50,32 @@ console.log(`Rounds: ${result.rounds}, Agents used: ${result.agentsUsed}`);
 
 ## Configuration
 
-| Option                 | Required | Default          | Purpose                                                                  |
-| ---------------------- | -------- | ---------------- | ------------------------------------------------------------------------ |
-| `orchestrator`         | Yes      | None             | Plans the work, assigns tasks to members, and merges results.            |
-| `members`              | Yes      | None             | Array of `{ role, agent, description? }` — at least one required.        |
-| `supervisor`           | No       | None             | Optional agent that reviews the final result and requests revisions.     |
+| Option                 | Required | Default          | Purpose                                                                                                                         |
+| ---------------------- | -------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `orchestrator`         | Yes      | None             | Plans the work, assigns tasks to members, and merges results.                                                                   |
+| `members`              | Yes      | None             | Array of `{ role, agent, description? }` — at least one required.                                                               |
+| `supervisor`           | No       | None             | Optional agent that reviews the final result and requests revisions.                                                            |
 | `workspace`            | No       | None             | Propagates cache, adapters, tool policy, and events to all members. Use `workspace.adapters` to share adapters across the team. |
-| `rolePolicies`         | No       | `{}`             | Per-role `ToolPolicy` overrides keyed by member role string.             |
-| `sharedSkills`         | No       | `[]`             | Skills attached to every member agent.                                   |
-| `executionHint`        | No       | `"auto"`         | `"parallel"`, `"sequential"`, `"pipeline"`, or `"auto"`.                |
-| `maxRounds`            | No       | `10`             | Maximum coordination rounds before the team stops.                       |
-| `maxRevisions`         | No       | `3`              | Maximum revision cycles per member.                                      |
-| `maxSupervisorReviews` | No       | `2`              | Maximum supervisor review iterations.                                    |
-| `onMemberError`        | No       | `"fail"`         | What to do when a member fails: `"retry"`, `"skip"`, or `"fail"`.       |
-| `mode`                 | No       | `"orchestrator"` | `"orchestrator"` or `"planner-executor-reviewer"`.                       |
-| `supervisorRubric`     | No       | None             | Custom rubric string given to the supervisor agent.                      |
-| `roleBudgets`          | No       | `{}`             | Per-role `RunBudget` limits keyed by member role string.                 |
+| `rolePolicies`         | No       | `{}`             | Per-role `ToolPolicy` overrides keyed by member role string.                                                                    |
+| `sharedSkills`         | No       | `[]`             | Skills attached to every member agent.                                                                                          |
+| `executionHint`        | No       | `"auto"`         | `"parallel"`, `"sequential"`, `"pipeline"`, or `"auto"`.                                                                        |
+| `maxRounds`            | No       | `10`             | Maximum coordination rounds before the team stops.                                                                              |
+| `maxRevisions`         | No       | `3`              | Maximum revision cycles per member.                                                                                             |
+| `maxSupervisorReviews` | No       | `2`              | Maximum supervisor review iterations.                                                                                           |
+| `onMemberError`        | No       | `"fail"`         | What to do when a member fails: `"retry"`, `"skip"`, or `"fail"`.                                                               |
+| `mode`                 | No       | `"orchestrator"` | `"orchestrator"` or `"planner-executor-reviewer"`.                                                                              |
+| `supervisorRubric`     | No       | None             | Custom rubric string given to the supervisor agent.                                                                             |
+| `roleBudgets`          | No       | `{}`             | Per-role `RunBudget` limits keyed by member role string.                                                                        |
 
 ## TeamResponse Fields
 
 `team.run()` returns `TeamResponse` which extends `AgentResponse` with:
 
-| Field        | Type          | Purpose                                    |
-| ------------ | ------------- | ------------------------------------------ |
-| `rounds`     | `number`      | Number of coordination rounds executed.    |
-| `agentsUsed` | `number`      | Number of agents that participated.        |
-| `trace`      | `TeamTrace[]` | Per-round execution traces.                |
+| Field        | Type          | Purpose                                 |
+| ------------ | ------------- | --------------------------------------- |
+| `rounds`     | `number`      | Number of coordination rounds executed. |
+| `agentsUsed` | `number`      | Number of agents that participated.     |
+| `trace`      | `TeamTrace[]` | Per-round execution traces.             |
 
 Each `TeamTrace` has: `round`, `agentRole`, `input`, `output`, `cost`, `tokensUsed`.
 
@@ -97,26 +101,34 @@ const writer = Agent.create({
 const reviewer = Agent.create({
   model: Provider.openai["gpt-4o"],
   apiKey: process.env.OPENAI_API_KEY!,
-  system: "Review for accuracy, clarity, and completeness. Be specific about what needs improvement.",
+  system:
+    "Review for accuracy, clarity, and completeness. Be specific about what needs improvement.",
 });
 
 const team = AgentTeam.create({
   orchestrator,
   members: [
     { role: "writer", agent: writer, description: "Draft the article." },
-    { role: "reviewer", agent: reviewer, description: "Review and approve or request revisions." },
+    {
+      role: "reviewer",
+      agent: reviewer,
+      description: "Review and approve or request revisions.",
+    },
   ],
-  maxRounds: 3,        // at most 3 orchestration rounds
-  maxRevisions: 2,     // at most 2 revision cycles
+  maxRounds: 3, // at most 3 orchestration rounds
+  maxRevisions: 2, // at most 2 revision cycles
   onMemberError: "fail", // fail fast if any member throws
 });
 
 const result = await team.run({
-  prompt: "Write and review a 300-word article about the benefits of TypeScript.",
+  prompt:
+    "Write and review a 300-word article about the benefits of TypeScript.",
 });
 
 console.log(result.content);
-console.log(`Completed in ${result.rounds} rounds using ${result.agentsUsed} agents.`);
+console.log(
+  `Completed in ${result.rounds} rounds using ${result.agentsUsed} agents.`,
+);
 ```
 
 ### With a Supervisor Agent
@@ -141,7 +153,8 @@ const writer = Agent.create({
 const supervisor = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
-  system: "You are an editorial director. Approve or reject content based on quality and accuracy.",
+  system:
+    "You are an editorial director. Approve or reject content based on quality and accuracy.",
 });
 
 const team = AgentTeam.create({
@@ -150,7 +163,8 @@ const team = AgentTeam.create({
   members: [
     { role: "writer", agent: writer, description: "Draft the content." },
   ],
-  supervisorRubric: "Approve only if the content is factually accurate, well-structured, and under 400 words.",
+  supervisorRubric:
+    "Approve only if the content is factually accurate, well-structured, and under 400 words.",
   maxSupervisorReviews: 2,
 });
 
@@ -199,7 +213,11 @@ const team = AgentTeam.create({
   workspace, // cache and Tavily shared across all agents
   orchestrator,
   members: [
-    { role: "researcher", agent: researcher, description: "Research the topic." },
+    {
+      role: "researcher",
+      agent: researcher,
+      description: "Research the topic.",
+    },
     { role: "writer", agent: writer, description: "Write the article." },
   ],
 });
@@ -241,7 +259,7 @@ const team = AgentTeam.create({
     { role: "publisher", agent: publisher },
   ],
   rolePolicies: {
-    researcher: { readOnly: true },          // researcher can only use read tools
+    researcher: { readOnly: true }, // researcher can only use read tools
     publisher: { approvedTools: ["publish_draft"] }, // publisher can publish
   },
   roleBudgets: {

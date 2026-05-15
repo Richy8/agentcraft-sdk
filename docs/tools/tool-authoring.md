@@ -4,13 +4,13 @@ Good tools are small, typed, scoped, and honest about side effects. This page co
 
 ## Authoring Checklist
 
-| Area      | Rule                                              | Why                                                    |
-| --------- | ------------------------------------------------- | ------------------------------------------------------ |
-| Name      | Use stable `snake_case`.                          | Models and tests depend on the name — don't change it. |
-| Params    | Validate every input with `type` and `options`.   | Prevents malformed tool calls from reaching your code. |
-| Results   | Return small structured objects, not raw HTML.    | Easier to cache, trace, audit, and reason about.       |
-| Security  | Always set `sideEffect` and `scopes`.             | Enables policy enforcement and tool caching.           |
-| Side effects | Use `requiresConfirmation: true` for writes.   | Forces approval before the tool executes.              |
+| Area         | Rule                                            | Why                                                    |
+| ------------ | ----------------------------------------------- | ------------------------------------------------------ |
+| Name         | Use stable `snake_case`.                        | Models and tests depend on the name — don't change it. |
+| Params       | Validate every input with `type` and `options`. | Prevents malformed tool calls from reaching your code. |
+| Results      | Return small structured objects, not raw HTML.  | Easier to cache, trace, audit, and reason about.       |
+| Security     | Always set `sideEffect` and `scopes`.           | Enables policy enforcement and tool caching.           |
+| Side effects | Use `requiresConfirmation: true` for writes.    | Forces approval before the tool executes.              |
 
 ## Basic Read Tool
 
@@ -22,8 +22,8 @@ const getUser = tool({
   name: "get_user",
   description: "Fetch a user profile by ID.",
   security: {
-    sideEffect: "read",      // safe to cache
-    scopes: ["users:read"],  // logical scope for audit logs
+    sideEffect: "read", // safe to cache
+    scopes: ["users:read"], // logical scope for audit logs
   },
   params: {
     userId: {
@@ -56,7 +56,7 @@ const listOrders = tool({
     status: {
       type: "string",
       description: "Filter by status.",
-      required: false,          // model may omit this — defaults to all statuses
+      required: false, // model may omit this — defaults to all statuses
       options: ["pending", "shipped", "delivered", "cancelled"],
     },
     limit: {
@@ -116,8 +116,8 @@ const sendSlackMessage = tool({
   name: "send_slack_message",
   description: "Send a message to a Slack channel.",
   security: {
-    sideEffect: "external",      // not cacheable — external side effect
-    requiresConfirmation: true,  // require approval before sending
+    sideEffect: "external", // not cacheable — external side effect
+    requiresConfirmation: true, // require approval before sending
     scopes: ["slack:post"],
   },
   params: {
@@ -155,7 +155,11 @@ const getOrder = tool({
 const updateOrderStatus = tool({
   name: "update_order_status",
   description: "Update the status of an order.",
-  security: { sideEffect: "write", requiresConfirmation: true, scopes: ["orders:write"] },
+  security: {
+    sideEffect: "write",
+    requiresConfirmation: true,
+    scopes: ["orders:write"],
+  },
   params: {
     orderId: { type: "string", description: "Order ID." },
     status: {
@@ -262,12 +266,12 @@ const DynamicAdapter = createAdapter({
 
 ## Return Value Guidelines
 
-| Pattern              | Good                                      | Avoid                                          |
-| -------------------- | ----------------------------------------- | ---------------------------------------------- |
-| Shape                | Small `{ field: value }` objects          | Raw HTML strings, full page dumps              |
-| Errors               | `{ error: "message" }` with context       | Throwing unhandled exceptions with stack traces |
-| Size                 | Under 20KB per result                     | Megabyte payloads — use `maxResultBytes` to cap |
-| Sensitive data       | Strip before returning                    | Include tokens, passwords, or PII in results   |
+| Pattern        | Good                                | Avoid                                           |
+| -------------- | ----------------------------------- | ----------------------------------------------- |
+| Shape          | Small `{ field: value }` objects    | Raw HTML strings, full page dumps               |
+| Errors         | `{ error: "message" }` with context | Throwing unhandled exceptions with stack traces |
+| Size           | Under 20KB per result               | Megabyte payloads — use `maxResultBytes` to cap |
+| Sensitive data | Strip before returning              | Include tokens, passwords, or PII in results    |
 
 ## Related
 

@@ -15,9 +15,9 @@ const agent = Agent.create({
 const response = await agent.run({
   prompt: "Research and summarize three options.",
   budget: {
-    maxToolCalls: 5,      // at most 5 tool calls
-    maxTokens: 3_000,     // at most 3000 total tokens (prompt + completion)
-    maxCost: 0.05,        // abort if estimated cost exceeds $0.05
+    maxToolCalls: 5, // at most 5 tool calls
+    maxTokens: 3_000, // at most 3000 total tokens (prompt + completion)
+    maxCost: 0.05, // abort if estimated cost exceeds $0.05
   },
 });
 
@@ -29,15 +29,15 @@ console.log(`Tokens: ${response.tokensUsed.total}`);
 
 All budget fields are passed inside `budget` in `agent.run()`. All are optional.
 
-| Field                          | Default | When enforced | Purpose                                                       |
-| ------------------------------ | ------- | ------------- | ------------------------------------------------------------- |
-| `maxToolCalls`                 | No cap  | During run    | Throws after this many tool calls are executed.               |
-| `maxTokens`                    | No cap  | Pre-flight + post-run | Total token budget (prompt + completion).             |
-| `maxInputTokens`               | No cap  | Pre-flight    | Cap on estimated prompt tokens.                               |
-| `maxOutputTokens`              | No cap  | Pre-flight    | Cap on estimated completion tokens.                           |
-| `maxCost`                      | No cap  | Pre-flight + post-run | Abort if estimated or actual cost exceeds this value.  |
-| `costOptions`                  | None    | Pre-flight    | Modifiers: `region`, `batch`, `priority`, `flex`, tool/search fees. |
-| `cachePolicy.requireCachedFor` | None    | During run    | Tool names that must have a cached result — throws if not.    |
+| Field                          | Default | When enforced         | Purpose                                                             |
+| ------------------------------ | ------- | --------------------- | ------------------------------------------------------------------- |
+| `maxToolCalls`                 | No cap  | During run            | Throws after this many tool calls are executed.                     |
+| `maxTokens`                    | No cap  | Pre-flight + post-run | Total token budget (prompt + completion).                           |
+| `maxInputTokens`               | No cap  | Pre-flight            | Cap on estimated prompt tokens.                                     |
+| `maxOutputTokens`              | No cap  | Pre-flight            | Cap on estimated completion tokens.                                 |
+| `maxCost`                      | No cap  | Pre-flight + post-run | Abort if estimated or actual cost exceeds this value.               |
+| `costOptions`                  | None    | Pre-flight            | Modifiers: `region`, `batch`, `priority`, `flex`, tool/search fees. |
+| `cachePolicy.requireCachedFor` | None    | During run            | Tool names that must have a cached result — throws if not.          |
 
 ## Cost Estimation
 
@@ -77,13 +77,13 @@ console.log(`Estimated cost: $${estimate.estimatedCost.toFixed(4)}`);
 
 ## CostEstimate Fields
 
-| Field           | Type      | Purpose                                                   |
-| --------------- | --------- | --------------------------------------------------------- |
-| `estimatedCost` | `number`  | Estimated run cost in USD.                                |
-| `tokens.prompt` | `number`  | Estimated prompt (input) tokens.                          |
-| `tokens.completion` | `number` | Estimated completion (output) tokens.                 |
-| `tokens.total`  | `number`  | Total estimated tokens.                                   |
-| `stalePricing`  | `boolean` | `true` if pricing data is older than 90 days or unknown.  |
+| Field               | Type      | Purpose                                                  |
+| ------------------- | --------- | -------------------------------------------------------- |
+| `estimatedCost`     | `number`  | Estimated run cost in USD.                               |
+| `tokens.prompt`     | `number`  | Estimated prompt (input) tokens.                         |
+| `tokens.completion` | `number`  | Estimated completion (output) tokens.                    |
+| `tokens.total`      | `number`  | Total estimated tokens.                                  |
+| `stalePricing`      | `boolean` | `true` if pricing data is older than 90 days or unknown. |
 
 ## Patterns
 
@@ -123,8 +123,8 @@ const agent = Agent.create({
 const response = await agent.run({
   prompt: "Analyze this log file.",
   budget: {
-    maxInputTokens: 10_000,   // reject if the prompt is too long
-    maxOutputTokens: 500,     // keep responses concise
+    maxInputTokens: 10_000, // reject if the prompt is too long
+    maxOutputTokens: 500, // keep responses concise
   },
 });
 
@@ -142,18 +142,19 @@ const agent = Agent.create({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-const prompt = "Write a detailed technical spec for a real-time notification system.";
+const prompt =
+  "Write a detailed technical spec for a real-time notification system.";
 
 // Estimate first — surface cost to the user before running
 const estimate = Agent.estimateCost(model, { prompt, maxTokens: 2_000 });
 console.log(`Estimated cost: $${estimate.estimatedCost.toFixed(4)}`);
 
-if (estimate.estimatedCost > 0.10) {
+if (estimate.estimatedCost > 0.1) {
   console.warn("Cost estimate exceeds $0.10 — choosing a smaller model.");
 } else {
   const response = await agent.run({
     prompt,
-    budget: { maxCost: 0.10 }, // also enforce at runtime
+    budget: { maxCost: 0.1 }, // also enforce at runtime
   });
   console.log(response.content);
 }
@@ -174,7 +175,7 @@ const agent = Agent.create({
 const response = await agent.run({
   prompt: "Find the top 3 TypeScript frameworks and summarize each.",
   budget: {
-    maxToolCalls: 3,  // throws QuotaExceededError after the 3rd call
+    maxToolCalls: 3, // throws QuotaExceededError after the 3rd call
   },
 });
 
@@ -254,7 +255,7 @@ const response = await agent.run({
   budget: {
     maxCost: 0.05,
     costOptions: {
-      batch: true,      // apply batch pricing discount if available
+      batch: true, // apply batch pricing discount if available
       region: "us-east-1", // region-specific pricing
     },
   },
@@ -267,11 +268,11 @@ console.log(response.cost);
 
 Budget checks run twice — before and after the LLM call.
 
-| Check           | When          | Throws if...                                              |
-| --------------- | ------------- | --------------------------------------------------------- |
-| Pre-flight      | Before call   | Estimated tokens or cost already exceeds the limit.       |
-| During run      | Per tool call | `maxToolCalls` is reached.                                |
-| Post-run        | After call    | Actual cost or token count exceeds `maxCost`/`maxTokens`. |
+| Check      | When          | Throws if...                                              |
+| ---------- | ------------- | --------------------------------------------------------- |
+| Pre-flight | Before call   | Estimated tokens or cost already exceeds the limit.       |
+| During run | Per tool call | `maxToolCalls` is reached.                                |
+| Post-run   | After call    | Actual cost or token count exceeds `maxCost`/`maxTokens`. |
 
 Pre-flight throws `ContextWindowError` if the estimated token count exceeds the model's context window, and `QuotaExceededError` for all other budget violations.
 

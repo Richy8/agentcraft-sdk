@@ -4,11 +4,11 @@ Structured output forces the model to return JSON matching a schema, validates i
 
 ## Options
 
-| Option                          | Required                  | Default   | Purpose                                                                    |
-| ------------------------------- | ------------------------- | --------- | -------------------------------------------------------------------------- |
-| `responseSchema`                | Yes for structured output | None      | JSON schema object or Zod schema (anything with a `.safeParse()` method).  |
-| `structuredOutput.retries`      | No                        | `0`       | Number of additional attempts when JSON parsing or schema validation fails. |
-| `structuredOutput.toolFallback` | No                        | `"auto"`  | When to use tool-based extraction. `"auto"` falls back automatically when JSON mode is unavailable. `true` always uses it. `false` disables it. |
+| Option                          | Required                  | Default  | Purpose                                                                                                                                         |
+| ------------------------------- | ------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `responseSchema`                | Yes for structured output | None     | JSON schema object or Zod schema (anything with a `.safeParse()` method).                                                                       |
+| `structuredOutput.retries`      | No                        | `0`      | Number of additional attempts when JSON parsing or schema validation fails.                                                                     |
+| `structuredOutput.toolFallback` | No                        | `"auto"` | When to use tool-based extraction. `"auto"` falls back automatically when JSON mode is unavailable. `true` always uses it. `false` disables it. |
 
 ## Schema Types
 
@@ -67,8 +67,8 @@ const response = await agent.run({
 
 // TypeScript infers the type when you cast
 const ticket = response.structuredResponse as z.infer<typeof TicketSchema>;
-console.log(ticket.priority);  // → "p0"
-console.log(ticket.category);  // → "bug"
+console.log(ticket.priority); // → "p0"
+console.log(ticket.category); // → "bug"
 ```
 
 ## `structuredOutput` Options
@@ -126,7 +126,7 @@ const response = await localAgent.run({
   prompt: "What is the capital of France?",
   responseSchema: ResponseSchema,
   structuredOutput: {
-    toolFallback: true,  // always use tool extraction regardless of JSON mode support
+    toolFallback: true, // always use tool extraction regardless of JSON mode support
   },
 });
 

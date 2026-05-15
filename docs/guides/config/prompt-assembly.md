@@ -18,16 +18,15 @@ Use exactly one source per run: `prompt` for simple inline text, or `promptFile`
 A single-file prompt with all three placeholder types:
 
 ```handlebars
-Write a concise release note for {{product}}.
+Write a concise release note for
+{{product}}. Audience:
+{{audience}}
+Brand voice:
+{{config.brand.voice}}
+Release channel:
+{{config.release.channel}}
 
-Audience: {{audience}}
-Brand voice: {{config.brand.voice}}
-Release channel: {{config.release.channel}}
-
-Include:
-- one headline
-- three value bullets
-- one migration note
+Include: - one headline - three value bullets - one migration note
 ```
 
 A bundled entry file that composes others with includes:

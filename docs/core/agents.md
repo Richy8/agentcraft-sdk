@@ -27,57 +27,57 @@ All fields passed to `Agent.create()` belong to `AgentCreateConfig`. Only `model
 
 ### Core Fields
 
-| Field             | Required          | Default                  | Purpose                                                        |
-| ----------------- | ----------------- | ------------------------ | -------------------------------------------------------------- |
-| `model`           | Yes               | None                     | Provider-prefixed model ID or `Provider` catalog value.        |
-| `apiKey`          | Provider-specific | Env / provider behavior  | Authenticates cloud providers (OpenAI, Anthropic, Google, ...) |
-| `name`            | No                | None                     | Optional label for the agent, surfaced in traces.              |
-| `system`          | No                | None                     | Default system prompt prepended to every run.                  |
-| `temperature`     | No                | `0.7`                    | Sampling temperature (0–2).                                    |
-| `maxTokens`       | No                | Model max output         | Hard cap on completion tokens.                                 |
-| `topP`            | No                | None                     | Nucleus sampling probability (0–1).                            |
-| `frequencyPenalty`| No                | None                     | Penalizes repeated tokens (-2–2).                              |
-| `presencePenalty` | No                | None                     | Penalizes token presence (-2–2).                               |
-| `stopSequences`   | No                | None                     | Up to 4 strings where generation stops.                        |
-| `responseFormat`  | No                | `{ type: "text" }`       | `"text"` or `"json_object"` mode.                              |
-| `timeout`         | No                | `120000` (ms)            | Request timeout in milliseconds.                               |
+| Field              | Required          | Default                 | Purpose                                                        |
+| ------------------ | ----------------- | ----------------------- | -------------------------------------------------------------- |
+| `model`            | Yes               | None                    | Provider-prefixed model ID or `Provider` catalog value.        |
+| `apiKey`           | Provider-specific | Env / provider behavior | Authenticates cloud providers (OpenAI, Anthropic, Google, ...) |
+| `name`             | No                | None                    | Optional label for the agent, surfaced in traces.              |
+| `system`           | No                | None                    | Default system prompt prepended to every run.                  |
+| `temperature`      | No                | `0.7`                   | Sampling temperature (0–2).                                    |
+| `maxTokens`        | No                | Model max output        | Hard cap on completion tokens.                                 |
+| `topP`             | No                | None                    | Nucleus sampling probability (0–1).                            |
+| `frequencyPenalty` | No                | None                    | Penalizes repeated tokens (-2–2).                              |
+| `presencePenalty`  | No                | None                    | Penalizes token presence (-2–2).                               |
+| `stopSequences`    | No                | None                    | Up to 4 strings where generation stops.                        |
+| `responseFormat`   | No                | `{ type: "text" }`      | `"text"` or `"json_object"` mode.                              |
+| `timeout`          | No                | `120000` (ms)           | Request timeout in milliseconds.                               |
 
 ### Tool and Skill Fields
 
-| Field             | Required | Default   | Purpose                                                                                            |
-| ----------------- | -------- | --------- | -------------------------------------------------------------------------------------------------- |
-| `tools`           | No       | `[]`      | Static tool definitions attached to every run.                                                     |
-| `toolPolicy`      | No       | Permissive | Controls approval, read-only mode, guardrails, redaction, and result size limits.                 |
+| Field             | Required | Default    | Purpose                                                                                                                                    |
+| ----------------- | -------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `tools`           | No       | `[]`       | Static tool definitions attached to every run.                                                                                             |
+| `toolPolicy`      | No       | Permissive | Controls approval, read-only mode, guardrails, redaction, and result size limits.                                                          |
 | `skillActivation` | No       | `"always"` | `"always"` — all attached skills run. `"auto"` — activated by prompt keywords. `"directive-only"` — activated by `/skill-name` directives. |
-| `toolSelection`   | No       | `"all"`   | `"all"` — all attached adapters expose tools. `"auto"` — only adapters relevant to active skills. |
+| `toolSelection`   | No       | `"all"`    | `"all"` — all attached adapters expose tools. `"auto"` — only adapters relevant to active skills.                                          |
 
 ### Retry Fields
 
-| Field   | Required | Default                                              | Purpose                                  |
-| ------- | -------- | ---------------------------------------------------- | ---------------------------------------- |
+| Field   | Required | Default                                                                       | Purpose                                |
+| ------- | -------- | ----------------------------------------------------------------------------- | -------------------------------------- |
 | `retry` | No       | `{ maxAttempts:3, backoff:"exponential", initialDelay:1000, maxDelay:60000 }` | Retry strategy for transient failures. |
 
 ### Provider-specific Fields
 
-| Field            | Required            | Purpose                                        |
-| ---------------- | ------------------- | ---------------------------------------------- |
-| `baseUrl`        | Local / compatible  | Base URL for local or OpenAI-compatible providers. |
-| `endpoint`       | Azure               | Azure OpenAI endpoint URL.                     |
-| `deployment`     | Azure               | Azure deployment name.                         |
-| `apiVersion`     | Azure               | Azure API version string.                      |
-| `organizationId` | OpenAI              | OpenAI organization ID.                        |
-| `region`         | Bedrock / Vertex    | AWS/GCP region.                                |
-| `accessKeyId`    | Bedrock             | AWS access key.                                |
-| `secretAccessKey`| Bedrock             | AWS secret key.                                |
-| `project`        | Vertex              | GCP project ID.                                |
-| `location`       | Vertex              | GCP location (e.g. `"us-central1"`).           |
+| Field             | Required           | Purpose                                            |
+| ----------------- | ------------------ | -------------------------------------------------- |
+| `baseUrl`         | Local / compatible | Base URL for local or OpenAI-compatible providers. |
+| `endpoint`        | Azure              | Azure OpenAI endpoint URL.                         |
+| `deployment`      | Azure              | Azure deployment name.                             |
+| `apiVersion`      | Azure              | Azure API version string.                          |
+| `organizationId`  | OpenAI             | OpenAI organization ID.                            |
+| `region`          | Bedrock / Vertex   | AWS/GCP region.                                    |
+| `accessKeyId`     | Bedrock            | AWS access key.                                    |
+| `secretAccessKey` | Bedrock            | AWS secret key.                                    |
+| `project`         | Vertex             | GCP project ID.                                    |
+| `location`        | Vertex             | GCP location (e.g. `"us-central1"`).               |
 
 ### Cache and Logger
 
-| Field    | Required | Default    | Purpose                                             |
-| -------- | -------- | ---------- | --------------------------------------------------- |
-| `cache`  | No       | Disabled   | `AgentCacheController` from `AgentCache.file()` etc. |
-| `logger` | No       | Console    | Custom logger implementing the `Logger` interface.  |
+| Field    | Required | Default  | Purpose                                              |
+| -------- | -------- | -------- | ---------------------------------------------------- |
+| `cache`  | No       | Disabled | `AgentCacheController` from `AgentCache.file()` etc. |
+| `logger` | No       | Console  | Custom logger implementing the `Logger` interface.   |
 
 ## Patterns
 
@@ -142,9 +142,9 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
-    readOnly: true,           // blocks any write side-effect tools
-    maxResultBytes: 100_000,  // truncates large tool results
-    redactSecrets: true,      // strips tokens/keys from tool output
+    readOnly: true, // blocks any write side-effect tools
+    maxResultBytes: 100_000, // truncates large tool results
+    redactSecrets: true, // strips tokens/keys from tool output
   },
 });
 
@@ -242,7 +242,9 @@ const agent = Agent.create({
   .use(SomeSkill.create());
 
 // Now agent.run() can invoke Tavily search and SomeSkill tools
-const response = await agent.run({ prompt: "Research and summarize AgentCraft." });
+const response = await agent.run({
+  prompt: "Research and summarize AgentCraft.",
+});
 console.log(response.content);
 ```
 
@@ -259,8 +261,14 @@ const base = Agent.create({
 });
 
 // Create two specialized clones from the same base — no double-provisioning
-const concise = base.cloneWithSystem("Respond in one sentence.", "concise-agent");
-const verbose = base.cloneWithSystem("Respond with detailed explanations.", "verbose-agent");
+const concise = base.cloneWithSystem(
+  "Respond in one sentence.",
+  "concise-agent",
+);
+const verbose = base.cloneWithSystem(
+  "Respond with detailed explanations.",
+  "verbose-agent",
+);
 
 const [short, long] = await Promise.all([
   concise.run({ prompt: "What is TypeScript?" }),
@@ -282,11 +290,11 @@ import { Agent, Provider } from "agentcraft";
 
 const info = Agent.inspect(Provider.openai["gpt-4o"]);
 
-console.log(info.capabilities.vision);    // → true
+console.log(info.capabilities.vision); // → true
 console.log(info.capabilities.streaming); // → true
-console.log(info.pricing.inputPerM);      // → cost per 1M input tokens
-console.log(info.scores.quality);         // → 0–100 quality score
-console.log(info.optimizedFor);           // → ["reasoning", "coding", ...]
+console.log(info.pricing.inputPerM); // → cost per 1M input tokens
+console.log(info.scores.quality); // → 0–100 quality score
+console.log(info.optimizedFor); // → ["reasoning", "coding", ...]
 ```
 
 ### `Agent.supports(model, capability)`
@@ -347,7 +355,9 @@ const agent = Agent.create({
   model: Provider.anthropic["claude-3-5-haiku-20241022"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
-const instanceEstimate = agent.estimateCost({ prompt: "Classify this ticket." });
+const instanceEstimate = agent.estimateCost({
+  prompt: "Classify this ticket.",
+});
 console.log(`Estimated cost: $${instanceEstimate.estimatedCost.toFixed(4)}`);
 ```
 

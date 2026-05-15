@@ -39,7 +39,8 @@ const workflow = AgentWorkflow.create({
       id: "draft",
       agent: writer,
       // prompt is a function so it can read validated input
-      prompt: (ctx) => `Write a short article about ${(ctx.input as z.infer<typeof InputSchema>).topic}.`,
+      prompt: (ctx) =>
+        `Write a short article about ${(ctx.input as z.infer<typeof InputSchema>).topic}.`,
     }),
 
     // Step 2 — persist the draft to the artifact store
@@ -60,54 +61,54 @@ const workflow = AgentWorkflow.create({
 
 const result = await workflow.run({ input: { topic: "agent caching" } });
 
-console.log(result.status);       // "completed"
-console.log(result.totalCost);    // total cost across all steps
-console.log(result.durationMs);   // total wall-clock time
+console.log(result.status); // "completed"
+console.log(result.totalCost); // total cost across all steps
+console.log(result.durationMs); // total wall-clock time
 ```
 
 ## `AgentWorkflow.create()` Config
 
-| Field            | Required | Default                   | Purpose                                                             |
-| ---------------- | -------- | ------------------------- | ------------------------------------------------------------------- |
-| `steps`          | Yes      | None                      | Ordered `WorkflowStep[]` executed in sequence.                      |
-| `workspace`      | No       | `AgentWorkspace.memory()` | Shared cache, store, policy, and events injected into every step.   |
+| Field            | Required | Default                   | Purpose                                                            |
+| ---------------- | -------- | ------------------------- | ------------------------------------------------------------------ |
+| `steps`          | Yes      | None                      | Ordered `WorkflowStep[]` executed in sequence.                     |
+| `workspace`      | No       | `AgentWorkspace.memory()` | Shared cache, store, policy, and events injected into every step.  |
 | `input`          | No       | None                      | Zod schema — validates `workflow.run({ input })` before step 1.    |
-| `id`             | No       | Auto-generated            | Stable workflow ID used in persisted run records.                   |
+| `id`             | No       | Auto-generated            | Stable workflow ID used in persisted run records.                  |
 | `onStepComplete` | No       | None                      | `(stepId, output, ctx) => void` — called after each step succeeds. |
 | `onStepError`    | No       | None                      | `(stepId, error, ctx) => void` — called after each step fails.     |
 
 ## Workflow Instance Methods
 
-| Method              | Returns                  | Purpose                                                             |
-| ------------------- | ------------------------ | ------------------------------------------------------------------- |
-| `workflow.run(opts)` | `Promise<WorkflowResult>` | Execute all steps with validated input. Persists run if store set. |
-| `workflow.resume(id)` | `Promise<WorkflowResult>` | Re-run from first incomplete step. Requires `workspace.store`.    |
-| `workflow.inspect()` | `WorkflowInspection`     | Return the workflow ID and static step graph (IDs and types).       |
+| Method                | Returns                   | Purpose                                                            |
+| --------------------- | ------------------------- | ------------------------------------------------------------------ |
+| `workflow.run(opts)`  | `Promise<WorkflowResult>` | Execute all steps with validated input. Persists run if store set. |
+| `workflow.resume(id)` | `Promise<WorkflowResult>` | Re-run from first incomplete step. Requires `workspace.store`.     |
+| `workflow.inspect()`  | `WorkflowInspection`      | Return the workflow ID and static step graph (IDs and types).      |
 
 ## `WorkflowResult` Fields
 
 ```ts
 const result = await workflow.run({ input: { topic: "caching" } });
 
-result.runId;       // string — unique run ID (also the store artifact ID if persisted)
-result.status;      // "completed" | "failed" | "partial"
-result.input;       // the validated input object
-result.steps;       // WorkflowStepResult[] — one entry per executed step
-result.totalCost;   // number — sum of cost across all steps
-result.durationMs;  // number — total wall-clock time in milliseconds
+result.runId; // string — unique run ID (also the store artifact ID if persisted)
+result.status; // "completed" | "failed" | "partial"
+result.input; // the validated input object
+result.steps; // WorkflowStepResult[] — one entry per executed step
+result.totalCost; // number — sum of cost across all steps
+result.durationMs; // number — total wall-clock time in milliseconds
 ```
 
 ### `WorkflowStepResult` Fields
 
 ```ts
 // Available on result.steps[n] or ctx.steps["stepId"]
-step.stepId;      // string — the step's id
-step.status;      // "completed" | "failed" | "skipped" | "pending" | ...
-step.output;      // unknown — whatever the step returned
-step.error;       // string | undefined — error message if status is "failed"
-step.durationMs;  // number — how long the step took
-step.cost;        // number | undefined — LLM cost if the step ran an agent
-step.tokensUsed;  // TokenUsage | undefined
+step.stepId; // string — the step's id
+step.status; // "completed" | "failed" | "skipped" | "pending" | ...
+step.output; // unknown — whatever the step returned
+step.error; // string | undefined — error message if status is "failed"
+step.durationMs; // number — how long the step took
+step.cost; // number | undefined — LLM cost if the step ran an agent
+step.tokensUsed; // TokenUsage | undefined
 ```
 
 ## Step Types
@@ -172,14 +173,17 @@ const workflow = AgentWorkflow.create({
     AgentStep({
       id: "review",
       agent: reviewer,
-      prompt: (ctx) => `Review this draft and return a JSON assessment:\n\n${(ctx.input as { draft: string }).draft}`,
+      prompt: (ctx) =>
+        `Review this draft and return a JSON assessment:\n\n${(ctx.input as { draft: string }).draft}`,
       // Structured output — step.output will be { score, summary, approved }
       responseSchema: ReviewSchema,
     }),
   ],
 });
 
-const result = await workflow.run({ input: { draft: "TypeScript is great because..." } });
+const result = await workflow.run({
+  input: { draft: "TypeScript is great because..." },
+});
 const review = result.steps[0]?.output as z.infer<typeof ReviewSchema>;
 console.log(review.score, review.approved);
 ```
@@ -197,14 +201,14 @@ AgentStep({
 
 **`AgentStep` config fields:**
 
-| Field            | Required | Default | Purpose                                                              |
-| ---------------- | -------- | ------- | -------------------------------------------------------------------- |
-| `id`             | No       | Auto    | Step identifier — used as key in `ctx.steps`.                       |
-| `agent`          | Yes      | None    | The `Agent` instance to run.                                         |
-| `prompt`         | Yes      | None    | Static string or `(ctx) => string` function.                        |
-| `responseSchema` | No       | None    | Zod or JSON schema — output becomes `structuredResponse` value.     |
-| `toolPolicy`     | No       | None    | Per-step `ToolPolicy` merged with workspace policy.                 |
-| `retry`          | No       | None    | `{ attempts, delayMs? }` — retry on failure.                        |
+| Field            | Required | Default | Purpose                                                         |
+| ---------------- | -------- | ------- | --------------------------------------------------------------- |
+| `id`             | No       | Auto    | Step identifier — used as key in `ctx.steps`.                   |
+| `agent`          | Yes      | None    | The `Agent` instance to run.                                    |
+| `prompt`         | Yes      | None    | Static string or `(ctx) => string` function.                    |
+| `responseSchema` | No       | None    | Zod or JSON schema — output becomes `structuredResponse` value. |
+| `toolPolicy`     | No       | None    | Per-step `ToolPolicy` merged with workspace policy.             |
+| `retry`          | No       | None    | `{ attempts, delayMs? }` — retry on failure.                    |
 
 ---
 
@@ -250,7 +254,8 @@ const workflow = AgentWorkflow.create({
       id: "write-and-review",
       team,
       // Prompt can be static or dynamic from ctx
-      prompt: (ctx) => `Write and review an article about ${(ctx.input as { topic: string }).topic}.`,
+      prompt: (ctx) =>
+        `Write and review an article about ${(ctx.input as { topic: string }).topic}.`,
     }),
   ],
 });
@@ -261,9 +266,9 @@ console.log(result.steps[0]?.output); // final team content
 
 **`TeamStep` config fields:**
 
-| Field    | Required | Default | Purpose                                                  |
-| -------- | -------- | ------- | -------------------------------------------------------- |
-| `id`     | No       | Auto    | Step identifier.                                         |
+| Field    | Required | Default | Purpose                                                 |
+| -------- | -------- | ------- | ------------------------------------------------------- |
+| `id`     | No       | Auto    | Step identifier.                                        |
 | `team`   | Yes      | None    | The `AgentTeam` instance to run.                        |
 | `prompt` | Yes      | None    | Static string or `(ctx) => string` function.            |
 | `retry`  | No       | None    | `{ attempts, delayMs? }` — retry the team run on error. |
@@ -322,7 +327,9 @@ const workflow = AgentWorkflow.create({
   ],
 });
 
-const result = await workflow.run({ input: { query: "TypeScript 5.5 features" } });
+const result = await workflow.run({
+  input: { query: "TypeScript 5.5 features" },
+});
 console.log(result.steps[1]?.output); // summary from agent
 ```
 
@@ -346,10 +353,10 @@ ToolStep({
 | Field      | Required | Default | Purpose                                                                       |
 | ---------- | -------- | ------- | ----------------------------------------------------------------------------- |
 | `id`       | No       | Auto    | Step identifier.                                                              |
-| `adapter`  | Yes      | None    | `AgentAdapter` instance or `(ctx) => AgentAdapter` function.                 |
-| `toolName` | Yes      | None    | Name of the tool to call. Must match `adapter.getTools()`.                   |
+| `adapter`  | Yes      | None    | `AgentAdapter` instance or `(ctx) => AgentAdapter` function.                  |
+| `toolName` | Yes      | None    | Name of the tool to call. Must match `adapter.getTools()`.                    |
 | `args`     | Yes      | None    | Static `Record<string, unknown>` or `async (ctx) => Record<string, unknown>`. |
-| `retry`    | No       | None    | `{ attempts, delayMs? }` — retry tool call on failure.                       |
+| `retry`    | No       | None    | `{ attempts, delayMs? }` — retry tool call on failure.                        |
 
 ---
 
@@ -436,14 +443,14 @@ ApprovalStep({
 
 **`ApprovalStep` config fields:**
 
-| Field         | Required | Default    | Purpose                                                                        |
-| ------------- | -------- | ---------- | ------------------------------------------------------------------------------ |
-| `id`          | No       | Auto       | Step identifier.                                                               |
-| `description` | Yes      | None       | Human-readable description of what is being approved.                          |
-| `approve`     | No       | `() => true` | `(ctx) => boolean` — return `false` to reject. Defaults to auto-approve.    |
-| `onApproved`  | No       | None       | `(ctx) => void` — runs when approved. Use for side effects (write, send, etc.).|
-| `onRejected`  | No       | None       | `(ctx, reason?) => void` — runs when rejected. Use for logging or alerting.   |
-| `timeoutMs`   | No       | None       | Abort if `approve` hasn't resolved within this many milliseconds.             |
+| Field         | Required | Default      | Purpose                                                                         |
+| ------------- | -------- | ------------ | ------------------------------------------------------------------------------- |
+| `id`          | No       | Auto         | Step identifier.                                                                |
+| `description` | Yes      | None         | Human-readable description of what is being approved.                           |
+| `approve`     | No       | `() => true` | `(ctx) => boolean` — return `false` to reject. Defaults to auto-approve.        |
+| `onApproved`  | No       | None         | `(ctx) => void` — runs when approved. Use for side effects (write, send, etc.). |
+| `onRejected`  | No       | None         | `(ctx, reason?) => void` — runs when rejected. Use for logging or alerting.     |
+| `timeoutMs`   | No       | None         | Abort if `approve` hasn't resolved within this many milliseconds.               |
 
 ---
 
@@ -501,7 +508,9 @@ const workflow = AgentWorkflow.create({
 });
 
 // Will run the translate branch
-const r1 = await workflow.run({ input: { lang: "fr", text: "Bonjour le monde" } });
+const r1 = await workflow.run({
+  input: { lang: "fr", text: "Bonjour le monde" },
+});
 
 // Will run the pass-through branch
 const r2 = await workflow.run({ input: { lang: "en", text: "Hello world" } });
@@ -536,12 +545,12 @@ ConditionStep({
 
 **`ConditionStep` config fields:**
 
-| Field       | Required | Default | Purpose                                                                             |
-| ----------- | -------- | ------- | ----------------------------------------------------------------------------------- |
-| `id`        | No       | Auto    | Step identifier.                                                                    |
-| `condition` | Yes      | None    | `(ctx) => boolean` — evaluated at runtime.                                          |
-| `ifTrue`    | No       | None    | `WorkflowStep` or `WorkflowStep[]` — executed when condition is `true`.            |
-| `ifFalse`   | No       | None    | `WorkflowStep` or `WorkflowStep[]` — executed when condition is `false`.           |
+| Field       | Required | Default | Purpose                                                                  |
+| ----------- | -------- | ------- | ------------------------------------------------------------------------ |
+| `id`        | No       | Auto    | Step identifier.                                                         |
+| `condition` | Yes      | None    | `(ctx) => boolean` — evaluated at runtime.                               |
+| `ifTrue`    | No       | None    | `WorkflowStep` or `WorkflowStep[]` — executed when condition is `true`.  |
+| `ifFalse`   | No       | None    | `WorkflowStep` or `WorkflowStep[]` — executed when condition is `false`. |
 
 ---
 
@@ -576,17 +585,20 @@ const workflow = AgentWorkflow.create({
         AgentStep({
           id: "competitors",
           agent: researcher,
-          prompt: (ctx) => `List the top 3 competitors of ${(ctx.input as { product: string }).product}.`,
+          prompt: (ctx) =>
+            `List the top 3 competitors of ${(ctx.input as { product: string }).product}.`,
         }),
         AgentStep({
           id: "pricing",
           agent: researcher,
-          prompt: (ctx) => `What is the typical pricing model for ${(ctx.input as { product: string }).product}?`,
+          prompt: (ctx) =>
+            `What is the typical pricing model for ${(ctx.input as { product: string }).product}?`,
         }),
         AgentStep({
           id: "trends",
           agent: researcher,
-          prompt: (ctx) => `What are the current market trends relevant to ${(ctx.input as { product: string }).product}?`,
+          prompt: (ctx) =>
+            `What are the current market trends relevant to ${(ctx.input as { product: string }).product}?`,
         }),
       ],
       failFast: true, // default — throw if any child step fails
@@ -627,11 +639,11 @@ ParallelStep({
 
 **`ParallelStep` config fields:**
 
-| Field      | Required | Default | Purpose                                                                     |
-| ---------- | -------- | ------- | --------------------------------------------------------------------------- |
-| `id`       | No       | Auto    | Step identifier.                                                            |
-| `steps`    | Yes      | None    | `WorkflowStep[]` — all run concurrently.                                   |
-| `failFast` | No       | `true`  | Throw if any child fails. Set `false` to continue with partial results.    |
+| Field      | Required | Default | Purpose                                                                 |
+| ---------- | -------- | ------- | ----------------------------------------------------------------------- |
+| `id`       | No       | Auto    | Step identifier.                                                        |
+| `steps`    | Yes      | None    | `WorkflowStep[]` — all run concurrently.                                |
+| `failFast` | No       | `true`  | Throw if any child fails. Set `false` to continue with partial results. |
 
 ---
 
@@ -672,7 +684,11 @@ const workflow = AgentWorkflow.create({
       run: (ctx) => {
         const raw = ctx.steps["draft"]?.output as string;
         // Add metadata envelope around the draft
-        return { body: raw, wordCount: raw.split(" ").length, createdAt: new Date().toISOString() };
+        return {
+          body: raw,
+          wordCount: raw.split(" ").length,
+          createdAt: new Date().toISOString(),
+        };
       },
     }),
 
@@ -681,7 +697,10 @@ const workflow = AgentWorkflow.create({
       id: "persist",
       run: async (ctx) => {
         const formatted = ctx.steps["format"]?.output as { body: string };
-        const id = await ctx.store?.put("Draft", { ...formatted, status: "draft" });
+        const id = await ctx.store?.put("Draft", {
+          ...formatted,
+          status: "draft",
+        });
         return { id };
       },
     }),
@@ -722,9 +741,9 @@ CustomStep({
 
 **`CustomStep` config fields:**
 
-| Field   | Required | Default | Purpose                                                         |
-| ------- | -------- | ------- | --------------------------------------------------------------- |
-| `id`    | No       | Auto    | Step identifier.                                                |
+| Field   | Required | Default | Purpose                                                        |
+| ------- | -------- | ------- | -------------------------------------------------------------- |
+| `id`    | No       | Auto    | Step identifier.                                               |
 | `run`   | Yes      | None    | `async (ctx) => unknown` — return value becomes `step.output`. |
 | `retry` | No       | None    | `{ attempts, delayMs? }` — retry on throw.                     |
 
@@ -734,13 +753,13 @@ CustomStep({
 
 Every step receives `ctx` — the shared state object for the run.
 
-| Field       | Type                                   | Purpose                                                          |
-| ----------- | -------------------------------------- | ---------------------------------------------------------------- |
-| `ctx.input` | Validated input (from your Zod schema) | The typed workflow input passed to `workflow.run()`.            |
-| `ctx.steps` | `Record<string, WorkflowStepResult>`   | All previously completed step results, keyed by `stepId`.       |
-| `ctx.workspace` | `AgentWorkspaceInstance`           | Shared cache, policy, adapters, and events.                     |
-| `ctx.store` | `ArtifactStore \| undefined`           | Shorthand for `ctx.workspace.store`. `undefined` if not wired.  |
-| `ctx.runId` | `string`                               | This run's unique ID (also the persisted `WorkflowRun` artifact ID). |
+| Field           | Type                                   | Purpose                                                              |
+| --------------- | -------------------------------------- | -------------------------------------------------------------------- |
+| `ctx.input`     | Validated input (from your Zod schema) | The typed workflow input passed to `workflow.run()`.                 |
+| `ctx.steps`     | `Record<string, WorkflowStepResult>`   | All previously completed step results, keyed by `stepId`.            |
+| `ctx.workspace` | `AgentWorkspaceInstance`               | Shared cache, policy, adapters, and events.                          |
+| `ctx.store`     | `ArtifactStore \| undefined`           | Shorthand for `ctx.workspace.store`. `undefined` if not wired.       |
+| `ctx.runId`     | `string`                               | This run's unique ID (also the persisted `WorkflowRun` artifact ID). |
 
 Reading a previous step's output:
 
@@ -817,8 +836,16 @@ const workflow = AgentWorkflow.create({
   id: "publish-pipeline",
   workspace,
   steps: [
-    AgentStep({ id: "draft", agent: writer, prompt: "Write a product update." }),
-    AgentStep({ id: "review", agent: writer, prompt: (ctx) => `Review this draft:\n\n${ctx.steps["draft"]?.output}` }),
+    AgentStep({
+      id: "draft",
+      agent: writer,
+      prompt: "Write a product update.",
+    }),
+    AgentStep({
+      id: "review",
+      agent: writer,
+      prompt: (ctx) => `Review this draft:\n\n${ctx.steps["draft"]?.output}`,
+    }),
     CustomStep({
       id: "publish",
       run: async (ctx) => {
@@ -835,7 +862,9 @@ let result = await workflow.run({ input: {} });
 
 if (result.status === "failed") {
   // Find the failed run from the store
-  const failedRuns = await workspace.store!.query("WorkflowRun", { status: "failed" });
+  const failedRuns = await workspace.store!.query("WorkflowRun", {
+    status: "failed",
+  });
 
   if (failedRuns.length > 0) {
     const failedRun = failedRuns[0] as { id: string };
@@ -886,9 +915,14 @@ import {
 import { TavilySearchAdapter } from "agentcraft/adapters";
 import { z } from "zod";
 
-const InputSchema = z.object({ topic: z.string(), publish: z.boolean().default(false) });
+const InputSchema = z.object({
+  topic: z.string(),
+  publish: z.boolean().default(false),
+});
 
-const searchAdapter = TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! });
+const searchAdapter = TavilySearchAdapter.connect({
+  apiKey: process.env.TAVILY_API_KEY!,
+});
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
@@ -910,7 +944,10 @@ const workflow = AgentWorkflow.create({
       id: "search",
       adapter: searchAdapter,
       toolName: "web_search",
-      args: (ctx) => ({ query: (ctx.input as z.infer<typeof InputSchema>).topic, max_results: 5 }),
+      args: (ctx) => ({
+        query: (ctx.input as z.infer<typeof InputSchema>).topic,
+        max_results: 5,
+      }),
     }),
 
     // 2. Fan-out two analysis tasks in parallel
@@ -920,12 +957,14 @@ const workflow = AgentWorkflow.create({
         AgentStep({
           id: "summary",
           agent,
-          prompt: (ctx) => `Summarize these search results:\n\n${JSON.stringify(ctx.steps["search"]?.output)}`,
+          prompt: (ctx) =>
+            `Summarize these search results:\n\n${JSON.stringify(ctx.steps["search"]?.output)}`,
         }),
         AgentStep({
           id: "key-points",
           agent,
-          prompt: (ctx) => `Extract 5 key takeaways from:\n\n${JSON.stringify(ctx.steps["search"]?.output)}`,
+          prompt: (ctx) =>
+            `Extract 5 key takeaways from:\n\n${JSON.stringify(ctx.steps["search"]?.output)}`,
         }),
       ],
     }),
@@ -934,11 +973,12 @@ const workflow = AgentWorkflow.create({
     AgentStep({
       id: "draft",
       agent,
-      prompt: (ctx) => [
-        "Write a 400-word article using the following research:",
-        `Summary: ${ctx.steps["summary"]?.output}`,
-        `Key points: ${ctx.steps["key-points"]?.output}`,
-      ].join("\n\n"),
+      prompt: (ctx) =>
+        [
+          "Write a 400-word article using the following research:",
+          `Summary: ${ctx.steps["summary"]?.output}`,
+          `Key points: ${ctx.steps["key-points"]?.output}`,
+        ].join("\n\n"),
       retry: { attempts: 2 },
     }),
 
@@ -982,7 +1022,9 @@ const workflow = AgentWorkflow.create({
 });
 
 // Run with publish enabled
-const result = await workflow.run({ input: { topic: "AI agent caching", publish: true } });
+const result = await workflow.run({
+  input: { topic: "AI agent caching", publish: true },
+});
 console.log(`Status: ${result.status}`);
 console.log(`Total cost: $${result.totalCost.toFixed(4)}`);
 console.log(`Duration: ${result.durationMs}ms`);

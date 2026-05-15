@@ -19,7 +19,8 @@ const team = AgentTeam.spawn({
 });
 
 const result = await team.run({
-  prompt: "Research, draft, and review a short article about TypeScript generics.",
+  prompt:
+    "Research, draft, and review a short article about TypeScript generics.",
 });
 
 console.log(result.content);
@@ -28,33 +29,33 @@ console.log(`Rounds: ${result.rounds}, Agents used: ${result.agentsUsed}`);
 
 ## `AgentTeam.spawn()` vs `AgentTeam.create()`
 
-| Feature               | `AgentTeam.create()`                   | `AgentTeam.spawn()`                              |
-| --------------------- | -------------------------------------- | ------------------------------------------------ |
-| Members defined by    | You — at setup time                    | Root agent — at runtime                          |
-| Member roles          | Fixed, declared up front               | Dynamic, based on the task                       |
-| Best for              | Predictable pipelines                  | Open-ended tasks with unknown scope              |
-| Spawn limit           | N/A                                    | `maxAgents` (default: 5)                         |
+| Feature            | `AgentTeam.create()`     | `AgentTeam.spawn()`                 |
+| ------------------ | ------------------------ | ----------------------------------- |
+| Members defined by | You — at setup time      | Root agent — at runtime             |
+| Member roles       | Fixed, declared up front | Dynamic, based on the task          |
+| Best for           | Predictable pipelines    | Open-ended tasks with unknown scope |
+| Spawn limit        | N/A                      | `maxAgents` (default: 5)            |
 
 ## Configuration
 
 `AgentTeam.spawn(config: AgentTeamSpawnConfig)` accepts:
 
-| Option                 | Required | Default          | Purpose                                                                 |
-| ---------------------- | -------- | ---------------- | ----------------------------------------------------------------------- |
-| `root`                 | Yes      | None             | The orchestrating agent that spawns and coordinates members.            |
-| `maxAgents`            | No       | `5`              | Maximum specialist agents the root may spawn.                           |
-| `roleHints`            | No       | None             | Suggested role names given to the root as starting hints.               |
-| `supervisor`           | No       | None             | Optional agent that reviews the final result and requests revisions.    |
-| `workspace`            | No       | None             | `AgentWorkspaceInstance` for shared cache, adapters, policy, and events.|
-| `rolePolicies`         | No       | `{}`             | Per-role `ToolPolicy` overrides keyed by role string.                   |
-| `executionHint`        | No       | `"auto"`         | `"parallel"`, `"sequential"`, `"pipeline"`, or `"auto"`.               |
-| `maxRounds`            | No       | `10`             | Maximum coordination rounds before the team stops.                      |
-| `maxRevisions`         | No       | `3`              | Maximum revision cycles per spawned member.                             |
-| `maxSupervisorReviews` | No       | `2`              | Maximum supervisor review iterations.                                   |
-| `onMemberError`        | No       | `"fail"`         | What to do when a member fails: `"retry"`, `"skip"`, or `"fail"`.      |
-| `mode`                 | No       | `"orchestrator"` | `"orchestrator"` or `"planner-executor-reviewer"`.                      |
-| `supervisorRubric`     | No       | None             | Custom quality rubric string passed to the supervisor agent.            |
-| `roleBudgets`          | No       | `{}`             | Per-role `RunBudget` limits keyed by role string.                       |
+| Option                 | Required | Default          | Purpose                                                                  |
+| ---------------------- | -------- | ---------------- | ------------------------------------------------------------------------ |
+| `root`                 | Yes      | None             | The orchestrating agent that spawns and coordinates members.             |
+| `maxAgents`            | No       | `5`              | Maximum specialist agents the root may spawn.                            |
+| `roleHints`            | No       | None             | Suggested role names given to the root as starting hints.                |
+| `supervisor`           | No       | None             | Optional agent that reviews the final result and requests revisions.     |
+| `workspace`            | No       | None             | `AgentWorkspaceInstance` for shared cache, adapters, policy, and events. |
+| `rolePolicies`         | No       | `{}`             | Per-role `ToolPolicy` overrides keyed by role string.                    |
+| `executionHint`        | No       | `"auto"`         | `"parallel"`, `"sequential"`, `"pipeline"`, or `"auto"`.                 |
+| `maxRounds`            | No       | `10`             | Maximum coordination rounds before the team stops.                       |
+| `maxRevisions`         | No       | `3`              | Maximum revision cycles per spawned member.                              |
+| `maxSupervisorReviews` | No       | `2`              | Maximum supervisor review iterations.                                    |
+| `onMemberError`        | No       | `"fail"`         | What to do when a member fails: `"retry"`, `"skip"`, or `"fail"`.        |
+| `mode`                 | No       | `"orchestrator"` | `"orchestrator"` or `"planner-executor-reviewer"`.                       |
+| `supervisorRubric`     | No       | None             | Custom quality rubric string passed to the supervisor agent.             |
+| `roleBudgets`          | No       | `{}`             | Per-role `RunBudget` limits keyed by role string.                        |
 
 ## Patterns
 
@@ -106,13 +107,15 @@ const supervisor = Agent.create({
 const team = AgentTeam.spawn({
   root,
   supervisor,
-  supervisorRubric: "Approve only if the content is factually accurate and under 500 words.",
+  supervisorRubric:
+    "Approve only if the content is factually accurate and under 500 words.",
   maxAgents: 4,
   maxSupervisorReviews: 2,
 });
 
 const result = await team.run({
-  prompt: "Research and write a product announcement for our new streaming API.",
+  prompt:
+    "Research and write a product announcement for our new streaming API.",
 });
 
 console.log(result.content);
@@ -178,7 +181,7 @@ const team = AgentTeam.spawn({
 
 const result = await team.run({
   prompt: "Research and write about the benefits of TypeScript.",
-  budget: { maxCost: 0.20 }, // overall run budget
+  budget: { maxCost: 0.2 }, // overall run budget
 });
 
 console.log(result.content);

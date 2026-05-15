@@ -26,16 +26,16 @@ for await (const chunk of agent.stream({
 
 Each yielded chunk has the following shape:
 
-| Field          | Type                                              | Present when                            |
-| -------------- | ------------------------------------------------- | --------------------------------------- |
-| `type`         | `"model_delta" \| "tool_call" \| "tool_result" \| "final"` | Always |
-| `delta`        | `string`                                          | `"model_delta"` — incremental text     |
-| `toolCall`     | `ToolCall`                                        | `"tool_call"` — model invoked a tool   |
-| `toolResult`   | `ToolCallResult`                                  | `"tool_result"` — tool finished        |
-| `finishReason` | `FinishReason`                                    | `"final"` — stream is complete         |
-| `usage`        | `{ prompt, completion, total }`                   | `"final"` — token counts               |
-| `runId`        | `string`                                          | Always (for correlation)               |
-| `spanId`       | `string`                                          | Always (trace span reference)          |
+| Field          | Type                                                       | Present when                         |
+| -------------- | ---------------------------------------------------------- | ------------------------------------ |
+| `type`         | `"model_delta" \| "tool_call" \| "tool_result" \| "final"` | Always                               |
+| `delta`        | `string`                                                   | `"model_delta"` — incremental text   |
+| `toolCall`     | `ToolCall`                                                 | `"tool_call"` — model invoked a tool |
+| `toolResult`   | `ToolCallResult`                                           | `"tool_result"` — tool finished      |
+| `finishReason` | `FinishReason`                                             | `"final"` — stream is complete       |
+| `usage`        | `{ prompt, completion, total }`                            | `"final"` — token counts             |
+| `runId`        | `string`                                                   | Always (for correlation)             |
+| `spanId`       | `string`                                                   | Always (trace span reference)        |
 
 ## Patterns
 
@@ -175,8 +175,8 @@ const agent = Agent.create({
 for await (const chunk of agent.stream({
   prompt: "Research and summarize the top 3 AI frameworks.",
   budget: {
-    maxToolCalls: 5,   // model may call at most 5 tools
-    maxCost: 0.10,     // abort if estimated cost exceeds $0.10
+    maxToolCalls: 5, // model may call at most 5 tools
+    maxCost: 0.1, // abort if estimated cost exceeds $0.10
   },
 })) {
   if (chunk.type === "model_delta") {
@@ -196,7 +196,9 @@ const agent = Agent.create({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-const search = TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! });
+const search = TavilySearchAdapter.connect({
+  apiKey: process.env.TAVILY_API_KEY!,
+});
 
 // Attach the adapter only for this stream — cleaned up after the generator completes
 for await (const chunk of agent.stream({
@@ -247,7 +249,9 @@ import { Agent, Provider } from "agentcraft";
 const model = Provider.openai["gpt-4o-mini"];
 
 if (!Agent.supports(model, "streaming")) {
-  throw new Error(`${model} does not support streaming — use agent.run() instead`);
+  throw new Error(
+    `${model} does not support streaming — use agent.run() instead`,
+  );
 }
 
 const agent = Agent.create({

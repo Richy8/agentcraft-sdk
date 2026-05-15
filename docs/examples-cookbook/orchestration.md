@@ -59,7 +59,7 @@ const strongAgent = Agent.create({
 });
 
 const pool = AgentPool.create([cheapAgent, strongAgent], {
-  strategy: "cost",  // pick the cheapest agent first; fall back to the stronger one on failure
+  strategy: "cost", // pick the cheapest agent first; fall back to the stronger one on failure
   fallbackMode: "first-error",
 });
 
@@ -81,9 +81,7 @@ const apiKey = process.env.OPENAI_API_KEY ?? "";
 
 // Attach adapters to the workspace — they are available to all team members
 const workspace = AgentWorkspace.create({
-  adapters: [
-    FetchAdapter.connect({ allowedDomains: ["docs.example.com"] }),
-  ],
+  adapters: [FetchAdapter.connect({ allowedDomains: ["docs.example.com"] })],
 });
 
 const orchestrator = Agent.create({

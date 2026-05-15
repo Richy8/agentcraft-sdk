@@ -21,9 +21,13 @@ const LaunchReviewSkill = defineSkill({
       "Do not repeat information already in the prompt.",
     ],
     toolUsePolicy: ["Use tools only when attached and explicitly needed."],
-    outputFormat: ["Return findings as a list with: blocker, severity, and owner."],
+    outputFormat: [
+      "Return findings as a list with: blocker, severity, and owner.",
+    ],
     qualityChecklist: ["Every blocker must have a clear next step."],
-    failureBehavior: ["If the input is ambiguous, ask one clarifying question."],
+    failureBehavior: [
+      "If the input is ambiguous, ask one clarifying question.",
+    ],
     safetyNotes: ["Do not include PII in findings."],
   },
 
@@ -50,37 +54,37 @@ console.log(response.content);
 
 ## `defineSkill()` Config
 
-| Field                     | Required    | Default     | Purpose                                                              |
-| ------------------------- | ----------- | ----------- | -------------------------------------------------------------------- |
-| `name`                    | Yes         | None        | Stable skill identifier. Used in traces and activation matching.     |
-| `description`             | Yes         | None        | Human-readable description. Used in auto-activation keyword matching.|
-| `directive`               | Recommended | None        | Slash command trigger (e.g. `"launch-review"` → `/launch-review`).  |
-| `prompt`                  | Usually     | None        | Structured `SkillPromptTemplate`. Compiled into a system prompt.     |
-| `systemPromptExtension`   | Alternative | None        | Raw string injected into the system prompt. Use instead of `prompt`. |
-| `tools`                   | No          | `[]`        | Tool definitions exclusive to this skill.                            |
-| `requires`                | No          | `["tools"]` | Model capabilities this skill needs (e.g. `["vision"]`).            |
-| `dependsOn`               | No          | None        | Other adapters/skills that must be attached before this skill.       |
-| `metadata`                | Recommended | None        | Side effect risk, prompt version, adapter dependencies.              |
-| `init`                    | No          | None        | Called once before the first run.                                    |
-| `cleanup`                 | No          | None        | Called when `agent.dispose()` runs.                                  |
-| `onBeforeRun`             | No          | None        | Transform `AgentRunParams` before the LLM call.                      |
-| `onAfterRun`              | No          | None        | Transform `AgentResponse` after the LLM call.                        |
-| `onAfterStream`           | No          | None        | Post-process stream chunks and assembled response.                   |
+| Field                   | Required    | Default     | Purpose                                                               |
+| ----------------------- | ----------- | ----------- | --------------------------------------------------------------------- |
+| `name`                  | Yes         | None        | Stable skill identifier. Used in traces and activation matching.      |
+| `description`           | Yes         | None        | Human-readable description. Used in auto-activation keyword matching. |
+| `directive`             | Recommended | None        | Slash command trigger (e.g. `"launch-review"` → `/launch-review`).    |
+| `prompt`                | Usually     | None        | Structured `SkillPromptTemplate`. Compiled into a system prompt.      |
+| `systemPromptExtension` | Alternative | None        | Raw string injected into the system prompt. Use instead of `prompt`.  |
+| `tools`                 | No          | `[]`        | Tool definitions exclusive to this skill.                             |
+| `requires`              | No          | `["tools"]` | Model capabilities this skill needs (e.g. `["vision"]`).              |
+| `dependsOn`             | No          | None        | Other adapters/skills that must be attached before this skill.        |
+| `metadata`              | Recommended | None        | Side effect risk, prompt version, adapter dependencies.               |
+| `init`                  | No          | None        | Called once before the first run.                                     |
+| `cleanup`               | No          | None        | Called when `agent.dispose()` runs.                                   |
+| `onBeforeRun`           | No          | None        | Transform `AgentRunParams` before the LLM call.                       |
+| `onAfterRun`            | No          | None        | Transform `AgentResponse` after the LLM call.                         |
+| `onAfterStream`         | No          | None        | Post-process stream chunks and assembled response.                    |
 
 ## Prompt Template Fields
 
 All `prompt` fields are required. Empty values or empty arrays will throw.
 
-| Field              | Type       | Purpose                                              |
-| ------------------ | ---------- | ---------------------------------------------------- |
-| `role`             | `string`   | Who the model should be in this skill context.       |
-| `goal`             | `string`   | What the skill is trying to accomplish.              |
-| `constraints`      | `string[]` | Rules the model must follow.                         |
-| `toolUsePolicy`    | `string[]` | When and how to use tools.                           |
-| `outputFormat`     | `string[]` | Expected shape of the response.                      |
-| `qualityChecklist` | `string[]` | Self-check criteria before responding.               |
-| `failureBehavior`  | `string[]` | What to do when inputs are missing or ambiguous.     |
-| `safetyNotes`      | `string[]` | Safety constraints (PII, content limits, etc.).      |
+| Field              | Type       | Purpose                                          |
+| ------------------ | ---------- | ------------------------------------------------ |
+| `role`             | `string`   | Who the model should be in this skill context.   |
+| `goal`             | `string`   | What the skill is trying to accomplish.          |
+| `constraints`      | `string[]` | Rules the model must follow.                     |
+| `toolUsePolicy`    | `string[]` | When and how to use tools.                       |
+| `outputFormat`     | `string[]` | Expected shape of the response.                  |
+| `qualityChecklist` | `string[]` | Self-check criteria before responding.           |
+| `failureBehavior`  | `string[]` | What to do when inputs are missing or ambiguous. |
+| `safetyNotes`      | `string[]` | Safety constraints (PII, content limits, etc.).  |
 
 ## Patterns
 
@@ -162,11 +166,16 @@ const ResearchSkill = defineSkill({
   prompt: {
     role: "You are a senior research analyst.",
     goal: "Find authoritative sources and synthesize findings.",
-    constraints: ["Only cite sources from the search results.", "Do not hallucinate data."],
+    constraints: [
+      "Only cite sources from the search results.",
+      "Do not hallucinate data.",
+    ],
     toolUsePolicy: ["Always call web_search before drafting findings."],
     outputFormat: ["Return a structured summary with citations."],
     qualityChecklist: ["Every claim has a source."],
-    failureBehavior: ["If no results found, say so and suggest refining the query."],
+    failureBehavior: [
+      "If no results found, say so and suggest refining the query.",
+    ],
     safetyNotes: ["Do not include unverified medical or legal claims."],
   },
 
@@ -208,7 +217,9 @@ const SessionSkill = defineSkill({
   // Inject session context into every run
   onBeforeRun: async (params: AgentRunParams): Promise<AgentRunParams> => ({
     ...params,
-    system: [params.system, `Session ID: ${sessionId}`].filter(Boolean).join("\n"),
+    system: [params.system, `Session ID: ${sessionId}`]
+      .filter(Boolean)
+      .join("\n"),
   }),
 
   // Log cost after every run
@@ -278,7 +289,8 @@ const WritingSkill = defineSkill({
   name: "writing",
   description: "Writes clear, structured content.",
   directive: "write",
-  systemPromptExtension: "You are a professional content writer. Be clear and concise.",
+  systemPromptExtension:
+    "You are a professional content writer. Be clear and concise.",
 });
 
 const ResearchSkill = defineSkill({
@@ -286,23 +298,29 @@ const ResearchSkill = defineSkill({
   description: "Researches topics with web search.",
   directive: "research",
   dependsOn: [TavilySearchAdapter],
-  systemPromptExtension: "You are a research analyst. Always cite your sources.",
+  systemPromptExtension:
+    "You are a research analyst. Always cite your sources.",
 });
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   skillActivation: "directive-only", // skills only activate on explicit directive
-}).use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }))
+})
+  .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }))
   .use(ResearchSkill)
   .use(WritingSkill);
 
 // Each prompt activates the matching skill only
-const research = await agent.run({ prompt: "/research Find the latest TypeScript news." });
-const writing = await agent.run({ prompt: "/write Draft a summary of today's findings." });
+const research = await agent.run({
+  prompt: "/research Find the latest TypeScript news.",
+});
+const writing = await agent.run({
+  prompt: "/write Draft a summary of today's findings.",
+});
 
 console.log(research.selection?.activeSkills); // → ["research"]
-console.log(writing.selection?.activeSkills);  // → ["writing"]
+console.log(writing.selection?.activeSkills); // → ["writing"]
 ```
 
 ## Related

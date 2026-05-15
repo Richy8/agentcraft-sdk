@@ -16,7 +16,11 @@ const lookupOrder = tool({
   params: {
     orderId: { type: "string", description: "Order ID." },
   },
-  run: async ({ orderId }) => ({ orderId, status: "shipped", updatedAt: "2024-01-15" }),
+  run: async ({ orderId }) => ({
+    orderId,
+    status: "shipped",
+    updatedAt: "2024-01-15",
+  }),
 });
 
 // Bundle into an adapter
@@ -44,19 +48,19 @@ console.log(response.content);
 
 ## `createAdapter()` Config
 
-| Field         | Required    | Default            | Purpose                                            |
-| ------------- | ----------- | ------------------ | -------------------------------------------------- |
-| `name`        | Yes         | None               | Stable adapter identifier. Used in traces and logs.|
-| `metadata`    | Recommended | None               | Auth type, side effects, scopes, trust level.      |
-| `tools`       | Usually     | None               | Static array of `ToolDefinition`s.                 |
-| `getTools`    | Alternative | None               | Async function returning tools — for dynamic tools.|
-| `requires`    | No          | `["tools"]`        | Model capabilities this adapter needs.             |
-| `dependsOn`   | No          | None               | Other adapters that must be attached first.        |
-| `init`        | No          | None               | Called once before the first run.                  |
-| `cleanup`     | No          | None               | Called when `agent.dispose()` runs.                |
-| `onBeforeRun` | No          | None               | Transform `AgentRunParams` before the LLM call.    |
-| `onAfterRun`  | No          | None               | Transform `AgentResponse` after the LLM call.      |
-| `onAfterStream` | No        | None               | Post-process stream chunks and assembled response. |
+| Field           | Required    | Default     | Purpose                                             |
+| --------------- | ----------- | ----------- | --------------------------------------------------- |
+| `name`          | Yes         | None        | Stable adapter identifier. Used in traces and logs. |
+| `metadata`      | Recommended | None        | Auth type, side effects, scopes, trust level.       |
+| `tools`         | Usually     | None        | Static array of `ToolDefinition`s.                  |
+| `getTools`      | Alternative | None        | Async function returning tools — for dynamic tools. |
+| `requires`      | No          | `["tools"]` | Model capabilities this adapter needs.              |
+| `dependsOn`     | No          | None        | Other adapters that must be attached first.         |
+| `init`          | No          | None        | Called once before the first run.                   |
+| `cleanup`       | No          | None        | Called when `agent.dispose()` runs.                 |
+| `onBeforeRun`   | No          | None        | Transform `AgentRunParams` before the LLM call.     |
+| `onAfterRun`    | No          | None        | Transform `AgentResponse` after the LLM call.       |
+| `onAfterStream` | No          | None        | Post-process stream chunks and assembled response.  |
 
 ## Patterns
 
@@ -107,7 +111,11 @@ const getTicket = tool({
 const updateTicketStatus = tool({
   name: "update_ticket_status",
   description: "Update the status of a ticket.",
-  security: { sideEffect: "write", requiresConfirmation: true, scopes: ["tickets:write"] },
+  security: {
+    sideEffect: "write",
+    requiresConfirmation: true,
+    scopes: ["tickets:write"],
+  },
   params: {
     ticketId: { type: "string", description: "Ticket ID." },
     status: {
@@ -178,7 +186,9 @@ const agent = Agent.create({
 }).use(DatabaseAdapter);
 
 try {
-  const response = await agent.run({ prompt: "How many users signed up this week?" });
+  const response = await agent.run({
+    prompt: "How many users signed up this week?",
+  });
   console.log(response.content);
 } finally {
   await agent.dispose(); // triggers DatabaseAdapter.cleanup()
@@ -306,15 +316,15 @@ export const SummaryAdapter = createAdapter({
 
 `metadata` provides context to policy enforcement, tracing, and documentation.
 
-| Field             | Values                                                                 | Purpose                                     |
-| ----------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
-| `kind`            | `"custom" \| "native-sdk" \| "mcp-backed" \| "placeholder"`           | Adapter implementation type.                |
-| `auth`            | `"none" \| "api-key" \| "oauth" \| "aws" \| "connection-string" \| "custom"` | Authentication method.            |
-| `sideEffects`     | `Array<"none" \| "read" \| "write" \| "external">`                    | Highest side-effect level this adapter has. |
-| `scopes`          | `string[]`                                                             | Logical permission scopes.                  |
-| `readOnly`        | `boolean`                                                              | Hint that this adapter never writes.        |
-| `trustLevel`      | `"trusted" \| "review-required" \| "untrusted"`                       | For audit and policy decisions.             |
-| `requiredSecrets` | `string[]`                                                             | Environment variable names needed.          |
+| Field             | Values                                                                       | Purpose                                     |
+| ----------------- | ---------------------------------------------------------------------------- | ------------------------------------------- |
+| `kind`            | `"custom" \| "native-sdk" \| "mcp-backed" \| "placeholder"`                  | Adapter implementation type.                |
+| `auth`            | `"none" \| "api-key" \| "oauth" \| "aws" \| "connection-string" \| "custom"` | Authentication method.                      |
+| `sideEffects`     | `Array<"none" \| "read" \| "write" \| "external">`                           | Highest side-effect level this adapter has. |
+| `scopes`          | `string[]`                                                                   | Logical permission scopes.                  |
+| `readOnly`        | `boolean`                                                                    | Hint that this adapter never writes.        |
+| `trustLevel`      | `"trusted" \| "review-required" \| "untrusted"`                              | For audit and policy decisions.             |
+| `requiredSecrets` | `string[]`                                                                   | Environment variable names needed.          |
 
 ## Related
 

@@ -43,18 +43,18 @@ export interface TraceSink {
 
 ## TraceSpan Fields
 
-| Field          | Type                                                                        | Purpose                              |
-| -------------- | --------------------------------------------------------------------------- | ------------------------------------ |
-| `runId`        | `string`                                                                    | Unique run identifier.               |
-| `spanId`       | `string`                                                                    | Unique span identifier.              |
-| `parentSpanId` | `string`                                                                    | Parent span (for nested spans).      |
-| `name`         | `string`                                                                    | Span name (e.g. `"tool.web_search"`). |
-| `kind`         | `"agent" \| "model" \| "tool" \| "mcp" \| "adapter" \| "team" \| "retry" \| "guardrail"` | Span category. |
-| `startedAt`    | `string`                                                                    | ISO timestamp when the span started. |
-| `endedAt`      | `string`                                                                    | ISO timestamp when the span ended.   |
-| `status`       | `"ok" \| "error"`                                                           | Outcome of the span.                 |
-| `attributes`   | `Record<string, unknown>`                                                   | Span-specific metadata.              |
-| `error`        | `string`                                                                    | Error message if `status` is `"error"`. |
+| Field          | Type                                                                                     | Purpose                                 |
+| -------------- | ---------------------------------------------------------------------------------------- | --------------------------------------- |
+| `runId`        | `string`                                                                                 | Unique run identifier.                  |
+| `spanId`       | `string`                                                                                 | Unique span identifier.                 |
+| `parentSpanId` | `string`                                                                                 | Parent span (for nested spans).         |
+| `name`         | `string`                                                                                 | Span name (e.g. `"tool.web_search"`).   |
+| `kind`         | `"agent" \| "model" \| "tool" \| "mcp" \| "adapter" \| "team" \| "retry" \| "guardrail"` | Span category.                          |
+| `startedAt`    | `string`                                                                                 | ISO timestamp when the span started.    |
+| `endedAt`      | `string`                                                                                 | ISO timestamp when the span ended.      |
+| `status`       | `"ok" \| "error"`                                                                        | Outcome of the span.                    |
+| `attributes`   | `Record<string, unknown>`                                                                | Span-specific metadata.                 |
+| `error`        | `string`                                                                                 | Error message if `status` is `"error"`. |
 
 ## Patterns
 
@@ -80,7 +80,9 @@ const response = await agent.run({
       const ms = span.endedAt
         ? new Date(span.endedAt).getTime() - new Date(span.startedAt).getTime()
         : 0;
-      console.log(`[end]   ${span.kind}: ${span.name} — ${span.status} (${ms}ms)`);
+      console.log(
+        `[end]   ${span.kind}: ${span.name} — ${span.status} (${ms}ms)`,
+      );
     },
   },
 });
@@ -116,7 +118,10 @@ for (const span of toolSpans) {
 // Check for any errors
 const errorSpans = spans.filter((s) => s.status === "error");
 if (errorSpans.length > 0) {
-  console.error("Errors during run:", errorSpans.map((s) => s.error));
+  console.error(
+    "Errors during run:",
+    errorSpans.map((s) => s.error),
+  );
 }
 ```
 
@@ -140,7 +145,8 @@ const spans = response.trace as TraceSpan[];
 
 for (const span of spans) {
   if (!span.endedAt) continue;
-  const ms = new Date(span.endedAt).getTime() - new Date(span.startedAt).getTime();
+  const ms =
+    new Date(span.endedAt).getTime() - new Date(span.startedAt).getTime();
   console.log(`${span.name.padEnd(30)} ${ms}ms`);
 }
 ```

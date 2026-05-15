@@ -31,45 +31,45 @@ console.log(result.content);
 
 `AgentPool.create(agents, options)` takes an array of agents and an `AgentPoolOptions` object.
 
-| Option                      | Required | Default        | Purpose                                                              |
-| --------------------------- | -------- | -------------- | -------------------------------------------------------------------- |
-| `strategy`                  | Yes      | None           | How to pick the primary agent (see Strategies below).               |
-| `fallback`                  | No       | None           | Fallback agent tried last if all primary agents fail.               |
-| `fallbackMode`              | No       | `"first-error"`| When to attempt fallback after a failure (see Fallback Modes).      |
-| `downgradeOnBudgetPressure` | No       | `false`        | Sort candidates by cost (cheapest first) when `budget.maxCost` is set.|
-| `upgradeOnQualityFailure`   | No       | `false`        | Sort candidates by quality (highest first) when retrying after failure.|
+| Option                      | Required | Default         | Purpose                                                                 |
+| --------------------------- | -------- | --------------- | ----------------------------------------------------------------------- |
+| `strategy`                  | Yes      | None            | How to pick the primary agent (see Strategies below).                   |
+| `fallback`                  | No       | None            | Fallback agent tried last if all primary agents fail.                   |
+| `fallbackMode`              | No       | `"first-error"` | When to attempt fallback after a failure (see Fallback Modes).          |
+| `downgradeOnBudgetPressure` | No       | `false`         | Sort candidates by cost (cheapest first) when `budget.maxCost` is set.  |
+| `upgradeOnQualityFailure`   | No       | `false`         | Sort candidates by quality (highest first) when retrying after failure. |
 
 ### Strategies
 
-| Strategy      | Behavior                                                            |
-| ------------- | ------------------------------------------------------------------- |
-| `"cost"`      | Pick the cheapest agent by estimated cost per token.               |
-| `"speed"`     | Pick the fastest agent by speed score.                             |
-| `"quality"`   | Pick the highest-quality agent by quality score.                   |
-| `"round-robin"` | Rotate through agents in order, one per call.                    |
-| `"random"`    | Pick a random agent on each call.                                  |
-| `"best-fit"`  | Alias for `"quality"` — picks the highest-quality agent.          |
+| Strategy        | Behavior                                                 |
+| --------------- | -------------------------------------------------------- |
+| `"cost"`        | Pick the cheapest agent by estimated cost per token.     |
+| `"speed"`       | Pick the fastest agent by speed score.                   |
+| `"quality"`     | Pick the highest-quality agent by quality score.         |
+| `"round-robin"` | Rotate through agents in order, one per call.            |
+| `"random"`      | Pick a random agent on each call.                        |
+| `"best-fit"`    | Alias for `"quality"` — picks the highest-quality agent. |
 
 ### Fallback Modes
 
 `fallbackMode` controls when the pool tries the next candidate after a failure.
 
-| Mode              | When it falls back                                    |
-| ----------------- | ----------------------------------------------------- |
-| `"first-error"`   | On any error from the primary agent (default).        |
-| `"retryable"`     | Only on retryable `AgentCraftError`s.                 |
-| `"non-retryable"` | Only on non-retryable `AgentCraftError`s.             |
+| Mode              | When it falls back                                   |
+| ----------------- | ---------------------------------------------------- |
+| `"first-error"`   | On any error from the primary agent (default).       |
+| `"retryable"`     | Only on retryable `AgentCraftError`s.                |
+| `"non-retryable"` | Only on non-retryable `AgentCraftError`s.            |
 | `"all"`           | Always try all candidates, regardless of error type. |
 | `"none"`          | Never fall back — throw immediately on any error.    |
 
 ## Pool Methods
 
-| Method              | Returns              | Purpose                                            |
-| ------------------- | -------------------- | -------------------------------------------------- |
-| `pool.run(params)`  | `Promise<AgentResponse>` | Run the pool with the selected strategy.       |
-| `pool.stream(params)` | `AsyncGenerator<StreamChunk>` | Stream from the selected agent.         |
-| `pool.get(name)`    | `Agent \| undefined` | Look up a pool agent by its `name` field.          |
-| `pool.agents`       | `readonly Agent[]`   | The full list of primary agents in the pool.       |
+| Method                | Returns                       | Purpose                                      |
+| --------------------- | ----------------------------- | -------------------------------------------- |
+| `pool.run(params)`    | `Promise<AgentResponse>`      | Run the pool with the selected strategy.     |
+| `pool.stream(params)` | `AsyncGenerator<StreamChunk>` | Stream from the selected agent.              |
+| `pool.get(name)`      | `Agent \| undefined`          | Look up a pool agent by its `name` field.    |
+| `pool.agents`         | `readonly Agent[]`            | The full list of primary agents in the pool. |
 
 ## Patterns
 
@@ -94,7 +94,9 @@ const pool = AgentPool.create([cheapest, mid], {
   strategy: "cost",
 });
 
-const result = await pool.run({ prompt: "Summarize this text in one sentence." });
+const result = await pool.run({
+  prompt: "Summarize this text in one sentence.",
+});
 console.log(result.content);
 ```
 
@@ -117,8 +119,8 @@ const fallbackAgent = Agent.create({
 
 const pool = AgentPool.create([primary], {
   strategy: "quality",
-  fallback: fallbackAgent,           // tried if primary fails
-  fallbackMode: "first-error",       // fall back on any error
+  fallback: fallbackAgent, // tried if primary fails
+  fallbackMode: "first-error", // fall back on any error
 });
 
 const result = await pool.run({ prompt: "Write a product description." });
@@ -202,12 +204,14 @@ const smart = Agent.create({
 });
 
 const pool = AgentPool.create([fast, smart], {
-  strategy: "cost",                 // prefer cheaper by default
-  upgradeOnQualityFailure: true,    // on failure, try the higher-quality agent
-  fallbackMode: "retryable",        // only upgrade on retryable errors
+  strategy: "cost", // prefer cheaper by default
+  upgradeOnQualityFailure: true, // on failure, try the higher-quality agent
+  fallbackMode: "retryable", // only upgrade on retryable errors
 });
 
-const result = await pool.run({ prompt: "Analyze this complex legal document." });
+const result = await pool.run({
+  prompt: "Analyze this complex legal document.",
+});
 console.log(result.content);
 ```
 
@@ -262,7 +266,9 @@ const pool = AgentPool.create([researcher, writer], {
 });
 
 // Run the pool normally
-const result = await pool.run({ prompt: "Research and write about TypeScript." });
+const result = await pool.run({
+  prompt: "Research and write about TypeScript.",
+});
 
 // Or target a specific agent by name
 const writerAgent = pool.get("writer");

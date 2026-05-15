@@ -73,16 +73,16 @@ All includes are resolved relative to the entry file's directory and sandboxed t
 
 ## Options
 
-| Option                      | Required            | Default          | Purpose                                                              |
-| --------------------------- | ------------------- | ---------------- | -------------------------------------------------------------------- |
-| `promptFile`                | One source required | None             | Entry prompt file. Resolves includes, then injects config and vars.  |
-| `prompt`                    | One source required | None             | Inline text. Supports variable and config injection, not includes.   |
+| Option                      | Required            | Default          | Purpose                                                               |
+| --------------------------- | ------------------- | ---------------- | --------------------------------------------------------------------- |
+| `promptFile`                | One source required | None             | Entry prompt file. Resolves includes, then injects config and vars.   |
+| `prompt`                    | One source required | None             | Inline text. Supports variable and config injection, not includes.    |
 | `vars`                      | No                  | `{}`             | Variable values injected into the prompt. Arrays become bullet lists. |
-| `assembly.config`           | No                  | `{}`             | App/runtime config values for `config.path` placeholder injection.   |
-| `assembly.strict`           | No                  | `false`          | Throws when a variable placeholder is unresolved.                    |
-| `assembly.minify`           | No                  | `true`           | Trims prompt whitespace before the provider call.                    |
-| `assembly.maxPartialDepth`  | No                  | `10`             | Maximum include nesting depth.                                       |
-| `assembly.rootDir`          | No                  | Entry file's dir | File boundary for include resolution.                                |
-| `assembly.allowOutsideRoot` | No                  | `false`          | Allows includes outside `rootDir`. Keep false for untrusted sources. |
+| `assembly.config`           | No                  | `{}`             | App/runtime config values for `config.path` placeholder injection.    |
+| `assembly.strict`           | No                  | `false`          | Throws when a variable placeholder is unresolved.                     |
+| `assembly.minify`           | No                  | `true`           | Trims prompt whitespace before the provider call.                     |
+| `assembly.maxPartialDepth`  | No                  | `10`             | Maximum include nesting depth.                                        |
+| `assembly.rootDir`          | No                  | Entry file's dir | File boundary for include resolution.                                 |
+| `assembly.allowOutsideRoot` | No                  | `false`          | Allows includes outside `rootDir`. Keep false for untrusted sources.  |
 
 More variants: [Prompt Assembly](../core/prompt-assembly.md) and [prompt assembly guide](../guides/config/prompt-assembly.md).

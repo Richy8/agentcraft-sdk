@@ -6,64 +6,64 @@
 
 ### Core
 
-| Field             | Required          | Default                  | Purpose                                              |
-| ----------------- | ----------------- | ------------------------ | ---------------------------------------------------- |
-| `model`           | Yes               | None                     | Provider-prefixed model string or `Provider` catalog value. |
-| `apiKey`          | Provider-specific | Env / provider behavior  | Authenticates cloud providers.                       |
-| `name`            | No                | None                     | Agent label surfaced in traces and pool routing.     |
-| `system`          | No                | None                     | Default system prompt for every run on this agent.   |
+| Field    | Required          | Default                 | Purpose                                                     |
+| -------- | ----------------- | ----------------------- | ----------------------------------------------------------- |
+| `model`  | Yes               | None                    | Provider-prefixed model string or `Provider` catalog value. |
+| `apiKey` | Provider-specific | Env / provider behavior | Authenticates cloud providers.                              |
+| `name`   | No                | None                    | Agent label surfaced in traces and pool routing.            |
+| `system` | No                | None                    | Default system prompt for every run on this agent.          |
 
 ### Generation
 
-| Field              | Default                  | Purpose                                    |
-| ------------------ | ------------------------ | ------------------------------------------ |
-| `temperature`      | `0.7`                    | Sampling temperature (0–2).                |
-| `maxTokens`        | Model max output         | Hard cap on completion tokens.             |
-| `topP`             | None                     | Nucleus sampling (0–1).                    |
-| `frequencyPenalty` | None                     | Repeated-token penalty (-2–2).             |
-| `presencePenalty`  | None                     | Token-presence penalty (-2–2).             |
-| `stopSequences`    | None                     | Up to 4 strings that stop generation.      |
-| `responseFormat`   | `{ type: "text" }`       | `"text"` or `"json_object"` output format. |
-| `timeout`          | `120000` ms              | Per-request timeout in milliseconds.       |
+| Field              | Default            | Purpose                                    |
+| ------------------ | ------------------ | ------------------------------------------ |
+| `temperature`      | `0.7`              | Sampling temperature (0–2).                |
+| `maxTokens`        | Model max output   | Hard cap on completion tokens.             |
+| `topP`             | None               | Nucleus sampling (0–1).                    |
+| `frequencyPenalty` | None               | Repeated-token penalty (-2–2).             |
+| `presencePenalty`  | None               | Token-presence penalty (-2–2).             |
+| `stopSequences`    | None               | Up to 4 strings that stop generation.      |
+| `responseFormat`   | `{ type: "text" }` | `"text"` or `"json_object"` output format. |
+| `timeout`          | `120000` ms        | Per-request timeout in milliseconds.       |
 
 ### Tools and Skills
 
-| Field             | Default    | Purpose                                                                                              |
-| ----------------- | ---------- | ---------------------------------------------------------------------------------------------------- |
-| `tools`           | `[]`       | Static tool definitions available on every run.                                                      |
-| `toolPolicy`      | Permissive | Controls approval, read-only mode, guardrails, result truncation, and secret redaction.              |
+| Field             | Default    | Purpose                                                                                             |
+| ----------------- | ---------- | --------------------------------------------------------------------------------------------------- |
+| `tools`           | `[]`       | Static tool definitions available on every run.                                                     |
+| `toolPolicy`      | Permissive | Controls approval, read-only mode, guardrails, result truncation, and secret redaction.             |
 | `skillActivation` | `"always"` | `"always"` — all skills active. `"auto"` — keyword-activated. `"directive-only"` — `/name` trigger. |
-| `toolSelection`   | `"all"`    | `"all"` — all adapters expose tools. `"auto"` — only adapters relevant to active skills.             |
+| `toolSelection`   | `"all"`    | `"all"` — all adapters expose tools. `"auto"` — only adapters relevant to active skills.            |
 
 ### Retry
 
-| Field   | Default                                                                             | Purpose                    |
-| ------- | ----------------------------------------------------------------------------------- | -------------------------- |
+| Field   | Default                                                                       | Purpose                                |
+| ------- | ----------------------------------------------------------------------------- | -------------------------------------- |
 | `retry` | `{ maxAttempts:3, backoff:"exponential", initialDelay:1000, maxDelay:60000 }` | Retry strategy for transient failures. |
 
 Backoff options: `"exponential"` (doubles delay), `"linear"` (adds delay linearly), `"fixed"` (constant delay).
 
 ### Provider-Specific
 
-| Field             | Provider          | Purpose                                        |
-| ----------------- | ----------------- | ---------------------------------------------- |
+| Field             | Provider           | Purpose                                              |
+| ----------------- | ------------------ | ---------------------------------------------------- |
 | `baseUrl`         | Local / compatible | Override base URL for local or compatible providers. |
-| `endpoint`        | Azure             | Azure OpenAI endpoint URL.                     |
-| `deployment`      | Azure             | Azure deployment name.                         |
-| `apiVersion`      | Azure             | Azure API version string.                      |
-| `organizationId`  | OpenAI            | OpenAI organization ID.                        |
-| `region`          | Bedrock / Vertex  | AWS/GCP region.                                |
-| `accessKeyId`     | Bedrock           | AWS access key.                                |
-| `secretAccessKey` | Bedrock           | AWS secret key.                                |
-| `project`         | Vertex            | GCP project ID.                                |
-| `location`        | Vertex            | GCP location (e.g. `"us-central1"`).           |
+| `endpoint`        | Azure              | Azure OpenAI endpoint URL.                           |
+| `deployment`      | Azure              | Azure deployment name.                               |
+| `apiVersion`      | Azure              | Azure API version string.                            |
+| `organizationId`  | OpenAI             | OpenAI organization ID.                              |
+| `region`          | Bedrock / Vertex   | AWS/GCP region.                                      |
+| `accessKeyId`     | Bedrock            | AWS access key.                                      |
+| `secretAccessKey` | Bedrock            | AWS secret key.                                      |
+| `project`         | Vertex             | GCP project ID.                                      |
+| `location`        | Vertex             | GCP location (e.g. `"us-central1"`).                 |
 
 ### Cache and Logging
 
-| Field    | Default  | Purpose                                             |
-| -------- | -------- | --------------------------------------------------- |
+| Field    | Default  | Purpose                                              |
+| -------- | -------- | ---------------------------------------------------- |
 | `cache`  | Disabled | `AgentCacheController` from `AgentCache.file()` etc. |
-| `logger` | Console  | Custom logger implementing the `Logger` interface.  |
+| `logger` | Console  | Custom logger implementing the `Logger` interface.   |
 
 ## Examples
 
@@ -91,10 +91,10 @@ import { Agent, Provider } from "agentcraft";
 const agent = Agent.create({
   model: Provider.openai["gpt-4o"],
   apiKey: process.env.OPENAI_API_KEY!,
-  temperature: 0.2,        // lower = more deterministic
-  maxTokens: 1_000,        // cap responses to ~750 words
-  topP: 0.9,               // nucleus sampling
-  frequencyPenalty: 0.2,   // discourage repetition
+  temperature: 0.2, // lower = more deterministic
+  maxTokens: 1_000, // cap responses to ~750 words
+  topP: 0.9, // nucleus sampling
+  frequencyPenalty: 0.2, // discourage repetition
 });
 
 const response = await agent.run({ prompt: "Summarize the key points." });
@@ -135,13 +135,15 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
-    readOnly: true,           // blocks tools with write side effects
-    maxResultBytes: 100_000,  // truncates large tool results
-    redactSecrets: true,      // strips API keys/tokens from results
+    readOnly: true, // blocks tools with write side effects
+    maxResultBytes: 100_000, // truncates large tool results
+    redactSecrets: true, // strips API keys/tokens from results
   },
 }).use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
 
-const response = await agent.run({ prompt: "Research the latest TypeScript features." });
+const response = await agent.run({
+  prompt: "Research the latest TypeScript features.",
+});
 console.log(response.content);
 ```
 
@@ -156,7 +158,7 @@ const agent = Agent.create({
   apiKey: process.env.OPENAI_API_KEY!,
   retry: {
     maxAttempts: 5,
-    backoff: "exponential",   // 500ms → 1s → 2s → 4s → 8s (capped at maxDelay)
+    backoff: "exponential", // 500ms → 1s → 2s → 4s → 8s (capped at maxDelay)
     initialDelay: 500,
     maxDelay: 10_000,
   },
@@ -179,13 +181,13 @@ const agent = Agent.create({
     strategy: "auto",
     namespace: "docs-production",
     version: "v1",
-    defaultTtlMs: 60 * 60 * 1000,  // 1 hour
+    defaultTtlMs: 60 * 60 * 1000, // 1 hour
     maxEntryBytes: 250_000,
   }),
 });
 
 const response = await agent.run({ prompt: "Fetch the latest changelog." });
-console.log(response.cache?.hits);          // cache hits this run
+console.log(response.cache?.hits); // cache hits this run
 console.log(response.cache?.toolCallsAvoided); // avoided tool calls
 ```
 
@@ -231,7 +233,7 @@ import { Agent } from "agentcraft";
 const agent = Agent.create({
   model: "azure:gpt-4o",
   apiKey: process.env.AZURE_OPENAI_API_KEY!,
-  endpoint: process.env.AZURE_OPENAI_ENDPOINT!,   // e.g. "https://my-resource.openai.azure.com"
+  endpoint: process.env.AZURE_OPENAI_ENDPOINT!, // e.g. "https://my-resource.openai.azure.com"
   deployment: process.env.AZURE_OPENAI_DEPLOYMENT!, // e.g. "my-gpt4o-deployment"
   apiVersion: "2024-02-01",
 });
@@ -251,7 +253,9 @@ const agent = Agent.create({
   baseUrl: "http://localhost:11434/v1",
 });
 
-const response = await agent.run({ prompt: "Explain async/await in TypeScript." });
+const response = await agent.run({
+  prompt: "Explain async/await in TypeScript.",
+});
 console.log(response.content);
 ```
 

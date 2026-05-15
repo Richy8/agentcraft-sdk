@@ -33,10 +33,10 @@ console.log(response.structuredResponse);
 
 These fields are passed to `agent.run()`:
 
-| Field                           | Required                  | Default | Purpose                                                                    |
-| ------------------------------- | ------------------------- | ------- | -------------------------------------------------------------------------- |
-| `responseSchema`                | Yes for structured output | None    | JSON schema object or Zod schema. Defines and validates the expected shape. |
-| `structuredOutput.retries`      | No                        | `0`     | Number of additional parse attempts when validation fails.                 |
+| Field                           | Required                  | Default  | Purpose                                                                                                           |
+| ------------------------------- | ------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
+| `responseSchema`                | Yes for structured output | None     | JSON schema object or Zod schema. Defines and validates the expected shape.                                       |
+| `structuredOutput.retries`      | No                        | `0`      | Number of additional parse attempts when validation fails.                                                        |
 | `structuredOutput.toolFallback` | No                        | `"auto"` | `"auto"` — use tool extraction when JSON mode is unavailable. `true` — always use tool. `false` — never use tool. |
 
 ## Schema Types
@@ -61,7 +61,10 @@ const response = await agent.run({
   },
 });
 
-const data = response.structuredResponse as { actions: string[]; owner?: string };
+const data = response.structuredResponse as {
+  actions: string[];
+  owner?: string;
+};
 console.log(data.actions);
 // → ["Follow up with design", "Update the roadmap"]
 ```
@@ -85,14 +88,15 @@ const SentimentSchema = z.object({
 });
 
 const response = await agent.run({
-  prompt: "Analyze the sentiment: 'AgentCraft makes AI agents delightful to build.'",
+  prompt:
+    "Analyze the sentiment: 'AgentCraft makes AI agents delightful to build.'",
   responseSchema: SentimentSchema,
 });
 
 // Zod schema gives you a typed structuredResponse
 const result = response.structuredResponse as z.infer<typeof SentimentSchema>;
-console.log(result.sentiment);   // → "positive"
-console.log(result.confidence);  // → 0.96
+console.log(result.sentiment); // → "positive"
+console.log(result.confidence); // → 0.96
 ```
 
 ## Patterns
@@ -114,7 +118,10 @@ const response = await agent.run({
     type: "object",
     properties: {
       priority: { type: "string", enum: ["p0", "p1", "p2", "p3"] },
-      category: { type: "string", enum: ["bug", "feature", "question", "billing"] },
+      category: {
+        type: "string",
+        enum: ["bug", "feature", "question", "billing"],
+      },
     },
     required: ["priority", "category"],
   },
@@ -123,9 +130,12 @@ const response = await agent.run({
   },
 });
 
-const ticket = response.structuredResponse as { priority: string; category: string };
-console.log(ticket.priority);  // → "p0"
-console.log(ticket.category);  // → "bug"
+const ticket = response.structuredResponse as {
+  priority: string;
+  category: string;
+};
+console.log(ticket.priority); // → "p0"
+console.log(ticket.category); // → "bug"
 ```
 
 ### Nested Object Schema
@@ -158,8 +168,8 @@ const brief = response.structuredResponse as {
   outline: string[];
   tone: string;
 };
-console.log(brief.title);    // → "TypeScript 5.5: What's new for devs"
-console.log(brief.outline);  // → ["Intro", "New inferred type predicates", "Migration tips"]
+console.log(brief.title); // → "TypeScript 5.5: What's new for devs"
+console.log(brief.outline); // → ["Intro", "New inferred type predicates", "Migration tips"]
 ```
 
 ### Array Response
@@ -224,7 +234,8 @@ const ContentBriefSchema = z.object({
 });
 
 const response = await agent.run({
-  prompt: "Create a content brief for an article about AgentCraft for senior engineers.",
+  prompt:
+    "Create a content brief for an article about AgentCraft for senior engineers.",
   responseSchema: ContentBriefSchema,
   structuredOutput: {
     retries: 2, // retry up to 2 times if Zod validation fails
@@ -254,7 +265,8 @@ const DraftSchema = ArtifactRegistry.lookup("Draft");
 if (!DraftSchema) throw new Error("Draft schema not found");
 
 const response = await agent.run({
-  prompt: "Write a draft article about AI agents and their use in software development.",
+  prompt:
+    "Write a draft article about AI agents and their use in software development.",
   responseSchema: DraftSchema,
 });
 
@@ -293,8 +305,8 @@ const response = await agent.run({
 });
 
 const result = response.structuredResponse as z.infer<typeof ResponseSchema>;
-console.log(result.answer);      // → "Paris"
-console.log(result.confidence);  // → "high"
+console.log(result.answer); // → "Paris"
+console.log(result.confidence); // → "high"
 ```
 
 ### Register a Custom Schema
@@ -304,12 +316,15 @@ import { Agent, ArtifactRegistry, Provider } from "agentcraft";
 import { z } from "zod";
 
 // Register a custom artifact type once at startup
-ArtifactRegistry.register("TechSpec", z.object({
-  title: z.string(),
-  scope: z.string(),
-  requirements: z.array(z.string()),
-  openQuestions: z.array(z.string()),
-}));
+ArtifactRegistry.register(
+  "TechSpec",
+  z.object({
+    title: z.string(),
+    scope: z.string(),
+    requirements: z.array(z.string()),
+    openQuestions: z.array(z.string()),
+  }),
+);
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

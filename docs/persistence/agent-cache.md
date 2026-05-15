@@ -33,23 +33,23 @@ console.log(`Tool calls avoided: ${response.cache?.toolCallsAvoided}`);
 
 ## Cache Drivers
 
-| Factory                          | Backend      | Best for                                         |
-| -------------------------------- | ------------ | ------------------------------------------------ |
-| `AgentCache.file(root, options)` | Filesystem   | Local and single-process production deployments. |
-| `AgentCache.memory(options)`     | In-process   | Tests, demos, and ephemeral short-lived scripts. |
-| `AgentCache.disabled()`          | None         | Explicitly disabling cache while keeping config. |
+| Factory                          | Backend    | Best for                                         |
+| -------------------------------- | ---------- | ------------------------------------------------ |
+| `AgentCache.file(root, options)` | Filesystem | Local and single-process production deployments. |
+| `AgentCache.memory(options)`     | In-process | Tests, demos, and ephemeral short-lived scripts. |
+| `AgentCache.disabled()`          | None       | Explicitly disabling cache while keeping config. |
 
 ## Configuration
 
 ### `AgentCache.file(root, options)`
 
-| Option          | Required | Default        | Purpose                                        |
-| --------------- | -------- | -------------- | ---------------------------------------------- |
-| `strategy`      | No       | `"auto"`       | `"conservative"`, `"auto"`, or `"aggressive"`. |
-| `namespace`     | No       | `"default"`    | Tenant or workspace partition.                 |
-| `version`       | No       | `"v1"`         | Invalidation boundary for prompt/tool changes. |
-| `defaultTtlMs`  | No       | None           | Default TTL for cache entries in milliseconds. |
-| `maxEntryBytes` | No       | None           | Reject entries larger than this byte count.    |
+| Option          | Required | Default     | Purpose                                        |
+| --------------- | -------- | ----------- | ---------------------------------------------- |
+| `strategy`      | No       | `"auto"`    | `"conservative"`, `"auto"`, or `"aggressive"`. |
+| `namespace`     | No       | `"default"` | Tenant or workspace partition.                 |
+| `version`       | No       | `"v1"`      | Invalidation boundary for prompt/tool changes. |
+| `defaultTtlMs`  | No       | None        | Default TTL for cache entries in milliseconds. |
+| `maxEntryBytes` | No       | None        | Reject entries larger than this byte count.    |
 
 ### `AgentCache.memory(options)`
 
@@ -61,11 +61,11 @@ console.log(`Tool calls avoided: ${response.cache?.toolCallsAvoided}`);
 
 ### Cache Strategies
 
-| Strategy          | What it caches                                              |
-| ----------------- | ----------------------------------------------------------- |
-| `"conservative"`  | Only tools explicitly marked safe (e.g. `sideEffect: "read"` with no writes). |
-| `"auto"`          | All safe read tools — the recommended default.             |
-| `"aggressive"`    | All tool outputs including external calls. Use with care.  |
+| Strategy         | What it caches                                                                |
+| ---------------- | ----------------------------------------------------------------------------- |
+| `"conservative"` | Only tools explicitly marked safe (e.g. `sideEffect: "read"` with no writes). |
+| `"auto"`         | All safe read tools — the recommended default.                                |
+| `"aggressive"`   | All tool outputs including external calls. Use with care.                     |
 
 ## `response.cache` Stats
 
@@ -74,15 +74,15 @@ After every `agent.run()`, `response.cache` reports what happened:
 ```ts
 const response = await agent.run({ prompt: "Look up pricing for plan A." });
 
-console.log(response.cache?.hits);              // entries served from cache
-console.log(response.cache?.misses);            // cache misses (tools ran)
-console.log(response.cache?.writes);            // entries written to cache
-console.log(response.cache?.bypassed);          // true if cache was skipped globally
-console.log(response.cache?.skippedUnsafe);     // tools skipped due to unsafe side effects
-console.log(response.cache?.stale);             // expired entries that were bypassed
-console.log(response.cache?.corrupt);           // corrupt entries (could not be parsed)
-console.log(response.cache?.oversized);         // entries rejected for exceeding maxEntryBytes
-console.log(response.cache?.toolCallsAvoided);  // total tool calls saved by cache hits
+console.log(response.cache?.hits); // entries served from cache
+console.log(response.cache?.misses); // cache misses (tools ran)
+console.log(response.cache?.writes); // entries written to cache
+console.log(response.cache?.bypassed); // true if cache was skipped globally
+console.log(response.cache?.skippedUnsafe); // tools skipped due to unsafe side effects
+console.log(response.cache?.stale); // expired entries that were bypassed
+console.log(response.cache?.corrupt); // corrupt entries (could not be parsed)
+console.log(response.cache?.oversized); // entries rejected for exceeding maxEntryBytes
+console.log(response.cache?.toolCallsAvoided); // total tool calls saved by cache hits
 console.log(response.cache?.estimatedSavedTokens); // estimated tokens saved
 ```
 
@@ -117,27 +117,27 @@ console.log(response.content);
 
 `AgentCacheController` is the interface implemented by all cache drivers. You can pass your own implementation for distributed backends.
 
-| Method            | Signature                                        | Purpose                                      |
-| ----------------- | ------------------------------------------------ | -------------------------------------------- |
-| `config`          | `AgentCacheConfig`                               | Read-only config describing the cache setup. |
-| `get`             | `(key) => Promise<unknown \| undefined>`         | Retrieve a cached value by key.              |
-| `getEntry`        | `(key) => Promise<AgentCacheLookup>`             | Retrieve with full metadata (status, TTL).   |
-| `set`             | `(key, value, options?) => Promise<void>`        | Write a value with optional TTL override.    |
-| `delete`          | `(key) => Promise<boolean>`                      | Remove an entry. Returns true if removed.    |
-| `clear`           | `() => Promise<void>`                            | Remove all entries in the current scope.     |
-| `pruneExpired`    | `() => Promise<number>`                          | Remove expired entries. Returns count pruned.|
+| Method         | Signature                                 | Purpose                                       |
+| -------------- | ----------------------------------------- | --------------------------------------------- |
+| `config`       | `AgentCacheConfig`                        | Read-only config describing the cache setup.  |
+| `get`          | `(key) => Promise<unknown \| undefined>`  | Retrieve a cached value by key.               |
+| `getEntry`     | `(key) => Promise<AgentCacheLookup>`      | Retrieve with full metadata (status, TTL).    |
+| `set`          | `(key, value, options?) => Promise<void>` | Write a value with optional TTL override.     |
+| `delete`       | `(key) => Promise<boolean>`               | Remove an entry. Returns true if removed.     |
+| `clear`        | `() => Promise<void>`                     | Remove all entries in the current scope.      |
+| `pruneExpired` | `() => Promise<number>`                   | Remove expired entries. Returns count pruned. |
 
 All methods except `config` are optional — implement only what your backend supports.
 
 ### `AgentCacheLookup` Status Values
 
-| Status      | Meaning                                                    |
-| ----------- | ---------------------------------------------------------- |
-| `"hit"`     | Entry found and valid. `value` is populated.               |
-| `"miss"`    | No entry for this key.                                     |
-| `"stale"`   | Entry existed but expired. Tool will run and re-cache.     |
-| `"oversize"` | Entry exists but exceeds `maxEntryBytes`. Bypassed.       |
-| `"corrupt"` | Entry could not be parsed. Bypassed.                       |
+| Status       | Meaning                                                |
+| ------------ | ------------------------------------------------------ |
+| `"hit"`      | Entry found and valid. `value` is populated.           |
+| `"miss"`     | No entry for this key.                                 |
+| `"stale"`    | Entry existed but expired. Tool will run and re-cache. |
+| `"oversize"` | Entry exists but exceeds `maxEntryBytes`. Bypassed.    |
+| `"corrupt"`  | Entry could not be parsed. Bypassed.                   |
 
 ## Patterns
 
@@ -225,7 +225,7 @@ await cache.clear?.();
 import { AgentCache } from "agentcraft";
 
 const cache = AgentCache.file(".agentcraft/cache", {
-  strategy: "conservative",   // only cache tools explicitly marked safe
+  strategy: "conservative", // only cache tools explicitly marked safe
   namespace: "regulated",
   version: "policy-2026-05",
   defaultTtlMs: 15 * 60 * 1000, // 15 minutes

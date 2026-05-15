@@ -16,7 +16,11 @@ const lookupOrder = tool({
   params: {
     orderId: { type: "string", description: "The order ID to look up." },
   },
-  run: async ({ orderId }) => ({ orderId, status: "shipped", updatedAt: "2024-01-15" }),
+  run: async ({ orderId }) => ({
+    orderId,
+    status: "shipped",
+    updatedAt: "2024-01-15",
+  }),
 });
 
 const agent = Agent.create({
@@ -57,23 +61,23 @@ const myTool = tool({
 
 Each entry in `params` defines one argument:
 
-| Field         | Type                                              | Required | Default  | Purpose                                      |
-| ------------- | ------------------------------------------------- | -------- | -------- | -------------------------------------------- |
-| `type`        | `"string" \| "number" \| "boolean" \| "array" \| "object"` | Yes | — | Argument type. Validated at call time. |
-| `description` | `string`                                          | Yes      | —        | Describes the argument to the model.         |
-| `required`    | `boolean`                                         | No       | `true`   | Set `false` to make optional.                |
-| `options`     | `string[]`                                        | No       | None     | Restricts to a fixed set of values (enum).   |
-| `default`     | `unknown`                                         | No       | None     | Default value hint (informational only).     |
+| Field         | Type                                                       | Required | Default | Purpose                                    |
+| ------------- | ---------------------------------------------------------- | -------- | ------- | ------------------------------------------ |
+| `type`        | `"string" \| "number" \| "boolean" \| "array" \| "object"` | Yes      | —       | Argument type. Validated at call time.     |
+| `description` | `string`                                                   | Yes      | —       | Describes the argument to the model.       |
+| `required`    | `boolean`                                                  | No       | `true`  | Set `false` to make optional.              |
+| `options`     | `string[]`                                                 | No       | None    | Restricts to a fixed set of values (enum). |
+| `default`     | `unknown`                                                  | No       | None    | Default value hint (informational only).   |
 
 ## Security Fields
 
 The `security` object classifies what a tool does so that policy and caching can apply correctly.
 
-| Field                   | Values                                   | Purpose                                                      |
-| ----------------------- | ---------------------------------------- | ------------------------------------------------------------ |
-| `sideEffect`            | `"none" \| "read" \| "write" \| "external"` | Classifies the tool's impact. `"none"` and `"read"` are cacheable. `"write"` and `"external"` are not. |
-| `requiresConfirmation`  | `boolean`                                | `true` — the tool is blocked unless explicitly approved via `toolPolicy`. |
-| `scopes`                | `string[]`                               | Logical permission scopes — useful for audit logging.        |
+| Field                  | Values                                      | Purpose                                                                                                |
+| ---------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `sideEffect`           | `"none" \| "read" \| "write" \| "external"` | Classifies the tool's impact. `"none"` and `"read"` are cacheable. `"write"` and `"external"` are not. |
+| `requiresConfirmation` | `boolean`                                   | `true` — the tool is blocked unless explicitly approved via `toolPolicy`.                              |
+| `scopes`               | `string[]`                                  | Logical permission scopes — useful for audit logging.                                                  |
 
 ## Patterns
 
@@ -111,7 +115,7 @@ const searchProducts = tool({
     category: {
       type: "string",
       description: "Filter by category.",
-      required: false,  // optional — model may omit this
+      required: false, // optional — model may omit this
     },
     limit: {
       type: "number",
@@ -134,7 +138,11 @@ import { tool } from "agentcraft/adapters";
 const setTicketPriority = tool({
   name: "set_ticket_priority",
   description: "Set the priority level of a support ticket.",
-  security: { sideEffect: "write", requiresConfirmation: true, scopes: ["tickets:write"] },
+  security: {
+    sideEffect: "write",
+    requiresConfirmation: true,
+    scopes: ["tickets:write"],
+  },
   params: {
     ticketId: { type: "string", description: "Ticket ID." },
     priority: {
@@ -227,9 +235,9 @@ const response = await agent.run({
 });
 
 // See which tools the model had access to and how many it called
-console.log(response.selection?.exposedTools);      // → ["lookup_order"]
+console.log(response.selection?.exposedTools); // → ["lookup_order"]
 console.log(response.selection?.executedToolCalls); // → 1
-console.log(response.toolCalls);                    // full tool call log
+console.log(response.toolCalls); // full tool call log
 ```
 
 ## Raw `ToolDefinition` (Without the Helper)

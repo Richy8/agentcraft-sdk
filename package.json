@@ -23,7 +23,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/agentcraft-ai/agentcraft.git"
+    "url": "git+https://github.com/Richy8/agentcraft-sdk.git"
   },
   "homepage": "https://agentcraft-sdk.vercel.app",
   "bugs": {

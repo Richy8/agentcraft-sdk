@@ -1,7 +1,10 @@
-import { Agent, Provider } from "agentcraft";
-import { FetchAdapter, TavilySearchAdapter } from "agentcraft/adapters";
-import { MemoryMCP } from "agentcraft/mcp";
-import { MemorySkill, ResearchSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import {
+  FetchAdapter,
+  TavilySearchAdapter,
+} from "@deskcreate/agentcraft/adapters";
+import { MemoryMCP } from "@deskcreate/agentcraft/mcp";
+import { MemorySkill, ResearchSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

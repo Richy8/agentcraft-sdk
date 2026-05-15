@@ -17,7 +17,7 @@ Structured output forces the model to return JSON matching a schema, validates i
 ### JSON Schema
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -46,7 +46,7 @@ console.log(response.structuredResponse);
 ### Zod Schema
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 const agent = Agent.create({
@@ -78,7 +78,7 @@ console.log(ticket.category); // → "bug"
 When the model returns malformed JSON or data that fails schema validation, AgentCraft can retry the call with a correction prompt. Each retry tells the model what went wrong.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -108,7 +108,7 @@ console.log(response.structuredResponse);
 By default (`"auto"`), AgentCraft uses an internal tool to extract structured output when the model doesn't support JSON mode. You can force or disable this behavior.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 // Force tool-based extraction — good for local models without JSON mode
@@ -135,7 +135,7 @@ console.log(response.structuredResponse);
 ```
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 // Disable tool fallback — model must support JSON mode natively

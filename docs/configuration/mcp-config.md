@@ -14,8 +14,8 @@ MCP config connects external Model Context Protocol servers through wrapper help
 ## Usage
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { Context7MCP, GitHubMCP } from "agentcraft/mcp";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { Context7MCP, GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

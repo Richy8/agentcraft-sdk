@@ -1,5 +1,5 @@
-import { Agent, Provider } from "agentcraft";
-import { blockPromptInjectionGuardrail } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { blockPromptInjectionGuardrail } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

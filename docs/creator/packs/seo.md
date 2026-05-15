@@ -14,9 +14,12 @@ The SEO pack turns keyword intent, competitor pages, and SERP patterns into an a
 ## Usage
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { SeoAdapter, TavilySearchAdapter } from "agentcraft/adapters";
-import { CreatorPacks } from "agentcraft/packs";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import {
+  SeoAdapter,
+  TavilySearchAdapter,
+} from "@deskcreate/agentcraft/adapters";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

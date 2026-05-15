@@ -5,10 +5,10 @@ Creator memory persists brand voice and prior-work corpus context.
 ## Quick Start
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { CreatorResourcesAdapter } from "agentcraft/adapters";
-import { CreatorPacks } from "agentcraft/packs";
-import { FileSystemCreatorMemoryStore } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { CreatorResourcesAdapter } from "@deskcreate/agentcraft/adapters";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { FileSystemCreatorMemoryStore } from "@deskcreate/agentcraft";
 
 const memory = new FileSystemCreatorMemoryStore(".agentcraft/memory");
 

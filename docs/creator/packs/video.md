@@ -14,8 +14,8 @@ The video pack covers ideation, script structure, creative direction, and repurp
 ## Usage
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { CreatorPacks } from "agentcraft/packs";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.gemini["gemini-2.5-pro"],

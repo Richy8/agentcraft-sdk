@@ -13,7 +13,7 @@
 ## Usage
 
 ```ts
-import { AgentWorkspace, FileArtifactStore } from "agentcraft";
+import { AgentWorkspace, FileArtifactStore } from "@deskcreate/agentcraft";
 
 const store = FileArtifactStore({ root: "./.artifacts" });
 const workspace = AgentWorkspace.create({ store });
@@ -91,7 +91,7 @@ npm install better-sqlite3
 Use `MemoryArtifactStore` for test-scoped artifacts:
 
 ```ts
-import { MemoryArtifactStore } from "agentcraft";
+import { MemoryArtifactStore } from "@deskcreate/agentcraft";
 
 const store = MemoryArtifactStore();
 const id = await store.put("Draft", { body: "hello", status: "draft" });
@@ -103,7 +103,7 @@ console.log(draft);
 Use `SQLiteArtifactStore` when revision history matters:
 
 ```ts
-import { SQLiteArtifactStore } from "agentcraft";
+import { SQLiteArtifactStore } from "@deskcreate/agentcraft";
 
 const store = SQLiteArtifactStore({ dbPath: "./.agentcraft/artifacts.db" });
 const id = await store.put("Draft", { body: "v1", status: "draft" });

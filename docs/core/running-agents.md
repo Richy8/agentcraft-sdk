@@ -5,7 +5,7 @@
 ## Quick Start
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -128,7 +128,7 @@ interface AgentImage {
 ### Basic Inline Prompt
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -150,7 +150,7 @@ console.log(`Tokens: ${response.tokensUsed.total}`);
 ### Prompt With Variable Injection
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -172,7 +172,7 @@ console.log(response.content);
 ### Prompt From File
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -204,7 +204,7 @@ console.log(response.promptProvenance); // → { source: "file", promptFile: "..
 ### Per-Run System Prompt Override
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -225,7 +225,7 @@ console.log(response.content);
 ### Run With Budget
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -249,7 +249,7 @@ console.log(`Actual cost: $${response.cost.toFixed(4)}`);
 ### Run With Cancellation (AbortSignal)
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -277,7 +277,7 @@ try {
 ### Run With Cache Bypass
 
 ```ts
-import { Agent, AgentCache, Provider } from "agentcraft";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -300,7 +300,7 @@ console.log(fresh.cache?.bypassed); // → true
 ### Run With Structured Output
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 const agent = Agent.create({
@@ -334,7 +334,7 @@ console.log(result.summary); // → "..."
 ### Run With Files (Document Input)
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import { readFileSync } from "fs";
 
 const agent = Agent.create({
@@ -362,7 +362,7 @@ console.log(response.content);
 ### Run With Images (Vision)
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o"], // must support vision
@@ -391,8 +391,8 @@ if (!Agent.supports(Provider.openai["gpt-4o"], "vision")) {
 ### Run-Scoped Adapter Attachment
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -416,8 +416,8 @@ console.log(response.selection?.exposedTools); // → ["tavily_search", ...]
 ### Replay (Offline Testing)
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import type { AgentResponse } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import type { AgentResponse } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -445,7 +445,7 @@ console.log(response.content); // → "TypeScript is a typed superset of JavaScr
 ### Reading the Full Response
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

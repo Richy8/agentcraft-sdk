@@ -14,9 +14,13 @@ Analytics history stores performance snapshots and experiment outcomes so future
 ## Usage
 
 ```ts
-import { Agent, FileSystemAnalyticsHistoryStore, Provider } from "agentcraft";
-import { AnalyticsAdapter } from "agentcraft/adapters";
-import { CreatorPacks } from "agentcraft/packs";
+import {
+  Agent,
+  FileSystemAnalyticsHistoryStore,
+  Provider,
+} from "@deskcreate/agentcraft";
+import { AnalyticsAdapter } from "@deskcreate/agentcraft/adapters";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 // Constructor takes a root directory path (created if missing)
 const history = new FileSystemAnalyticsHistoryStore(

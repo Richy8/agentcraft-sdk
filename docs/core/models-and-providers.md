@@ -5,7 +5,7 @@ AgentCraft uses provider-prefixed model ids so a single runtime can route across
 ## Quick Start
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

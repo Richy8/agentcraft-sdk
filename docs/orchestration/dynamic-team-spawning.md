@@ -5,8 +5,8 @@
 ## Quick Start
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { AgentTeam } from "agentcraft/team";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
 
 const root = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -64,8 +64,8 @@ console.log(`Rounds: ${result.rounds}, Agents used: ${result.agentsUsed}`);
 `roleHints` nudges the root agent toward specific roles without hardcoding members.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { AgentTeam } from "agentcraft/team";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
 
 const root = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -90,8 +90,8 @@ console.log(result.content);
 The supervisor reviews the final output from the spawned team and may request revisions.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { AgentTeam } from "agentcraft/team";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
 
 const root = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -126,9 +126,14 @@ console.log(result.content);
 Pass a workspace to share cache, adapters, and tool policy with all spawned agents.
 
 ```ts
-import { Agent, AgentCache, AgentWorkspace, Provider } from "agentcraft";
-import { AgentTeam } from "agentcraft/team";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import {
+  Agent,
+  AgentCache,
+  AgentWorkspace,
+  Provider,
+} from "@deskcreate/agentcraft";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const workspace = AgentWorkspace.create({
   cache: AgentCache.file(".agentcraft/cache", { strategy: "auto" }),
@@ -162,8 +167,8 @@ console.log(result.content);
 Apply a `RunBudget` per-run to limit cost and tool calls.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { AgentTeam } from "agentcraft/team";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
 
 const root = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -190,9 +195,9 @@ console.log(result.content);
 ### Reading the Team Trace
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { AgentTeam } from "agentcraft/team";
-import type { TeamTrace } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
+import type { TeamTrace } from "@deskcreate/agentcraft";
 
 const root = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

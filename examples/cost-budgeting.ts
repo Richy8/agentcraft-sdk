@@ -1,4 +1,4 @@
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Estimate before spending. This is useful for UI previews, admission control,
 // and choosing between model tiers.

@@ -1,4 +1,4 @@
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const model = Provider.openai["gpt-4o-mini"];
 

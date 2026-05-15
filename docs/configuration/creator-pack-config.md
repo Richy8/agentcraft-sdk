@@ -23,8 +23,8 @@ Creator pack config applies shared behavior to a group of creator skills. The av
 ## Usage
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { CreatorPacks } from "agentcraft/packs";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

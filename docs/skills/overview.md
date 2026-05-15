@@ -5,8 +5,8 @@ Skills package reusable behavior: role, goal, output expectations, directives, d
 ## Quick Start
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { WritingSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { WritingSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

@@ -3,8 +3,8 @@
 Built-in skills are imported from `agentcraft/skills` and attached with `.use(...)`. They shape the agent's prompt behavior, declare useful capabilities, and expose slash directives when you want to force a specific skill.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { ResearchSkill, WritingSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { ResearchSkill, WritingSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -29,8 +29,11 @@ Import `ResearchSkill` when the agent should gather, compare, and synthesize inf
 Useful tools: [`fetch_url`](../adapters/built-in.md#fetchadapter), [`web_search`](../adapters/built-in.md#tavilysearchadapter), [`search_web`](../adapters/built-in.md#firecrawladapter), [search MCP wrappers](../mcp/built-in.md#search-and-web-mcps).
 
 ```ts
-import { ResearchSkill } from "agentcraft/skills";
-import { FetchAdapter, TavilySearchAdapter } from "agentcraft/adapters";
+import { ResearchSkill } from "@deskcreate/agentcraft/skills";
+import {
+  FetchAdapter,
+  TavilySearchAdapter,
+} from "@deskcreate/agentcraft/adapters";
 
 agent
   .use(FetchAdapter.connect({ allowedDomains: ["developer.mozilla.org"] }))

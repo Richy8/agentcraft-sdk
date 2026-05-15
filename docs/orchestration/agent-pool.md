@@ -5,7 +5,7 @@
 ## Quick Start
 
 ```ts
-import { Agent, AgentPool, Provider } from "agentcraft";
+import { Agent, AgentPool, Provider } from "@deskcreate/agentcraft";
 
 const fast = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -78,7 +78,7 @@ console.log(result.content);
 Pick the cheapest agent for every request.
 
 ```ts
-import { Agent, AgentPool, Provider } from "agentcraft";
+import { Agent, AgentPool, Provider } from "@deskcreate/agentcraft";
 
 const cheapest = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -105,7 +105,7 @@ console.log(result.content);
 Try OpenAI first; fall back to Anthropic if it fails.
 
 ```ts
-import { Agent, AgentPool, Provider } from "agentcraft";
+import { Agent, AgentPool, Provider } from "@deskcreate/agentcraft";
 
 const primary = Agent.create({
   model: Provider.openai["gpt-4o"],
@@ -132,7 +132,7 @@ console.log(result.content);
 Distribute requests evenly across multiple agents of the same model.
 
 ```ts
-import { Agent, AgentPool, Provider } from "agentcraft";
+import { Agent, AgentPool, Provider } from "@deskcreate/agentcraft";
 
 // Three identical agents — useful for rate-limit spreading
 const agents = Array.from({ length: 3 }, () =>
@@ -159,7 +159,7 @@ const [r1, r2, r3] = await Promise.all([
 When `budget.maxCost` is set and `downgradeOnBudgetPressure` is `true`, the pool prefers cheaper agents first.
 
 ```ts
-import { Agent, AgentPool, Provider } from "agentcraft";
+import { Agent, AgentPool, Provider } from "@deskcreate/agentcraft";
 
 const cheap = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -191,7 +191,7 @@ console.log(result.content);
 When `upgradeOnQualityFailure` is `true`, the pool re-sorts candidates by quality score before each retry, so the best agent is tried next.
 
 ```ts
-import { Agent, AgentPool, Provider } from "agentcraft";
+import { Agent, AgentPool, Provider } from "@deskcreate/agentcraft";
 
 const fast = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -220,7 +220,7 @@ console.log(result.content);
 `pool.stream()` streams from the selected agent. If the stream fails before any chunks are yielded and a `fallback` is configured, the pool falls back to the fallback agent's stream.
 
 ```ts
-import { Agent, AgentPool, Provider } from "agentcraft";
+import { Agent, AgentPool, Provider } from "@deskcreate/agentcraft";
 
 const primary = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -247,7 +247,7 @@ for await (const chunk of pool.stream({ prompt: "Tell me about streaming." })) {
 Use `pool.get(name)` to retrieve a specific agent from the pool by name.
 
 ```ts
-import { Agent, AgentPool, Provider } from "agentcraft";
+import { Agent, AgentPool, Provider } from "@deskcreate/agentcraft";
 
 const researcher = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -283,7 +283,7 @@ if (writerAgent) {
 Only fall back when the error is marked retryable (e.g. rate limits, timeouts) — not on auth or content-policy errors.
 
 ```ts
-import { Agent, AgentPool, Provider } from "agentcraft";
+import { Agent, AgentPool, Provider } from "@deskcreate/agentcraft";
 
 const primary = Agent.create({
   model: Provider.openai["gpt-4o"],

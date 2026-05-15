@@ -16,13 +16,13 @@ Creator adapters provide the tools creator skills naturally need.
 ## Example
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import {
   CitationManagerAdapter,
   LinkCheckerAdapter,
   SeoAdapter,
-} from "agentcraft/adapters";
-import { CreatorPacks } from "agentcraft/packs";
+} from "@deskcreate/agentcraft/adapters";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

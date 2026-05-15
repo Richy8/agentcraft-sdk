@@ -5,9 +5,12 @@ Creator examples combine packs, direct skills, tools, memory, cache, and review 
 ## Medium Blog Workflow
 
 ```ts
-import { Agent, AgentCache, Provider } from "agentcraft";
-import { FirecrawlAdapter, FileSystemAdapter } from "agentcraft/adapters";
-import { CreatorPacks } from "agentcraft/packs";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
+import {
+  FirecrawlAdapter,
+  FileSystemAdapter,
+} from "@deskcreate/agentcraft/adapters";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -32,9 +35,9 @@ console.log(response.content);
 ## Multiple Packs Plus A Skill
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { BrandVoiceSkill } from "agentcraft/skills";
-import { CreatorPacks } from "agentcraft/packs";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { BrandVoiceSkill } from "@deskcreate/agentcraft/skills";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -54,8 +57,8 @@ console.log(response.content);
 ## Review Before Publish
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { CreatorPacks } from "agentcraft/packs";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

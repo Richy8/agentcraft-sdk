@@ -5,8 +5,8 @@ Tools are typed functions the model may call during a run. Define them with `too
 ## Quick Start
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { tool } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 // Define a typed tool
 const lookupOrder = tool({
@@ -42,7 +42,7 @@ console.log(response.content);
 `tool()` is the standard way to define a tool. It validates arguments at runtime and infers TypeScript types for your `run` function.
 
 ```ts
-import { tool } from "agentcraft/adapters";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 const myTool = tool({
   name: string,              // stable snake_case identifier
@@ -84,7 +84,7 @@ The `security` object classifies what a tool does so that policy and caching can
 ### Read-Only Tool (Cacheable)
 
 ```ts
-import { tool } from "agentcraft/adapters";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 // sideEffect: "read" — results are safe to cache
 const getArticle = tool({
@@ -104,7 +104,7 @@ const getArticle = tool({
 ### Tool With Optional Parameters
 
 ```ts
-import { tool } from "agentcraft/adapters";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 const searchProducts = tool({
   name: "search_products",
@@ -133,7 +133,7 @@ const searchProducts = tool({
 ### Tool With Enum Options
 
 ```ts
-import { tool } from "agentcraft/adapters";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 const setTicketPriority = tool({
   name: "set_ticket_priority",
@@ -161,8 +161,8 @@ const setTicketPriority = tool({
 ### Tool Requiring Confirmation (Write Side Effect)
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { tool } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 const deleteRecord = tool({
   name: "delete_record",
@@ -200,8 +200,8 @@ console.log(response.content);
 ### Agent-Level vs Per-Run Tools
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { tool } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 // Agent-level: available on every run
 const agentWithTool = Agent.create({
@@ -221,8 +221,8 @@ console.log(response.content);
 ### Check Which Tools Were Exposed
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { tool } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -245,7 +245,7 @@ console.log(response.toolCalls); // full tool call log
 If you need to build tool definitions manually (e.g. from an OpenAPI spec), use `ToolDefinition` directly:
 
 ```ts
-import type { ToolDefinition } from "agentcraft/adapters";
+import type { ToolDefinition } from "@deskcreate/agentcraft/adapters";
 
 const rawTool: ToolDefinition = {
   name: "get_user",

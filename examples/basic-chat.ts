@@ -1,4 +1,4 @@
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Basic chat is the smallest useful AgentCraft surface:
 // - choose a provider/model from the typed Provider catalog

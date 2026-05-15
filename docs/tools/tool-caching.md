@@ -5,8 +5,8 @@ Tool caching reuses safe read-tool results through `AgentCache`. It is useful fo
 ## Setup
 
 ```ts
-import { Agent, AgentCache, Provider } from "agentcraft";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

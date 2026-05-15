@@ -14,7 +14,7 @@
 ## Usage
 
 ```ts
-import { AgentWorkflow, CustomStep } from "agentcraft";
+import { AgentWorkflow, CustomStep } from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 const workflow = AgentWorkflow.create({
@@ -71,7 +71,7 @@ import {
   AgentWorkspace,
   CustomStep,
   MemoryArtifactStore,
-} from "agentcraft";
+} from "@deskcreate/agentcraft";
 
 const workspace = AgentWorkspace.create({ store: MemoryArtifactStore() });
 const workflow = AgentWorkflow.create({

@@ -3,8 +3,8 @@
 Built-in MCP wrappers are imported from `agentcraft/mcp`. They are convenience factories over `MCPAdapter.connect(...)` with transport, package, secret, scope, and side-effect metadata already attached.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { Context7MCP } from "agentcraft/mcp";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { Context7MCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

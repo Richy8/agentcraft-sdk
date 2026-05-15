@@ -5,7 +5,7 @@ An `Agent` is the main runtime object. It owns provider config, model defaults, 
 ## Quick Start
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Minimal agent — only model and API key are required
 const agent = Agent.create({
@@ -84,7 +84,7 @@ All fields passed to `Agent.create()` belong to `AgentCreateConfig`. Only `model
 ### Minimal Agent
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Simplest setup — uses all defaults (temperature 0.7, 3 retries, etc.)
 const agent = Agent.create({
@@ -99,7 +99,7 @@ console.log(response.content); // → "4"
 ### Agent With System Prompt and Low Temperature
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Deterministic coding agent — low temp + enforced system prompt on every run
 const agent = Agent.create({
@@ -120,7 +120,7 @@ console.log(response.content);
 ### Local / OpenAI-Compatible Agent
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Ollama running locally — no API key needed, just baseUrl
 const agent = Agent.create({
@@ -135,7 +135,7 @@ console.log(response.content);
 ### Agent With Tool Policy (Read-Only)
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Guardrails: tools can only read, results capped, secrets redacted
 const agent = Agent.create({
@@ -157,7 +157,7 @@ console.log(response.content);
 ### Agent With File Cache
 
 ```ts
-import { Agent, AgentCache, Provider } from "agentcraft";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
 
 // Cache safe read-tool results to disk — avoids repeated fetches
 const agent = Agent.create({
@@ -178,7 +178,7 @@ console.log(response.cache?.hits, response.cache?.toolCallsAvoided);
 ### Agent With Custom Retry
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // More aggressive retry for flaky external tools
 const agent = Agent.create({
@@ -199,7 +199,7 @@ console.log(response.content);
 ### Skill Activation Modes
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import { SomeSkill } from "./skills/some-skill.js";
 
 // "always" — skills are always active regardless of prompt content (default)
@@ -230,8 +230,8 @@ const directive = Agent.create({
 Use `.use()` to attach adapters, skills, or creator packs to an agent. Adapters must be attached before the first `run()`.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 import { SomeSkill } from "./skills/some-skill.js";
 
 const agent = Agent.create({
@@ -253,7 +253,7 @@ console.log(response.content);
 `agent.cloneWithSystem()` produces a new agent with a different system prompt and optional name. All adapters, cache, and config are inherited.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const base = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -286,7 +286,7 @@ console.log(long.content);
 Returns capabilities and pricing for a model string without creating an agent.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const info = Agent.inspect(Provider.openai["gpt-4o"]);
 
@@ -302,7 +302,7 @@ console.log(info.optimizedFor); // → ["reasoning", "coding", ...]
 Quick boolean check for a single capability.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Check before attaching vision-dependent adapters
 if (Agent.supports(Provider.openai["gpt-4o-mini"], "vision")) {
@@ -319,7 +319,7 @@ if (!Agent.supports(Provider.ollama["llama3.2"], "tools")) {
 Returns all non-deprecated models in the registry. Accepts an optional filter.
 
 ```ts
-import { Agent } from "agentcraft";
+import { Agent } from "@deskcreate/agentcraft";
 
 // All available models
 const all = Agent.catalog();
@@ -339,7 +339,7 @@ console.log(highQuality.map((m) => `${m.model} — quality:${m.scores.quality}`)
 Estimates cost before running. Useful for budget enforcement or user-facing cost previews.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Static: estimate for a model you haven't instantiated yet
 const estimate = Agent.estimateCost(Provider.openai["gpt-4o"], {
@@ -366,7 +366,7 @@ console.log(`Estimated cost: $${instanceEstimate.estimatedCost.toFixed(4)}`);
 Call `agent.dispose()` when an agent with MCP or stateful adapters is no longer needed. It runs adapter cleanup in reverse attachment order.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

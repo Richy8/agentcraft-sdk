@@ -4,8 +4,11 @@ import path from "node:path";
 import {
   FileSystemAnalyticsHistoryStore,
   FileSystemCreatorMemoryStore,
-} from "agentcraft";
-import { AnalyticsAdapter, CreatorResourcesAdapter } from "agentcraft/adapters";
+} from "@deskcreate/agentcraft";
+import {
+  AnalyticsAdapter,
+  CreatorResourcesAdapter,
+} from "@deskcreate/agentcraft/adapters";
 
 const root = await mkdtemp(path.join(tmpdir(), "agentcraft-creator-state-"));
 

@@ -10,13 +10,13 @@ Production-grade TypeScript agent runtime with provider routing, tools, MCP, ski
 ## Install
 
 ```sh
-npm install agentcraft
+npm install @deskcreate/agentcraft
 ```
 
 ## 60-Second Quickstart
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

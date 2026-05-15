@@ -1,4 +1,4 @@
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Local models are valuable when prompts or files should stay on your machine.
 // This assumes Ollama is running an OpenAI-compatible endpoint locally.

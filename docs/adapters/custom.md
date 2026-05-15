@@ -5,8 +5,8 @@ Use custom adapters when your app owns the capability: internal APIs, product da
 ## Quick Start
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { createAdapter, tool } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { createAdapter, tool } from "@deskcreate/agentcraft/adapters";
 
 // Define tools
 const lookupOrder = tool({
@@ -67,7 +67,7 @@ console.log(response.content);
 ### Single Tool Adapter
 
 ```ts
-import { createAdapter, tool } from "agentcraft/adapters";
+import { createAdapter, tool } from "@deskcreate/agentcraft/adapters";
 
 const getWeather = tool({
   name: "get_weather",
@@ -98,7 +98,7 @@ export const WeatherAdapter = createAdapter({
 ### Multi-Tool Adapter (Read + Write)
 
 ```ts
-import { createAdapter, tool } from "agentcraft/adapters";
+import { createAdapter, tool } from "@deskcreate/agentcraft/adapters";
 
 const getTicket = tool({
   name: "get_ticket",
@@ -144,7 +144,7 @@ export const TicketingAdapter = createAdapter({
 Use `init` and `cleanup` for stateful adapters that need a connection or external session.
 
 ```ts
-import { createAdapter, tool } from "agentcraft/adapters";
+import { createAdapter, tool } from "@deskcreate/agentcraft/adapters";
 
 let client: DatabaseClient;
 
@@ -177,7 +177,7 @@ export const DatabaseAdapter = createAdapter({
 ```
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import { DatabaseAdapter } from "./adapters/database.js";
 
 const agent = Agent.create({
@@ -200,8 +200,8 @@ try {
 Inject context into every run — useful for tenant ID, user info, or feature flags.
 
 ```ts
-import { createAdapter } from "agentcraft/adapters";
-import type { AgentRunParams } from "agentcraft";
+import { createAdapter } from "@deskcreate/agentcraft/adapters";
+import type { AgentRunParams } from "@deskcreate/agentcraft";
 
 export function createTenantAdapter(tenantId: string) {
   return createAdapter({
@@ -223,7 +223,7 @@ export function createTenantAdapter(tenantId: string) {
 ```
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import { createTenantAdapter } from "./adapters/tenant.js";
 
 const agent = Agent.create({
@@ -240,8 +240,8 @@ console.log(response.content);
 Post-process the response — useful for logging, cost tracking, or response enrichment.
 
 ```ts
-import { createAdapter } from "agentcraft/adapters";
-import type { AgentResponse } from "agentcraft";
+import { createAdapter } from "@deskcreate/agentcraft/adapters";
+import type { AgentResponse } from "@deskcreate/agentcraft";
 
 export const CostTrackingAdapter = createAdapter({
   name: "cost-tracker",
@@ -265,8 +265,8 @@ export const CostTrackingAdapter = createAdapter({
 Use `getTools` when you don't know the tool list at compile time.
 
 ```ts
-import { createAdapter } from "agentcraft/adapters";
-import type { ToolDefinition } from "agentcraft/adapters";
+import { createAdapter } from "@deskcreate/agentcraft/adapters";
+import type { ToolDefinition } from "@deskcreate/agentcraft/adapters";
 
 export const PluginAdapter = createAdapter({
   name: "plugin-registry",
@@ -291,7 +291,7 @@ export const PluginAdapter = createAdapter({
 Use `dependsOn` when your adapter needs another adapter to be attached first.
 
 ```ts
-import { createAdapter, tool } from "agentcraft/adapters";
+import { createAdapter, tool } from "@deskcreate/agentcraft/adapters";
 
 const summarizeDoc = tool({
   name: "summarize_doc",

@@ -4,18 +4,18 @@ Skill config controls prompt behavior, dependencies, directives, and optional to
 
 ## Pattern
 
-| Step   | Action                                             | Required? | Related page                             |
-| ------ | -------------------------------------------------- | --------- | ---------------------------------------- |
-| Import | `import { WritingSkill } from 'agentcraft/skills'` | Yes       | [Built-In Skills](../skills/built-in.md) |
-| Create | `WritingSkill.create()`                            | Yes       | [Skill Overview](../skills/overview.md)  |
-| Attach | `agent.use(skill)`                                 | Yes       | [Agents](../core/agents.md)              |
-| Direct | Optional `/skill-name` directive                   | No        | [Directives](../skills/directives.md)    |
+| Step   | Action                                                         | Required? | Related page                             |
+| ------ | -------------------------------------------------------------- | --------- | ---------------------------------------- |
+| Import | `import { WritingSkill } from '@deskcreate/agentcraft/skills'` | Yes       | [Built-In Skills](../skills/built-in.md) |
+| Create | `WritingSkill.create()`                                        | Yes       | [Skill Overview](../skills/overview.md)  |
+| Attach | `agent.use(skill)`                                             | Yes       | [Agents](../core/agents.md)              |
+| Direct | Optional `/skill-name` directive                               | No        | [Directives](../skills/directives.md)    |
 
 ## Usage
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { ResearchSkill, WritingSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { ResearchSkill, WritingSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

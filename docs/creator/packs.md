@@ -3,9 +3,9 @@
 Creator packs are `.use(...)` bundles over creator skills. They are imported from `agentcraft/packs`, and every skill inside a pack remains directly importable from `agentcraft/skills`.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { CreatorPacks } from "agentcraft/packs";
-import { BrandVoiceSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { BrandVoiceSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

@@ -14,7 +14,7 @@ AgentCraft treats prompts, files, browser pages, MCP servers, adapter responses,
 ## Production Baseline
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

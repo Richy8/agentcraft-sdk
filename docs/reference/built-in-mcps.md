@@ -3,8 +3,8 @@
 Built-in MCP wrappers are convenience factories over `MCPAdapter.connect(...)`. They provide package metadata, default transport choices, required secret names, scopes, and side-effect labels. You still decide which tools/resources are exposed.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { GitHubMCP } from "agentcraft/mcp";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

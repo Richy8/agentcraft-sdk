@@ -1,5 +1,5 @@
-import { Agent, Provider } from "agentcraft";
-import { FileSystemAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   // Local providers are useful for private filesystem tasks because no prompt

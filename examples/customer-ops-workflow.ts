@@ -1,7 +1,7 @@
-import { Agent, Provider } from "agentcraft";
-import { EmailAdapter, SlackAdapter } from "agentcraft/adapters";
-import { SlackMCP } from "agentcraft/mcp";
-import { EmailDraftSkill, SummarizeSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { EmailAdapter, SlackAdapter } from "@deskcreate/agentcraft/adapters";
+import { SlackMCP } from "@deskcreate/agentcraft/mcp";
+import { EmailDraftSkill, SummarizeSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

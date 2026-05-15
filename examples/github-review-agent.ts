@@ -1,5 +1,5 @@
-import { Agent, Provider } from "agentcraft";
-import { GitHubAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { GitHubAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   // Use a stronger model for code review because quality matters more than cost.

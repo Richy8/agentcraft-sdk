@@ -14,7 +14,7 @@ AgentCraft configuration is layered. Create-time config defines the agent, run-t
 ## Minimal Setup
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -28,7 +28,7 @@ console.log(response.content);
 ## Production Setup
 
 ```ts
-import { Agent, AgentCache, Provider } from "agentcraft";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

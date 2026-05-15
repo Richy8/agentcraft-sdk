@@ -5,7 +5,7 @@ Structured output asks the model to return JSON that matches a schema, validates
 ## Quick Start
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -72,7 +72,7 @@ console.log(data.actions);
 ### Zod Schema
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 const agent = Agent.create({
@@ -104,7 +104,7 @@ console.log(result.confidence); // → 0.96
 ### Strict Classifier With Enum
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -141,7 +141,7 @@ console.log(ticket.category); // → "bug"
 ### Nested Object Schema
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -175,7 +175,7 @@ console.log(brief.outline); // → ["Intro", "New inferred type predicates", "Mi
 ### Array Response
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -216,7 +216,7 @@ for (const practice of practices) {
 ### Complex Zod Schema
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 const agent = Agent.create({
@@ -253,7 +253,7 @@ console.log(`~${brief.estimatedWordCount} words`);
 `ArtifactRegistry` provides pre-built schemas for creator workflows (drafts, briefs, SEO plans, etc.).
 
 ```ts
-import { Agent, ArtifactRegistry, Provider } from "agentcraft";
+import { Agent, ArtifactRegistry, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -283,7 +283,7 @@ console.log(ArtifactRegistry.list());
 When a model doesn't natively support JSON output mode, AgentCraft can use an internal tool (`submit_structured_response`) to extract structured output instead.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 const agent = Agent.create({
@@ -312,7 +312,7 @@ console.log(result.confidence); // → "high"
 ### Register a Custom Schema
 
 ```ts
-import { Agent, ArtifactRegistry, Provider } from "agentcraft";
+import { Agent, ArtifactRegistry, Provider } from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 // Register a custom artifact type once at startup

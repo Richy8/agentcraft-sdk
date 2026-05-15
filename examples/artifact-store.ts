@@ -6,7 +6,7 @@ import {
   MemoryArtifactStore,
   Provider,
   SQLiteArtifactStore,
-} from "agentcraft";
+} from "@deskcreate/agentcraft";
 
 // FileArtifactStore writes one JSON file per artifact for local inspection.
 const fileStore = FileArtifactStore({ root: "./.artifacts" });

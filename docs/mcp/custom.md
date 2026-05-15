@@ -13,8 +13,8 @@ Use `MCPAdapter.connect()` to connect to any MCP server — internal, self-hoste
 ## Stdio Server
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { MCPAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { MCPAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -42,7 +42,7 @@ console.log(response.content);
 ### Stdio With npx (Pinned Package)
 
 ```ts
-import { MCPAdapter } from "agentcraft/adapters";
+import { MCPAdapter } from "@deskcreate/agentcraft/adapters";
 
 // Use rejectUnpinnedPackage to prevent running unpinned npx packages
 const filesystemMcp = MCPAdapter.connect({
@@ -65,7 +65,7 @@ const filesystemMcp = MCPAdapter.connect({
 ### Stdio With Environment Variables
 
 ```ts
-import { MCPAdapter } from "agentcraft/adapters";
+import { MCPAdapter } from "@deskcreate/agentcraft/adapters";
 
 const internalApiMcp = MCPAdapter.connect({
   transport: "stdio",
@@ -88,8 +88,8 @@ const internalApiMcp = MCPAdapter.connect({
 ## HTTP Server
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { MCPAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { MCPAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -119,7 +119,7 @@ console.log(response.content);
 ## SSE Server
 
 ```ts
-import { MCPAdapter } from "agentcraft/adapters";
+import { MCPAdapter } from "@deskcreate/agentcraft/adapters";
 
 const streamingMcp = MCPAdapter.connect({
   transport: "sse",
@@ -139,7 +139,7 @@ const streamingMcp = MCPAdapter.connect({
 ## Discovery Modes
 
 ```ts
-import { MCPAdapter } from "agentcraft/adapters";
+import { MCPAdapter } from "@deskcreate/agentcraft/adapters";
 
 // "lazy" (default): tools are discovered on the first run
 const lazy = MCPAdapter.connect({
@@ -161,8 +161,8 @@ const eager = MCPAdapter.connect({
 `onTrace` receives lifecycle events for every MCP request/response — useful for debugging or custom observability.
 
 ```ts
-import { MCPAdapter } from "agentcraft/adapters";
-import type { McpTraceEvent } from "agentcraft/adapters";
+import { MCPAdapter } from "@deskcreate/agentcraft/adapters";
+import type { McpTraceEvent } from "@deskcreate/agentcraft/adapters";
 
 const tracedMcp = MCPAdapter.connect({
   transport: "http",
@@ -196,7 +196,7 @@ const tracedMcp = MCPAdapter.connect({
 Always use `allowedTools` to limit which server tools the model can invoke. MCP servers can expose many tools — exposing them all increases attack surface.
 
 ```ts
-import { MCPAdapter } from "agentcraft/adapters";
+import { MCPAdapter } from "@deskcreate/agentcraft/adapters";
 
 // Bad: exposes everything the server offers
 const unrestricted = MCPAdapter.connect({

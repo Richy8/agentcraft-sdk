@@ -1,4 +1,4 @@
-import { Agent, AgentPool, Provider } from "agentcraft";
+import { Agent, AgentPool, Provider } from "@deskcreate/agentcraft";
 
 // Provider routing is useful when your product has different runtime priorities:
 // - quality for hard tasks

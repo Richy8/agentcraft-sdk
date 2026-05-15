@@ -4,18 +4,21 @@ Adapter config connects native tools such as GitHub, files, search, browser auto
 
 ## Pattern
 
-| Step    | Action                                               | Required?   | Related page                                 |
-| ------- | ---------------------------------------------------- | ----------- | -------------------------------------------- |
-| Import  | `import { FetchAdapter } from 'agentcraft/adapters'` | Yes         | [Built-In Adapters](../adapters/built-in.md) |
-| Connect | `FetchAdapter.connect(config)`                       | Yes         | [Adapter Configs](../adapters/configs.md)    |
-| Attach  | `agent.use(adapter)`                                 | Yes         | [Agents](../core/agents.md)                  |
-| Govern  | `toolPolicy`, guardrails, approvals                  | Recommended | [Tool Policy](./tool-policy-config.md)       |
+| Step    | Action                                                           | Required?   | Related page                                 |
+| ------- | ---------------------------------------------------------------- | ----------- | -------------------------------------------- |
+| Import  | `import { FetchAdapter } from '@deskcreate/agentcraft/adapters'` | Yes         | [Built-In Adapters](../adapters/built-in.md) |
+| Connect | `FetchAdapter.connect(config)`                                   | Yes         | [Adapter Configs](../adapters/configs.md)    |
+| Attach  | `agent.use(adapter)`                                             | Yes         | [Agents](../core/agents.md)                  |
+| Govern  | `toolPolicy`, guardrails, approvals                              | Recommended | [Tool Policy](./tool-policy-config.md)       |
 
 ## Usage
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { FetchAdapter, FileSystemAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import {
+  FetchAdapter,
+  FileSystemAdapter,
+} from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

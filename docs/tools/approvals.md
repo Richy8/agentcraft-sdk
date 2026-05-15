@@ -15,8 +15,8 @@ Approvals make write-capable tools safe for production. A tool that declares `re
 ## Quick Start
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { tool } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 // Tool that requires explicit approval before executing
 const sendEmail = tool({
@@ -62,7 +62,7 @@ console.log(response.content);
 Pre-approve tool names at agent creation time. Useful when you know at startup which tools are always safe to execute.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -79,8 +79,8 @@ const agent = Agent.create({
 The `onApprovalRequired` callback receives the full `ToolGuardrailContext` — including the tool definition and the arguments the model passed. Use this to validate arguments before approving.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import type { ToolGuardrailContext } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import type { ToolGuardrailContext } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -110,7 +110,7 @@ const agent = Agent.create({
 Route approvals through a real human approval step — useful for high-stakes operations.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -139,8 +139,8 @@ const agent = Agent.create({
 ### Audit Approval Events
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import type { ToolAuditEvent } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import type { ToolAuditEvent } from "@deskcreate/agentcraft/adapters";
 
 const auditLog: ToolAuditEvent[] = [];
 
@@ -171,7 +171,7 @@ console.log("Approval events:", auditLog);
 ### Allow All Side Effects Globally
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // allowSideEffects: true bypasses the confirmation gate for ALL tools
 // Only use this in trusted, controlled environments
@@ -187,8 +187,8 @@ const agent = Agent.create({
 ### Per-Run Approval Override
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { tool } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 const deleteDraft = tool({
   name: "delete_draft",

@@ -1,5 +1,5 @@
-import { Agent, Provider } from "agentcraft";
-import { HumanizerSkill, WritingSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { HumanizerSkill, WritingSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

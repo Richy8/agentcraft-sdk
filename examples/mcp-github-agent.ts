@@ -1,5 +1,5 @@
-import { Agent, Provider } from "agentcraft";
-import { GitHubMCP } from "agentcraft/mcp";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

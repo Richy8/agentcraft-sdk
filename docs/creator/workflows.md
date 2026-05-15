@@ -5,9 +5,12 @@ Creator workflows combine packs, direct skills, adapters, memory, analytics, and
 ## Blog + SEO
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { SeoAdapter, LinkCheckerAdapter } from "agentcraft/adapters";
-import { CreatorPacks } from "agentcraft/packs";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import {
+  SeoAdapter,
+  LinkCheckerAdapter,
+} from "@deskcreate/agentcraft/adapters";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -29,10 +32,10 @@ console.log(response.content);
 ## Video
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { CreatorResourcesAdapter } from "agentcraft/adapters";
-import { CreatorPacks } from "agentcraft/packs";
-import { FileSystemCreatorMemoryStore } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { CreatorResourcesAdapter } from "@deskcreate/agentcraft/adapters";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { FileSystemCreatorMemoryStore } from "@deskcreate/agentcraft";
 
 const memoryStore = new FileSystemCreatorMemoryStore(".agentcraft/memory");
 
@@ -53,10 +56,10 @@ console.log(response.content);
 ## Analytics Feedback Loop
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { AnalyticsAdapter } from "agentcraft/adapters";
-import { CreatorPacks } from "agentcraft/packs";
-import { FileSystemAnalyticsHistoryStore } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { AnalyticsAdapter } from "@deskcreate/agentcraft/adapters";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { FileSystemAnalyticsHistoryStore } from "@deskcreate/agentcraft";
 
 const historyStore = new FileSystemAnalyticsHistoryStore(
   ".agentcraft/analytics",

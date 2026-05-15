@@ -330,4 +330,3 @@ console.log(response.structuredResponse);
 
 - [Structured Output Config](../configuration/structured-output-config.md)
 - [Running Agents](./running-agents.md)
-- [ArtifactRegistry](../core/artifact-registry.md)

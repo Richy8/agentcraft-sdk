@@ -1,5 +1,8 @@
 import { defineConfig } from 'vitepress';
 
+// Update this when switching to a custom domain
+const DOCS_SITE = 'https://agentcraft-sdk.vercel.app';
+
 export default defineConfig({
   title: 'AgentCraft',
   description:
@@ -12,6 +15,8 @@ export default defineConfig({
     ['meta', { name: 'theme-color', content: '#2563eb' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'AgentCraft Documentation' }],
+    ['meta', { property: 'og:url', content: DOCS_SITE }],
+    ['link', { rel: 'canonical', href: DOCS_SITE }],
     [
       'meta',
       {

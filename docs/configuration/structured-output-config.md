@@ -170,4 +170,3 @@ Processing order:
 
 - [Structured Output](../core/structured-output.md)
 - [Running Agents](../core/running-agents.md)
-- [ArtifactRegistry](../core/artifact-registry.md)

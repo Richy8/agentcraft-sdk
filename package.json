@@ -25,7 +25,7 @@
     "type": "git",
     "url": "git+https://github.com/agentcraft-ai/agentcraft.git"
   },
-  "homepage": "https://agentcraft.dev",
+  "homepage": "https://agentcraft-sdk.vercel.app",
   "bugs": {
     "url": "https://github.com/agentcraft-ai/agentcraft/issues"
   },

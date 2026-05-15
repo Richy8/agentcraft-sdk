@@ -58,24 +58,24 @@ console.log(result.trace);
 
 ## Guides
 
-- [Architecture](https://agentcraft.dev/architecture)
-- [Quickstart](https://agentcraft.dev/start/quickstart)
-- [Feature Map](https://agentcraft.dev/start/feature-map)
-- [Run Configuration](https://agentcraft.dev/configuration/run-config)
-- [Provider Configuration](https://agentcraft.dev/configuration/provider-config)
-- [Tool Lifecycle](https://agentcraft.dev/tools/tools)
-- [MCP Overview](https://agentcraft.dev/mcp/overview)
-- [Security Model](https://agentcraft.dev/core/security-model)
-- [Pricing and Budgets](https://agentcraft.dev/core/budgets-cost)
-- [AgentTeam Orchestration](https://agentcraft.dev/orchestration/agent-team)
-- [AgentWorkflow](https://agentcraft.dev/orchestration/agent-workflow)
-- [AgentWorkspace](https://agentcraft.dev/orchestration/agent-workspace)
-- [ArtifactStore](https://agentcraft.dev/persistence/artifact-store)
-- [ArtifactRegistry](https://agentcraft.dev/persistence/artifact-registry)
-- [Adapter Authoring](https://agentcraft.dev/adapters/custom)
-- [Skill Authoring](https://agentcraft.dev/skills/custom)
-- [Structured Output](https://agentcraft.dev/core/structured-output)
-- [Guardrails](https://agentcraft.dev/tools/guardrails)
+- [Architecture](https://agentcraft-sdk.vercel.app/architecture)
+- [Quickstart](https://agentcraft-sdk.vercel.app/start/quickstart)
+- [Feature Map](https://agentcraft-sdk.vercel.app/start/feature-map)
+- [Run Configuration](https://agentcraft-sdk.vercel.app/configuration/run-config)
+- [Provider Configuration](https://agentcraft-sdk.vercel.app/configuration/provider-config)
+- [Tool Lifecycle](https://agentcraft-sdk.vercel.app/tools/tools)
+- [MCP Overview](https://agentcraft-sdk.vercel.app/mcp/overview)
+- [Security Model](https://agentcraft-sdk.vercel.app/core/security-model)
+- [Pricing and Budgets](https://agentcraft-sdk.vercel.app/core/budgets-cost)
+- [AgentTeam Orchestration](https://agentcraft-sdk.vercel.app/orchestration/agent-team)
+- [AgentWorkflow](https://agentcraft-sdk.vercel.app/orchestration/agent-workflow)
+- [AgentWorkspace](https://agentcraft-sdk.vercel.app/orchestration/agent-workspace)
+- [ArtifactStore](https://agentcraft-sdk.vercel.app/persistence/artifact-store)
+- [ArtifactRegistry](https://agentcraft-sdk.vercel.app/persistence/artifact-registry)
+- [Adapter Authoring](https://agentcraft-sdk.vercel.app/adapters/custom)
+- [Skill Authoring](https://agentcraft-sdk.vercel.app/skills/custom)
+- [Structured Output](https://agentcraft-sdk.vercel.app/core/structured-output)
+- [Guardrails](https://agentcraft-sdk.vercel.app/tools/guardrails)
 
 For the local documentation site:
 
@@ -85,7 +85,7 @@ npm run docs:dev
 
 ## Examples
 
-See the [examples guide](https://agentcraft.dev/examples) for basic chat, structured output, streaming with tools, safe filesystem usage, GitHub review, MCP GitHub, research, AgentTeam, AgentWorkflow, ArtifactStore, cost budgeting, and custom adapter patterns.
+See the [examples guide](https://agentcraft-sdk.vercel.app/examples) for basic chat, structured output, streaming with tools, safe filesystem usage, GitHub review, MCP GitHub, research, AgentTeam, AgentWorkflow, ArtifactStore, cost budgeting, and custom adapter patterns.
 
 ## Safety Defaults
 

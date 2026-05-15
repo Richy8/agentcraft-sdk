@@ -8,7 +8,7 @@ Creator analytics stores performance reports, experiment plans, and experiment o
 import { Agent, Provider } from "agentcraft";
 import { AnalyticsAdapter } from "agentcraft/adapters";
 import { CreatorPacks } from "agentcraft/packs";
-import { FileSystemAnalyticsHistoryStore } from "agentcraft/persistence";
+import { FileSystemAnalyticsHistoryStore } from "agentcraft";
 
 const analytics = new FileSystemAnalyticsHistoryStore(".agentcraft/analytics");
 

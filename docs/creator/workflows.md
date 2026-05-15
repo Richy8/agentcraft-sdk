@@ -32,7 +32,7 @@ console.log(response.content);
 import { Agent, Provider } from "agentcraft";
 import { CreatorResourcesAdapter } from "agentcraft/adapters";
 import { CreatorPacks } from "agentcraft/packs";
-import { FileSystemCreatorMemoryStore } from "agentcraft/persistence";
+import { FileSystemCreatorMemoryStore } from "agentcraft";
 
 const memoryStore = new FileSystemCreatorMemoryStore(".agentcraft/memory");
 
@@ -56,7 +56,7 @@ console.log(response.content);
 import { Agent, Provider } from "agentcraft";
 import { AnalyticsAdapter } from "agentcraft/adapters";
 import { CreatorPacks } from "agentcraft/packs";
-import { FileSystemAnalyticsHistoryStore } from "agentcraft/persistence";
+import { FileSystemAnalyticsHistoryStore } from "agentcraft";
 
 const historyStore = new FileSystemAnalyticsHistoryStore(
   ".agentcraft/analytics",

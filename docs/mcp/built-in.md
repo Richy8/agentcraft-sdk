@@ -10,6 +10,11 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
 }).use(Context7MCP.connect());
+
+const response = await agent.run({
+  prompt: "Fetch the latest React hooks documentation.",
+});
+console.log(response.content);
 ```
 
 ## Search And Web MCPs

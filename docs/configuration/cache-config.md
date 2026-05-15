@@ -34,21 +34,31 @@ const agent = Agent.create({
 
 ## Cache Drivers
 
-| Driver                  | Required | Default | Purpose                                             |
-| ----------------------- | -------- | ------- | --------------------------------------------------- |
-| `AgentCache.file(root)` | Yes      | None    | File-backed cache for local production deployments. |
-| `AgentCache.memory()`   | No       | None    | In-memory cache for tests and ephemeral runs.       |
-| `AgentCache.disabled()` | No       | None    | Explicitly disables caching.                        |
+| Driver                                    | Purpose                                                                           |
+| ----------------------------------------- | --------------------------------------------------------------------------------- |
+| `AgentCache.file(root, options?)`         | File-backed cache for local and production deployments. Persists across restarts. |
+| `AgentCache.memory(options?)`             | In-memory cache for tests and ephemeral runs. Cleared on process exit.            |
+| `AgentCache.disabled()`                   | Explicitly disables caching — no reads or writes.                                 |
+| `AgentCache.placeholder(root, strategy?)` | Shorthand for `file()` with only a root and strategy. Useful for quick setup.     |
 
 ```ts
 import { AgentCache } from "agentcraft";
 
-const cache = AgentCache.memory({
+// In-memory cache — good for tests
+const memCache = AgentCache.memory({
   defaultTtlMs: 60_000,
   maxEntryBytes: 100_000,
 });
 
-console.log(cache.config.type);
+// Placeholder — quick file cache with just a root path and strategy
+const quickCache = AgentCache.placeholder("./.agentcraft/cache", "auto");
+
+// Disabled — disables caching explicitly even if the agent has a default
+const noCache = AgentCache.disabled();
+
+console.log(memCache.config.type); // → "memory"
+console.log(quickCache.config.type); // → "file"
+console.log(noCache.config.type); // → "disabled"
 ```
 
 ## CachePolicy
@@ -60,7 +70,7 @@ console.log(cache.config.type);
 | `requireCachedFor` | No       | None    | Tool names that must have a cache hit before execution can continue. |
 
 ```ts
-await agent.run({
+const response = await agent.run({
   prompt: "Summarize the cached research.",
   budget: {
     maxCost: 0.1,
@@ -69,6 +79,7 @@ await agent.run({
     },
   },
 });
+console.log(response.content);
 ```
 
 ## Strategy Notes

@@ -59,7 +59,8 @@ const strongAgent = Agent.create({
 });
 
 const pool = AgentPool.create([cheapAgent, strongAgent], {
-  strategy: "fallback",
+  strategy: "cost", // pick the cheapest agent first; fall back to the stronger one on failure
+  fallbackMode: "first-error",
 });
 
 const result = await pool.run({ prompt: "Summarize this research paper." });
@@ -68,29 +69,35 @@ console.log(result.content);
 
 ## Shared Tools
 
+Share adapters across all team members by attaching them to a `workspace`. This is the
+correct approach — `sharedAdapters` on the team config is not supported.
+
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, AgentWorkspace, Provider } from "agentcraft";
 import { AgentTeam } from "agentcraft/team";
 import { FetchAdapter } from "agentcraft/adapters";
 
 const apiKey = process.env.OPENAI_API_KEY ?? "";
+
+// Attach adapters to the workspace — they are available to all team members
+const workspace = AgentWorkspace.create({
+  adapters: [FetchAdapter.connect({ allowedDomains: ["docs.example.com"] })],
+});
+
 const orchestrator = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey,
 });
-const members = [
-  {
-    role: "writer",
-    agent: Agent.create({ model: Provider.openai["gpt-4o-mini"], apiKey }),
-  },
-];
 
 const team = AgentTeam.create({
+  workspace, // FetchAdapter is shared via workspace, not per-member
   orchestrator,
-  sharedAdapters: [
-    FetchAdapter.connect({ allowedDomains: ["docs.example.com"] }),
+  members: [
+    {
+      role: "writer",
+      agent: Agent.create({ model: Provider.openai["gpt-4o-mini"], apiKey }),
+    },
   ],
-  members,
 });
 
 const result = await team.run({ prompt: "Research and summarize the docs." });

@@ -35,10 +35,11 @@ console.log(response.cache?.hits, response.cache?.toolCallsAvoided);
 ## Bypass
 
 ```ts
-await agent.run({
+const response = await agent.run({
   prompt: "Refresh from source.",
   cache: { bypass: true },
 });
+console.log(response.content);
 ```
 
 ## Related

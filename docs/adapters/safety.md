@@ -14,8 +14,8 @@ Adapter safety is about constraining what a tool can read, write, and expose.
 ## Safer Pattern
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { FileSystemAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

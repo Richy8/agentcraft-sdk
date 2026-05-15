@@ -21,9 +21,12 @@ import {
   AgentWorkspace,
   FileArtifactStore,
   Provider,
-} from "agentcraft";
-import { FileSystemAdapter, TavilySearchAdapter } from "agentcraft/adapters";
-import { AgentTeam } from "agentcraft/team";
+} from "@deskcreate/agentcraft";
+import {
+  FileSystemAdapter,
+  TavilySearchAdapter,
+} from "@deskcreate/agentcraft/adapters";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
 
 const openaiKey = process.env.OPENAI_API_KEY ?? "";
 const tavilyKey = process.env.TAVILY_API_KEY ?? "";
@@ -87,7 +90,7 @@ console.log(response.content);
 Every workspace exposes an event emitter:
 
 ```ts
-import { AgentWorkspace } from "agentcraft";
+import { AgentWorkspace } from "@deskcreate/agentcraft";
 
 const workspace = AgentWorkspace.create({});
 
@@ -119,7 +122,7 @@ workspace.events.on("approval.requested", ({ toolName }) => {
 Workspace with a file cache and no adapters:
 
 ```ts
-import { AgentWorkspace } from "agentcraft";
+import { AgentWorkspace } from "@deskcreate/agentcraft";
 
 const workspace = AgentWorkspace.local("./workspace");
 console.log(workspace.cache?.config.type);
@@ -128,7 +131,7 @@ console.log(workspace.cache?.config.type);
 Workspace with store-only persistence:
 
 ```ts
-import { AgentWorkspace, MemoryArtifactStore } from "agentcraft";
+import { AgentWorkspace, MemoryArtifactStore } from "@deskcreate/agentcraft";
 
 const workspace = AgentWorkspace.create({
   store: MemoryArtifactStore(),

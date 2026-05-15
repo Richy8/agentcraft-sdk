@@ -5,8 +5,8 @@ Skills add reusable prompt behavior, dependency metadata, and optional directive
 ## Automatic Skill Use
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { ResearchSkill, WritingSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { ResearchSkill, WritingSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -25,8 +25,8 @@ console.log(response.content);
 ## Directive Use
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { HumanizerSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { HumanizerSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -43,8 +43,8 @@ console.log(response.content);
 ## External GitHub Skill
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { GitHubSkillLoader } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { GitHubSkillLoader } from "@deskcreate/agentcraft/skills";
 
 // Load a skill from a public GitHub repo — ref must be a pinned commit SHA
 const skill = await GitHubSkillLoader.load({

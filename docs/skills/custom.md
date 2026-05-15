@@ -5,8 +5,8 @@ Custom skills package reusable agent behavior: role, goal, output expectations, 
 ## Quick Start
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { defineSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { defineSkill } from "@deskcreate/agentcraft/skills";
 
 const LaunchReviewSkill = defineSkill({
   name: "launch-review",
@@ -93,7 +93,7 @@ All `prompt` fields are required. Empty values or empty arrays will throw.
 Use `systemPromptExtension` when you want direct control over the injected system text, without using the structured `prompt` template.
 
 ```ts
-import { defineSkill } from "agentcraft/skills";
+import { defineSkill } from "@deskcreate/agentcraft/skills";
 
 const SupportSkill = defineSkill({
   name: "customer-support",
@@ -115,8 +115,8 @@ const SupportSkill = defineSkill({
 A skill can own its own tools — they are only exposed when the skill is active.
 
 ```ts
-import { defineSkill } from "agentcraft/skills";
-import { tool } from "agentcraft/adapters";
+import { defineSkill } from "@deskcreate/agentcraft/skills";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 const lookupFaq = tool({
   name: "lookup_faq",
@@ -152,8 +152,8 @@ const SupportSkill = defineSkill({
 ### Skill With `dependsOn` (Requiring Another Adapter)
 
 ```ts
-import { defineSkill } from "agentcraft/skills";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import { defineSkill } from "@deskcreate/agentcraft/skills";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 // This skill requires TavilySearchAdapter to be attached first
 const ResearchSkill = defineSkill({
@@ -193,8 +193,8 @@ const ResearchSkill = defineSkill({
 ### Skill With Lifecycle Hooks
 
 ```ts
-import { defineSkill } from "agentcraft/skills";
-import type { AgentRunParams, AgentResponse } from "agentcraft";
+import { defineSkill } from "@deskcreate/agentcraft/skills";
+import type { AgentRunParams, AgentResponse } from "@deskcreate/agentcraft";
 
 let sessionId: string;
 
@@ -235,8 +235,8 @@ const SessionSkill = defineSkill({
 The `skillActivation` setting on the agent controls when attached skills are active:
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { defineSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { defineSkill } from "@deskcreate/agentcraft/skills";
 
 const MySkill = defineSkill({
   name: "my-skill",
@@ -281,9 +281,9 @@ const r5 = await autoAgent.run({ prompt: "Tell me a joke." }); // likely not act
 ### Multiple Skills on One Agent
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { defineSkill } from "agentcraft/skills";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { defineSkill } from "@deskcreate/agentcraft/skills";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const WritingSkill = defineSkill({
   name: "writing",

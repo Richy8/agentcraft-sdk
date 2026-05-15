@@ -4,9 +4,12 @@ import {
   AgentWorkspace,
   FileArtifactStore,
   Provider,
-} from "agentcraft";
-import { FileSystemAdapter, TavilySearchAdapter } from "agentcraft/adapters";
-import { AgentTeam } from "agentcraft/team";
+} from "@deskcreate/agentcraft";
+import {
+  FileSystemAdapter,
+  TavilySearchAdapter,
+} from "@deskcreate/agentcraft/adapters";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
 
 // Workspace keeps shared runtime concerns in one place: cache, tools, policy,
 // budget, store, and lightweight events.

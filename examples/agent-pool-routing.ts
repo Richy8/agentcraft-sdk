@@ -1,4 +1,4 @@
-import { Agent, AgentPool, Provider } from "agentcraft";
+import { Agent, AgentPool, Provider } from "@deskcreate/agentcraft";
 
 const fastAgent = Agent.create({
   // name is optional, but recommended. AgentPool.get(name), traces, and logs

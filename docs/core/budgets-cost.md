@@ -5,7 +5,7 @@ Budgets stop runaway work before it becomes expensive. Set limits on token usage
 ## Quick Start
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -44,7 +44,7 @@ All budget fields are passed inside `budget` in `agent.run()`. All are optional.
 Use `Agent.estimateCost()` to preview cost before running. This is useful for user-facing cost previews or budget enforcement checks.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Static method — estimate without creating an agent
 const estimate = Agent.estimateCost(Provider.openai["gpt-4o-mini"], {
@@ -59,7 +59,7 @@ console.log(`Pricing stale: ${estimate.stalePricing}`); // true if pricing data 
 ```
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Instance method — uses the agent's already-configured model
 const agent = Agent.create({
@@ -90,7 +90,7 @@ console.log(`Estimated cost: $${estimate.estimatedCost.toFixed(4)}`);
 ### Token Cap Only
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -112,7 +112,7 @@ console.log(response.tokensUsed.total); // always ≤ 2000
 ### Separate Input and Output Caps
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -134,7 +134,7 @@ console.log(response.content);
 ### Cost Cap With Estimation First
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const model = Provider.openai["gpt-4o"];
 const agent = Agent.create({
@@ -163,8 +163,8 @@ if (estimate.estimatedCost > 0.1) {
 ### Tool Call Cap
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -186,8 +186,8 @@ console.log(`Tool calls made: ${response.selection?.executedToolCalls}`);
 ### Combined Budget
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -214,8 +214,8 @@ console.log(`Tokens used: ${response.tokensUsed.total}`);
 `cachePolicy.requireCachedFor` ensures the run only proceeds if the named tools have cached results. It fails closed rather than executing an expensive live call.
 
 ```ts
-import { Agent, AgentCache, Provider } from "agentcraft";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -243,7 +243,7 @@ console.log(`Cache hits: ${response.cache?.hits}`);
 `costOptions` applies modifiers to the cost calculation — useful for batch jobs, priority queues, or region-specific pricing.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -279,7 +279,7 @@ Pre-flight throws `ContextWindowError` if the estimated token count exceeds the 
 ## Reading Cost From the Response
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

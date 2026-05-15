@@ -1,6 +1,9 @@
-import { Agent, Provider } from "agentcraft";
-import { FileSystemAdapter, GitHubAdapter } from "agentcraft/adapters";
-import { CodeReviewSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import {
+  FileSystemAdapter,
+  GitHubAdapter,
+} from "@deskcreate/agentcraft/adapters";
+import { CodeReviewSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

@@ -5,8 +5,8 @@ MCP examples show when to use a wrapper, when to use the generic adapter, and ho
 ## Built-In Wrapper
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { Context7MCP } from "agentcraft/mcp";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { Context7MCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -23,8 +23,8 @@ console.log(response.content);
 ## Wrapper Requiring A Reviewed Package
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { GitHubMCP } from "agentcraft/mcp";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -43,8 +43,8 @@ console.log(response.content);
 ## Generic MCP Adapter
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { MCPAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { MCPAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

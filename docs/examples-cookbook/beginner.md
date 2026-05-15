@@ -5,7 +5,7 @@ Use these examples when you want the smallest working shape before adding tools 
 ## Basic Chat
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -22,8 +22,8 @@ console.log(result.content);
 ## Add One Skill
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { WritingSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { WritingSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -39,7 +39,7 @@ console.log(response.content);
 ## Add A Budget
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

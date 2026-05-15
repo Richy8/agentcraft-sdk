@@ -1,9 +1,9 @@
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import {
   VisionSkill,
   DocumentAnalysisSkill,
   TranscriptionSkill,
-} from "agentcraft/skills";
+} from "@deskcreate/agentcraft/skills";
 
 const visionAgent = Agent.create({
   model: Provider.openai["gpt-4o"],

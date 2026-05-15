@@ -3,12 +3,12 @@
 Built-in adapters are imported from `agentcraft/adapters`, connected with `.connect(...)`, and attached with `.use(...)`. They expose exact tool names to the model, and every tool still runs through [Tool Policy](../tools/tool-policy.md), [Guardrails](../tools/guardrails.md), and [Approvals](../tools/approvals.md).
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import {
   FetchAdapter,
   LinkCheckerAdapter,
   SeoAdapter,
-} from "agentcraft/adapters";
+} from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

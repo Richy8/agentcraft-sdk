@@ -5,7 +5,7 @@ Production examples combine safety, cache, budgets, observability, and determini
 ## Safe Tool Defaults
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -26,7 +26,7 @@ console.log(response.content);
 ## Cache With Short TTL
 
 ```ts
-import { AgentCache } from "agentcraft";
+import { AgentCache } from "@deskcreate/agentcraft";
 
 const cache = AgentCache.file("./.agentcraft/cache", {
   strategy: "conservative",
@@ -43,7 +43,7 @@ INTEGRATION_TESTS=true AGENTCRAFT_LIVE_PROVIDERS=openai npm run test:int:light
 ## Replay Test
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

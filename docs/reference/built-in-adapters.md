@@ -3,8 +3,11 @@
 Adapters expose typed tools to an agent. Every adapter is attached with `.use(...)`, and tool execution still flows through `ToolPolicy`.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { FetchAdapter, LinkCheckerAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import {
+  FetchAdapter,
+  LinkCheckerAdapter,
+} from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

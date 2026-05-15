@@ -5,8 +5,8 @@
 ## Quick Start
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 // Read-only policy: tools can only fetch/read, secrets are redacted, results are capped
 const agent = Agent.create({
@@ -51,8 +51,8 @@ All fields are optional.
 ### Read-Only Agent
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 // Blocks any write-side-effect tools — only reads are allowed
 const agent = Agent.create({
@@ -76,8 +76,8 @@ console.log(response.content);
 When a tool has `requiresConfirmation: true`, it is blocked by default. Provide `onApprovalRequired` to grant approval at runtime.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { tool } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 const publishDraft = tool({
   name: "publish_draft",
@@ -109,7 +109,7 @@ console.log(response.content);
 ### Named Tool Approvals
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Pre-approve specific tools by name without a runtime callback
 const agent = Agent.create({
@@ -124,8 +124,8 @@ const agent = Agent.create({
 ### Dry Run (Preview Without Executing)
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { tool } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 const deleteRecord = tool({
   name: "delete_record",
@@ -155,7 +155,7 @@ console.log(response.toolCalls);
 ### Tool Timeout
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -169,7 +169,7 @@ const agent = Agent.create({
 ### Tool Retry
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Retry failing tool calls up to 3 times with a 500ms delay between attempts
 const agent = Agent.create({
@@ -189,8 +189,8 @@ const agent = Agent.create({
 `onAuditEvent` receives every policy lifecycle event — approvals, guardrail blocks, tool starts, successes, and errors.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import type { ToolAuditEvent } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import type { ToolAuditEvent } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -234,8 +234,8 @@ const agent = Agent.create({
 Guardrails are functions that run before (input) or after (output) tool execution. Return `{ allowed: false, reason }` to block the call.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import type { ToolGuardrail } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import type { ToolGuardrail } from "@deskcreate/agentcraft/adapters";
 
 // Input guardrail: block any call with a suspicious argument
 const noSqlInjection: ToolGuardrail = ({ tool: t, args }) => {
@@ -268,7 +268,7 @@ const agent = Agent.create({
 ### Custom Secret Patterns
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Extend redaction with your own regex patterns
 const agent = Agent.create({
@@ -289,7 +289,7 @@ const agent = Agent.create({
 Tool policy set on `agent.run()` is **merged** with the agent-level policy — it does not replace it entirely. `approvedTools`, `inputGuardrails`, `outputGuardrails`, and `secretPatterns` are concatenated; all other fields are overridden.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

@@ -5,9 +5,9 @@ Orchestration examples show pools, teams, and specialist roles.
 ## Research And Review Team
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { AgentTeam } from "agentcraft/team";
-import { CreatorPacks } from "agentcraft/packs";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const openaiKey = process.env.OPENAI_API_KEY ?? "";
 const anthropicKey = process.env.ANTHROPIC_API_KEY ?? "";
@@ -47,7 +47,7 @@ console.log(result.content);
 ## Pool With Fallback
 
 ```ts
-import { Agent, AgentPool, Provider } from "agentcraft";
+import { Agent, AgentPool, Provider } from "@deskcreate/agentcraft";
 
 const cheapAgent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -73,9 +73,9 @@ Share adapters across all team members by attaching them to a `workspace`. This 
 correct approach — `sharedAdapters` on the team config is not supported.
 
 ```ts
-import { Agent, AgentWorkspace, Provider } from "agentcraft";
-import { AgentTeam } from "agentcraft/team";
-import { FetchAdapter } from "agentcraft/adapters";
+import { Agent, AgentWorkspace, Provider } from "@deskcreate/agentcraft";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
+import { FetchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const apiKey = process.env.OPENAI_API_KEY ?? "";
 
@@ -107,9 +107,14 @@ console.log(result.content);
 ## Workspace With Team
 
 ```ts
-import { Agent, AgentCache, AgentWorkspace, Provider } from "agentcraft";
-import { AgentTeam } from "agentcraft/team";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import {
+  Agent,
+  AgentCache,
+  AgentWorkspace,
+  Provider,
+} from "@deskcreate/agentcraft";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const apiKey = process.env.OPENAI_API_KEY ?? "";
 
@@ -165,7 +170,7 @@ import {
   AgentStep,
   ApprovalStep,
   Provider,
-} from "agentcraft";
+} from "@deskcreate/agentcraft";
 
 const apiKey = process.env.OPENAI_API_KEY ?? "";
 const workspace = AgentWorkspace.create({ cache: AgentCache.memory() });

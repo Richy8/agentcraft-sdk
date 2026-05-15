@@ -14,8 +14,8 @@ The social pack turns one idea into platform-native posts without losing brand v
 ## Usage
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { CreatorPacks } from "agentcraft/packs";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

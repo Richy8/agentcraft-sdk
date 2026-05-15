@@ -14,8 +14,12 @@ Creator memory stores brand voice, audience notes, prior performance learnings, 
 ## Usage
 
 ```ts
-import { Agent, FileSystemCreatorMemoryStore, Provider } from "agentcraft";
-import { CreatorPacks } from "agentcraft/packs";
+import {
+  Agent,
+  FileSystemCreatorMemoryStore,
+  Provider,
+} from "@deskcreate/agentcraft";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 // Constructor takes a root directory path (created if missing)
 const memory = new FileSystemCreatorMemoryStore("./.agentcraft/creator-memory");

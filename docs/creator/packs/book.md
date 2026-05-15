@@ -14,9 +14,9 @@ The book pack is built for chapters, outlines, longform continuity, and editoria
 ## Usage
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { FileSystemAdapter } from "agentcraft/adapters";
-import { CreatorPacks } from "agentcraft/packs";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],

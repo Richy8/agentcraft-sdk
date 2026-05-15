@@ -1,5 +1,5 @@
-import { Agent, Provider } from "agentcraft";
-import { AgentTeam } from "agentcraft/team";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
 
 const root = Agent.create({
   // The root agent acts as orchestrator. Members can be cloned with role-specific systems.

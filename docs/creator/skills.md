@@ -15,8 +15,8 @@ AgentCraft ships 28 creator skills across strategy, SEO, creation, review, and o
 ## Usage
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { BlogWriterSkill, FactCheckSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { BlogWriterSkill, FactCheckSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

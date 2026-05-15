@@ -9,8 +9,8 @@ import {
   FileArtifactStore,
   ParallelStep,
   Provider,
-} from "agentcraft";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+} from "@deskcreate/agentcraft";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 import { z } from "zod";
 
 type ContentInput = {

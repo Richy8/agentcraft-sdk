@@ -37,7 +37,7 @@ Run config (`AgentRunParams`) is the request-specific layer passed to `agent.run
 ### Basic Prompt
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -54,7 +54,7 @@ console.log(response.content);
 ### Structured Output
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 const agent = Agent.create({
@@ -101,7 +101,7 @@ const response = await agent.run({
 ### Per-Run Tools
 
 ```ts
-import { tool } from "agentcraft/adapters";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 const lookupInventory = tool({
   name: "lookup_inventory",
@@ -120,8 +120,8 @@ const response = await agent.run({
 ### Per-Run Adapter Attachment
 
 ```ts
-import { FirecrawlAdapter } from "agentcraft/adapters";
-import { CreatorPacks } from "agentcraft/packs";
+import { FirecrawlAdapter } from "@deskcreate/agentcraft/adapters";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const response = await agent.run({
   prompt: "Research this topic and draft a blog post.",
@@ -221,7 +221,7 @@ const response = await agent.run({
 ### Replay a Previous Response
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

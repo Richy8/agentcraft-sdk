@@ -14,9 +14,12 @@ The blog pack is the full Medium-style writing lane. It adds research synthesis 
 ## Usage
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { FirecrawlAdapter, FileSystemAdapter } from "agentcraft/adapters";
-import { CreatorPacks } from "agentcraft/packs";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import {
+  FirecrawlAdapter,
+  FileSystemAdapter,
+} from "@deskcreate/agentcraft/adapters";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],

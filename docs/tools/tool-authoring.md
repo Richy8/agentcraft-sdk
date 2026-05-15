@@ -15,7 +15,7 @@ Good tools are small, typed, scoped, and honest about side effects. This page co
 ## Basic Read Tool
 
 ```ts
-import { tool } from "agentcraft/adapters";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 // A simple read tool — cacheable, no approval needed
 const getUser = tool({
@@ -42,7 +42,7 @@ const getUser = tool({
 ## Tool With Optional Params
 
 ```ts
-import { tool } from "agentcraft/adapters";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 const listOrders = tool({
   name: "list_orders",
@@ -77,7 +77,7 @@ const listOrders = tool({
 Tools that change state should use `sideEffect: "write"` and `requiresConfirmation: true`. They are blocked by default unless the caller provides an approval callback or `approvedTools` list.
 
 ```ts
-import { tool } from "agentcraft/adapters";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 const cancelOrder = tool({
   name: "cancel_order",
@@ -110,7 +110,7 @@ const cancelOrder = tool({
 Tools that call third-party APIs should use `sideEffect: "external"`. These are not cached by default.
 
 ```ts
-import { tool } from "agentcraft/adapters";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 const sendSlackMessage = tool({
   name: "send_slack_message",
@@ -142,7 +142,7 @@ const sendSlackMessage = tool({
 Group related tools into a reusable adapter with `createAdapter()`. Adapters are attached to agents with `.use()`.
 
 ```ts
-import { createAdapter, tool } from "agentcraft/adapters";
+import { createAdapter, tool } from "@deskcreate/agentcraft/adapters";
 
 const getOrder = tool({
   name: "get_order",
@@ -185,7 +185,7 @@ export const OrdersAdapter = createAdapter({
 ```
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import { OrdersAdapter } from "./adapters/orders-adapter.js";
 
 const agent = Agent.create({
@@ -207,7 +207,7 @@ console.log(response.content);
 `createAdapter()` also supports `init`, `cleanup`, `onBeforeRun`, and `onAfterRun` for stateful adapters.
 
 ```ts
-import { createAdapter } from "agentcraft/adapters";
+import { createAdapter } from "@deskcreate/agentcraft/adapters";
 
 let dbConnection: DbConnection;
 
@@ -244,8 +244,8 @@ const DatabaseAdapter = createAdapter({
 When tool definitions are not known at compile time (e.g. fetched from a remote registry), use `getTools` instead of `tools`.
 
 ```ts
-import { createAdapter } from "agentcraft/adapters";
-import type { ToolDefinition } from "agentcraft/adapters";
+import { createAdapter } from "@deskcreate/agentcraft/adapters";
+import type { ToolDefinition } from "@deskcreate/agentcraft/adapters";
 
 const DynamicAdapter = createAdapter({
   name: "dynamic-tools",

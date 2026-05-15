@@ -9,7 +9,7 @@ Pass `trace: true` to collect spans into `response.trace`, or pass a `TraceSink`
 ### Quick Start — Collect Spans
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -61,8 +61,8 @@ export interface TraceSink {
 ### Stream Spans in Real Time
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import type { TraceSpan } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import type { TraceSpan } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -93,8 +93,8 @@ console.log(response.content);
 ### Filter Spans by Kind
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import type { TraceSpan } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import type { TraceSpan } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -128,8 +128,8 @@ if (errorSpans.length > 0) {
 ### Measure Latency Per Span
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import type { TraceSpan } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import type { TraceSpan } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -156,7 +156,11 @@ for (const span of spans) {
 `createOpenTelemetryTraceSink` bridges AgentCraft spans to any OpenTelemetry-compatible tracer.
 
 ```ts
-import { Agent, Provider, createOpenTelemetryTraceSink } from "agentcraft";
+import {
+  Agent,
+  Provider,
+  createOpenTelemetryTraceSink,
+} from "@deskcreate/agentcraft";
 import { trace } from "@opentelemetry/api";
 
 // Get a tracer from your OTel provider
@@ -180,8 +184,8 @@ console.log(response.content);
 ### Forward to a Custom Backend
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import type { TraceSpan } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import type { TraceSpan } from "@deskcreate/agentcraft";
 
 const completedSpans: TraceSpan[] = [];
 
@@ -213,8 +217,8 @@ Replay returns a pre-recorded `AgentResponse` without making any provider calls.
 ### Single Response Replay
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import type { AgentResponse } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import type { AgentResponse } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -243,8 +247,8 @@ console.log(response.content); // → "TypeScript is a typed superset of JavaScr
 ### Replay From a List (Round-Robin)
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import type { AgentResponse } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import type { AgentResponse } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -287,8 +291,8 @@ console.log(second.content); // → "Second response."
 ### Replay in Tests
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import type { AgentResponse } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import type { AgentResponse } from "@deskcreate/agentcraft";
 import { describe, it, expect } from "vitest";
 
 describe("my agent pipeline", () => {
@@ -324,7 +328,7 @@ describe("my agent pipeline", () => {
 Every response includes `promptProvenance` — metadata about how the prompt was assembled.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

@@ -1,4 +1,8 @@
-import { Agent, Provider, createOpenTelemetryTraceSink } from "agentcraft";
+import {
+  Agent,
+  Provider,
+  createOpenTelemetryTraceSink,
+} from "@deskcreate/agentcraft";
 
 // Any tracing backend with a startSpan-compatible API can be bridged.
 // This tiny tracer logs span starts/ends instead of sending to a collector.

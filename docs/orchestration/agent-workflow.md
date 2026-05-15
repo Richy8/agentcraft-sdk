@@ -13,7 +13,7 @@ import {
   CustomStep,
   FileArtifactStore,
   Provider,
-} from "agentcraft";
+} from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 // Define the shape of the input this workflow accepts
@@ -122,7 +122,12 @@ All step factories are imported from `"agentcraft"`. Every step has an optional 
 Runs one agent with a prompt. The step's output is `response.structuredResponse` when `responseSchema` is set, otherwise `response.content`.
 
 ```ts
-import { Agent, AgentStep, AgentWorkflow, Provider } from "agentcraft";
+import {
+  Agent,
+  AgentStep,
+  AgentWorkflow,
+  Provider,
+} from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 const analyst = Agent.create({
@@ -153,7 +158,12 @@ console.log(result.steps[0]?.output); // the agent's text response
 **With structured output** — the step output becomes the validated typed value:
 
 ```ts
-import { Agent, AgentStep, AgentWorkflow, Provider } from "agentcraft";
+import {
+  Agent,
+  AgentStep,
+  AgentWorkflow,
+  Provider,
+} from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 const ReviewSchema = z.object({
@@ -217,8 +227,13 @@ AgentStep({
 Runs an `AgentTeam` and returns the team's final content string.
 
 ```ts
-import { Agent, AgentWorkflow, Provider, TeamStep } from "agentcraft";
-import { AgentTeam } from "agentcraft/team";
+import {
+  Agent,
+  AgentWorkflow,
+  Provider,
+  TeamStep,
+} from "@deskcreate/agentcraft";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
 import { z } from "zod";
 
 const orchestrator = Agent.create({
@@ -286,8 +301,8 @@ import {
   Agent,
   Provider,
   ToolStep,
-} from "agentcraft";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+} from "@deskcreate/agentcraft";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 import { z } from "zod";
 
 // Create the adapter (its tools will be called directly)
@@ -371,7 +386,7 @@ import {
   Agent,
   ApprovalStep,
   Provider,
-} from "agentcraft";
+} from "@deskcreate/agentcraft";
 
 const writer = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -466,7 +481,7 @@ import {
   ConditionStep,
   CustomStep,
   Provider,
-} from "agentcraft";
+} from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 const InputSchema = z.object({ lang: z.string(), text: z.string() });
@@ -566,7 +581,7 @@ import {
   CustomStep,
   ParallelStep,
   Provider,
-} from "agentcraft";
+} from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 const researcher = Agent.create({
@@ -660,7 +675,7 @@ import {
   FileArtifactStore,
   AgentWorkspace,
   Provider,
-} from "agentcraft";
+} from "@deskcreate/agentcraft";
 
 const writer = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -778,7 +793,12 @@ if (draft) {
 Use `onStepComplete` and `onStepError` for cross-cutting concerns like logging, metrics, or alerting without modifying individual steps.
 
 ```ts
-import { AgentStep, AgentWorkflow, Agent, Provider } from "agentcraft";
+import {
+  AgentStep,
+  AgentWorkflow,
+  Agent,
+  Provider,
+} from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -820,7 +840,7 @@ import {
   CustomStep,
   Provider,
   SQLiteArtifactStore,
-} from "agentcraft";
+} from "@deskcreate/agentcraft";
 
 const writer = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -911,8 +931,8 @@ import {
   ParallelStep,
   Provider,
   ToolStep,
-} from "agentcraft";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+} from "@deskcreate/agentcraft";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 import { z } from "zod";
 
 const InputSchema = z.object({

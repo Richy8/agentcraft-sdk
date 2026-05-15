@@ -17,8 +17,12 @@ All built-in guardrails are exported from `"agentcraft"`.
 ## Quick Start
 
 ```ts
-import { Agent, blockPromptInjectionGuardrail, Provider } from "agentcraft";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import {
+  Agent,
+  blockPromptInjectionGuardrail,
+  Provider,
+} from "@deskcreate/agentcraft";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -63,8 +67,12 @@ interface ToolGuardrailResult {
 ### Block Prompt Injection in Fetched Content
 
 ```ts
-import { Agent, blockPromptInjectionGuardrail, Provider } from "agentcraft";
-import { FetchAdapter } from "agentcraft/adapters";
+import {
+  Agent,
+  blockPromptInjectionGuardrail,
+  Provider,
+} from "@deskcreate/agentcraft";
+import { FetchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -86,8 +94,8 @@ console.log(response.content);
 ### Block Secrets in Tool Arguments
 
 ```ts
-import { Agent, blockSecretsGuardrail, Provider } from "agentcraft";
-import { tool } from "agentcraft/adapters";
+import { Agent, blockSecretsGuardrail, Provider } from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 const logEvent = tool({
   name: "log_event",
@@ -118,8 +126,8 @@ console.log(response.content);
 ### Block PII in Tool Results
 
 ```ts
-import { Agent, blockPiiGuardrail, Provider } from "agentcraft";
-import { tool } from "agentcraft/adapters";
+import { Agent, blockPiiGuardrail, Provider } from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 const queryDatabase = tool({
   name: "query_database",
@@ -150,8 +158,12 @@ console.log(response.content);
 ### Warn Instead of Block
 
 ```ts
-import { Agent, blockUnsafeUrlGuardrail, Provider } from "agentcraft";
-import type { ToolAuditEvent } from "agentcraft/adapters";
+import {
+  Agent,
+  blockUnsafeUrlGuardrail,
+  Provider,
+} from "@deskcreate/agentcraft";
+import type { ToolAuditEvent } from "@deskcreate/agentcraft/adapters";
 
 const blocked: ToolAuditEvent[] = [];
 
@@ -185,8 +197,8 @@ console.log(`Guardrail warnings: ${blocked.length}`);
 Write your own guardrail for domain-specific validation:
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import type { ToolGuardrail } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import type { ToolGuardrail } from "@deskcreate/agentcraft/adapters";
 
 // Block any tool call that targets a production environment in staging
 const noProductionInStaging: ToolGuardrail = ({ args }) => {
@@ -227,8 +239,8 @@ import {
   blockPiiGuardrail,
   blockSecretsGuardrail,
   Provider,
-} from "agentcraft";
-import { FetchAdapter } from "agentcraft/adapters";
+} from "@deskcreate/agentcraft";
+import { FetchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

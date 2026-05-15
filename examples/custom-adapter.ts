@@ -1,5 +1,5 @@
-import { Agent, Provider } from "agentcraft";
-import { createAdapter, tool } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { createAdapter, tool } from "@deskcreate/agentcraft/adapters";
 
 // Custom adapters are the cleanest way to turn application capabilities into tools.
 const inventory = createAdapter({

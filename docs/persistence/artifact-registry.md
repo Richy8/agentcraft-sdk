@@ -13,7 +13,7 @@
 ## Usage
 
 ```ts
-import { Agent, ArtifactRegistry, Provider } from "agentcraft";
+import { Agent, ArtifactRegistry, Provider } from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 const apiKey = process.env.OPENAI_API_KEY ?? "";
@@ -59,7 +59,7 @@ All 19 built-in creator artifact schemas are pre-registered:
 Register project-owned artifact types under project-owned names. Built-in names are protected from replacement.
 
 ```ts
-import { ArtifactRegistry } from "agentcraft";
+import { ArtifactRegistry } from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 const CampaignBriefSchema = z.object({
@@ -80,7 +80,7 @@ console.log(schema?.parse({ type: "CampaignBrief", campaignName: "Q3" }));
 Validate before writing to a store:
 
 ```ts
-import { ArtifactRegistry, MemoryArtifactStore } from "agentcraft";
+import { ArtifactRegistry, MemoryArtifactStore } from "@deskcreate/agentcraft";
 
 const store = MemoryArtifactStore();
 const schema = ArtifactRegistry.lookup("Draft");

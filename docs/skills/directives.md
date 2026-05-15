@@ -5,8 +5,8 @@ Directives let users force skill behavior for part of a prompt.
 ## Example
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { WritingSkill, HumanizerSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { WritingSkill, HumanizerSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

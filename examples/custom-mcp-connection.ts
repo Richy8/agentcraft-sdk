@@ -1,4 +1,4 @@
-import { Agent, MCPAdapter, Provider } from "agentcraft";
+import { Agent, MCPAdapter, Provider } from "@deskcreate/agentcraft";
 
 // Use MCPAdapter.connect when AgentCraft does not ship a wrapper for the server
 // you need, or when your company hosts an internal MCP server.

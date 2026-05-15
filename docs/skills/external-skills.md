@@ -5,8 +5,8 @@
 ## Quick Start
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { GitHubSkillLoader } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { GitHubSkillLoader } from "@deskcreate/agentcraft/skills";
 
 // Load a skill from a local directory
 const skill = await GitHubSkillLoader.loadLocal("./skills/my-skill");
@@ -66,8 +66,8 @@ const verified = await GitHubSkillLoader.loadLocal("./skills/my-skill", {
 Loads a batch of local skills in parallel. Throws if two skills share the same name.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { GitHubSkillLoader } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { GitHubSkillLoader } from "@deskcreate/agentcraft/skills";
 
 const skills = await GitHubSkillLoader.loadManyLocal([
   "./skills/research",
@@ -263,9 +263,9 @@ const skill = await GitHubSkillLoader.loadLocal("./skills/my-skill", {
 ### Load and Attach Multiple Skills
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { GitHubSkillLoader } from "agentcraft/skills";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { GitHubSkillLoader } from "@deskcreate/agentcraft/skills";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const [researchSkill, writerSkill] = await GitHubSkillLoader.loadManyLocal([
   "./skills/research",
@@ -295,8 +295,8 @@ console.log(r2.selection?.activeSkills); // → ["writer"]
 ### Pinned GitHub Skill with Repo Allowlist
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { GitHubSkillLoader } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { GitHubSkillLoader } from "@deskcreate/agentcraft/skills";
 
 const skill = await GitHubSkillLoader.load({
   repo: "https://github.com/acme/agentcraft-skills",
@@ -324,7 +324,7 @@ console.log(response.content);
 ### Untrusted Sandbox (Read-Only Skills Only)
 
 ```ts
-import { GitHubSkillLoader } from "agentcraft/skills";
+import { GitHubSkillLoader } from "@deskcreate/agentcraft/skills";
 
 // Blocks any skill with sideEffectRisk "write" or "external"
 const skill = await GitHubSkillLoader.loadLocal(
@@ -339,7 +339,7 @@ const skill = await GitHubSkillLoader.loadLocal(
 ### Skip Checksum for Development, Enable for Production
 
 ```ts
-import { GitHubSkillLoader } from "agentcraft/skills";
+import { GitHubSkillLoader } from "@deskcreate/agentcraft/skills";
 
 const isDev = process.env.NODE_ENV !== "production";
 

@@ -16,7 +16,11 @@
 ## Usage
 
 ```ts
-import { AgentCache, AgentWorkspace, FileArtifactStore } from "agentcraft";
+import {
+  AgentCache,
+  AgentWorkspace,
+  FileArtifactStore,
+} from "@deskcreate/agentcraft";
 
 const workspace = AgentWorkspace.create({
   cache: AgentCache.memory(),
@@ -56,8 +60,8 @@ console.log(Boolean(workspace.events));
 Workspace passed into a team:
 
 ```ts
-import { Agent, AgentWorkspace, Provider } from "agentcraft";
-import { AgentTeam } from "agentcraft/team";
+import { Agent, AgentWorkspace, Provider } from "@deskcreate/agentcraft";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
 
 const apiKey = process.env.OPENAI_API_KEY ?? "";
 const workspace = AgentWorkspace.create({

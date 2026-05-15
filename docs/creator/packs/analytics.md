@@ -14,9 +14,9 @@ The analytics pack closes the loop after publishing. It helps interpret performa
 ## Usage
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { AnalyticsAdapter } from "agentcraft/adapters";
-import { CreatorPacks } from "agentcraft/packs";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { AnalyticsAdapter } from "@deskcreate/agentcraft/adapters";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

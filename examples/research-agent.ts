@@ -1,6 +1,6 @@
-import { Agent, Provider } from "agentcraft";
-import { FetchAdapter } from "agentcraft/adapters";
-import { ResearchSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { FetchAdapter } from "@deskcreate/agentcraft/adapters";
+import { ResearchSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

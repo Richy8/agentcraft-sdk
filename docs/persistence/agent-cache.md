@@ -5,8 +5,8 @@
 ## Quick Start
 
 ```ts
-import { Agent, AgentCache, Provider } from "agentcraft";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const cache = AgentCache.file("./.agentcraft/cache", {
   strategy: "auto",
@@ -91,8 +91,8 @@ console.log(response.cache?.estimatedSavedTokens); // estimated tokens saved
 Use `cachePolicy` on `agent.run()` to require cache hits for specific tools — useful in replay or test scenarios where you want to guarantee no live calls are made.
 
 ```ts
-import { Agent, AgentCache, Provider } from "agentcraft";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const cache = AgentCache.file("./.agentcraft/cache");
 
@@ -144,7 +144,7 @@ All methods except `config` are optional — implement only what your backend su
 ### Memory Cache for Tests
 
 ```ts
-import { Agent, AgentCache, Provider } from "agentcraft";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
 
 const cache = AgentCache.memory({
   defaultTtlMs: 60_000,
@@ -166,8 +166,13 @@ console.log(`Hits: ${response.cache?.hits}, Misses: ${response.cache?.misses}`);
 Attach the same cache to all agents in a team via `AgentWorkspace`:
 
 ```ts
-import { Agent, AgentCache, AgentWorkspace, Provider } from "agentcraft";
-import { AgentTeam } from "agentcraft/team";
+import {
+  Agent,
+  AgentCache,
+  AgentWorkspace,
+  Provider,
+} from "@deskcreate/agentcraft";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
 
 const workspace = AgentWorkspace.create({
   cache: AgentCache.file(".agentcraft/cache", {
@@ -201,7 +206,7 @@ console.log(result.content);
 ### Invalidation Helpers
 
 ```ts
-import { AgentCache } from "agentcraft";
+import { AgentCache } from "@deskcreate/agentcraft";
 
 const cache = AgentCache.file(".agentcraft/cache", {
   namespace: "my-workspace",
@@ -222,7 +227,7 @@ await cache.clear?.();
 ### Conservative Cache for Regulated Work
 
 ```ts
-import { AgentCache } from "agentcraft";
+import { AgentCache } from "@deskcreate/agentcraft";
 
 const cache = AgentCache.file(".agentcraft/cache", {
   strategy: "conservative", // only cache tools explicitly marked safe
@@ -236,7 +241,7 @@ const cache = AgentCache.file(".agentcraft/cache", {
 ### Disabled Cache (Explicit No-Op)
 
 ```ts
-import { Agent, AgentCache, Provider } from "agentcraft";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
 
 // Pass disabled() to satisfy a config type that requires AgentCacheController
 const agent = Agent.create({

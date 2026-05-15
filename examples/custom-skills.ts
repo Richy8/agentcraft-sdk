@@ -1,6 +1,6 @@
-import { Agent, Provider } from "agentcraft";
-import { tool } from "agentcraft/adapters";
-import { defineSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
+import { defineSkill } from "@deskcreate/agentcraft/skills";
 
 // Custom skills are best when you want repeatable behavior, not a one-off prompt.
 // This first skill is tool-bearing: it contributes both instructions and a local

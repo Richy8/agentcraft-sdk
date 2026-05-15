@@ -5,8 +5,8 @@ These examples combine native adapters with tool policy so users can add capabil
 ## Read A Web Page
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { FetchAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { FetchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -22,8 +22,8 @@ console.log(response.content);
 ## Write Drafts Locally
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { FileSystemAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -47,8 +47,8 @@ console.log(response.content);
 ## Browser Check
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { PlaywrightAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { PlaywrightAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

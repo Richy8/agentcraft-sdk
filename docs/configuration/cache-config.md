@@ -17,7 +17,7 @@ Cache config controls reusable context and tool output retention. It is availabl
 ## Usage
 
 ```ts
-import { Agent, AgentCache, Provider } from "agentcraft";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -42,7 +42,7 @@ const agent = Agent.create({
 | `AgentCache.placeholder(root, strategy?)` | Shorthand for `file()` with only a root and strategy. Useful for quick setup.     |
 
 ```ts
-import { AgentCache } from "agentcraft";
+import { AgentCache } from "@deskcreate/agentcraft";
 
 // In-memory cache — good for tests
 const memCache = AgentCache.memory({

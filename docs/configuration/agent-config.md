@@ -70,7 +70,7 @@ Backoff options: `"exponential"` (doubles delay), `"linear"` (adds delay linearl
 ### Minimal — Defaults Only
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Only model + apiKey. All generation params use defaults (temp=0.7, 3 retries, etc.)
 const agent = Agent.create({
@@ -85,7 +85,7 @@ console.log(response.content);
 ### With Generation Defaults
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Pin temperature and token cap for deterministic, concise responses
 const agent = Agent.create({
@@ -104,7 +104,7 @@ console.log(response.content);
 ### With System Prompt
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // System prompt is prepended to every run — good for role/persona
 const agent = Agent.create({
@@ -127,8 +127,8 @@ console.log(response.content);
 ### With Tool Policy
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { TavilySearchAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 // Read-only policy: tools can only fetch/read, never write
 const agent = Agent.create({
@@ -150,7 +150,7 @@ console.log(response.content);
 ### With Custom Retry
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // More retries with faster initial delay — good for high-volume pipelines
 const agent = Agent.create({
@@ -171,7 +171,7 @@ console.log(response.content);
 ### With File Cache
 
 ```ts
-import { Agent, AgentCache, Provider } from "agentcraft";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
 
 // File-backed cache: safe read-tool results persist across restarts
 const agent = Agent.create({
@@ -194,7 +194,7 @@ console.log(response.cache?.toolCallsAvoided); // avoided tool calls
 ### With Skill Activation Modes
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 import { SomeSkill } from "./skills/some-skill.js";
 
 // "always": skill is always active (default) — good for single-purpose agents
@@ -227,7 +227,7 @@ const r3 = await directive.run({ prompt: "/some-skill do the thing." });
 ### Azure OpenAI Provider
 
 ```ts
-import { Agent } from "agentcraft";
+import { Agent } from "@deskcreate/agentcraft";
 
 // Azure requires endpoint, deployment, and apiVersion instead of a base URL
 const agent = Agent.create({
@@ -245,7 +245,7 @@ console.log(response.content);
 ### Local Ollama
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Local model via Ollama — no API key, just point at the local server
 const agent = Agent.create({

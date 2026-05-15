@@ -3,8 +3,8 @@
 Skills are normal `.use(...)` attachments. They add reusable behavior, directives, metadata, and sometimes tool dependencies. They do not replace adapters or MCPs: use adapters/MCPs for capability, and skills for behavior.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { BlogWriterSkill, ResearchSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { BlogWriterSkill, ResearchSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

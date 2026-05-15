@@ -28,8 +28,8 @@
 Block all write and side-effectful tools.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { FileSystemAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -50,7 +50,7 @@ console.log(response.content);
 Pre-approve specific tools by name at agent creation.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -66,8 +66,8 @@ const agent = Agent.create({
 Approve or deny each tool call based on the tool name and arguments.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import type { ToolGuardrailContext } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import type { ToolGuardrailContext } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -89,7 +89,7 @@ const agent = Agent.create({
 Automatically redact secrets from tool results before they reach the model.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -107,7 +107,7 @@ const agent = Agent.create({
 ### Tool Timeout and Result Size Limit
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -124,8 +124,8 @@ const agent = Agent.create({
 Record every tool event for compliance or observability.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import type { ToolAuditEvent } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import type { ToolAuditEvent } from "@deskcreate/agentcraft/adapters";
 
 const auditLog: ToolAuditEvent[] = [];
 
@@ -149,7 +149,11 @@ console.log("Events recorded:", auditLog.length);
 Block tool calls that fail a guardrail, rather than just logging.
 
 ```ts
-import { Agent, Provider, blockPromptInjectionGuardrail } from "agentcraft";
+import {
+  Agent,
+  Provider,
+  blockPromptInjectionGuardrail,
+} from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -166,7 +170,7 @@ const agent = Agent.create({
 Automatically retry failed tool calls with backoff.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -185,7 +189,7 @@ const agent = Agent.create({
 Override agent-level policy for a single run.
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

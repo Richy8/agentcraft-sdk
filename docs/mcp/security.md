@@ -16,8 +16,8 @@ MCP servers can expose broad external capability. Treat them like plugins with c
 ## Safe Pattern
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { MemoryMCP } from "agentcraft/mcp";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { MemoryMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

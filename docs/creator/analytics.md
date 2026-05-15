@@ -5,10 +5,10 @@ Creator analytics stores performance reports, experiment plans, and experiment o
 ## Quick Start
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { AnalyticsAdapter } from "agentcraft/adapters";
-import { CreatorPacks } from "agentcraft/packs";
-import { FileSystemAnalyticsHistoryStore } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { AnalyticsAdapter } from "@deskcreate/agentcraft/adapters";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { FileSystemAnalyticsHistoryStore } from "@deskcreate/agentcraft";
 
 const analytics = new FileSystemAnalyticsHistoryStore(".agentcraft/analytics");
 

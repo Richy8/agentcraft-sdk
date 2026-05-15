@@ -1,4 +1,4 @@
-import { ArtifactRegistry, MemoryArtifactStore } from "agentcraft";
+import { ArtifactRegistry, MemoryArtifactStore } from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 console.log("Registered artifact types:", ArtifactRegistry.list().length);

@@ -13,7 +13,7 @@ A basic agent needs three things:
 ## Minimal Agent
 
 ```ts
-import { Agent, Provider } from "agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Pick a model from the typed Provider catalog.
 const agent = Agent.create({
@@ -31,8 +31,8 @@ console.log(response.content);
 ## Add A Tool
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { FetchAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { FetchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -55,8 +55,8 @@ console.log(response.content);
 ## Add A Skill
 
 ```ts
-import { Agent, Provider } from "agentcraft";
-import { WritingSkill } from "agentcraft/skills";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { WritingSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -72,8 +72,8 @@ console.log(response.content);
 ## Add A Creator Pack
 
 ```ts
-import { Agent, AgentCache, Provider } from "agentcraft";
-import { CreatorPacks } from "agentcraft/packs";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

@@ -1,7 +1,10 @@
-import { Agent, AgentCache, Provider } from "agentcraft";
-import { CreatorPacks } from "agentcraft/packs";
-import { BlogWriterSkill } from "agentcraft/skills";
-import { CreatorResourcesAdapter, SeoAdapter } from "agentcraft/adapters";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { BlogWriterSkill } from "@deskcreate/agentcraft/skills";
+import {
+  CreatorResourcesAdapter,
+  SeoAdapter,
+} from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.ollama["llama3.2"],

@@ -1,5 +1,5 @@
-import { Agent, Provider } from "agentcraft";
-import { PlaywrightAdapter } from "agentcraft/adapters";
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { PlaywrightAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   // A cloud model is useful for browser tasks because it can reason over extracted page text.

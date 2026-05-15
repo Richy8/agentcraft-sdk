@@ -17,9 +17,8 @@ Creator memory stores brand voice, audience notes, prior performance learnings, 
 import { Agent, FileSystemCreatorMemoryStore, Provider } from "agentcraft";
 import { CreatorPacks } from "agentcraft/packs";
 
-const memory = new FileSystemCreatorMemoryStore({
-  filePath: "./.agentcraft/creator-memory.json",
-});
+// Constructor takes a root directory path (created if missing)
+const memory = new FileSystemCreatorMemoryStore("./.agentcraft/creator-memory");
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

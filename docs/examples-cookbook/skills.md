@@ -46,14 +46,12 @@ console.log(response.content);
 import { Agent, Provider } from "agentcraft";
 import { GitHubSkillLoader } from "agentcraft/skills";
 
-const loader = new GitHubSkillLoader({
-  token: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
-});
-
-const skill = await loader.loadFromGitHub({
-  repo: "org/agentcraft-skills",
-  ref: "main",
-  path: "skills/medium-editor",
+// Load a skill from a public GitHub repo — ref must be a pinned commit SHA
+const skill = await GitHubSkillLoader.load({
+  repo: "https://github.com/org/agentcraft-skills",
+  ref: "a1b2c3d4e5f67890abcdef1234567890abcdef12", // pinned SHA — never use a branch name
+  path: "skills/medium-editor",                    // subdirectory containing skill.json + SKILL.md
+  trust: "reviewed",                               // elevate from "untrusted" after audit
 });
 
 const agent = Agent.create({

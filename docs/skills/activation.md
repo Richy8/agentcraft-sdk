@@ -44,11 +44,20 @@ Use `auto` when attaching packs with many skills. Use directives when the user m
 Use run-level `use` when a skill or pack should be available to one prompt without becoming global agent context.
 
 ```ts
-await agent.run({
+import { Agent, Provider } from "agentcraft";
+import { CreatorPacks } from "agentcraft/packs";
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+const response = await agent.run({
   prompt: "Draft a concise Medium post about cache-aware agents.",
   use: CreatorPacks.blog({ cache: "auto" }),
   budget: { maxToolCalls: 4 },
 });
+console.log(response.content);
 ```
 
 This keeps the default agent lean, then activates creator skills only for the run that needs them.

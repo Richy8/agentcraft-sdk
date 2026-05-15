@@ -19,10 +19,11 @@ const agent = Agent.create({
   .use(LinkCheckerAdapter.connect())
   .use(SeoAdapter.connect());
 
-await agent.run({
+const response = await agent.run({
   prompt: "Audit the linked page and summarize SEO issues.",
   budget: { maxToolCalls: 6 },
 });
+console.log(response.content);
 ```
 
 ## Web And Browser

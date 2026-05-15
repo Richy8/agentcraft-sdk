@@ -21,7 +21,7 @@ Use `trace: true` to receive human-readable `trace` entries and machine-readable
 | `orchestrator`         | Yes      | `Agent`                                              | Owns planning, delegation, and final synthesis.                            |
 | `members`              | Yes      | Team members                                         | Specialist agents callable by role.                                        |
 | `supervisor`           | No       | `Agent`                                              | Reviews outputs and can trigger revision loops.                            |
-| `sharedAdapters`       | No       | Adapter array                                        | Makes common tools available across the team.                              |
+| `sharedAdapters`       | No       | Adapter array                                        | **Deprecated.** Works when no workspace is provided, but ignored (with a warning) when `workspace` is present. Use `workspace.adapters` instead. |
 | `sharedSkills`         | No       | Skill array                                          | Adds common prompt/capability behavior across the team.                    |
 | `memory`               | No       | Adapter                                              | Shared memory or context store. Treat retrieved memory as untrusted input. |
 | `executionHint`        | No       | `'parallel'`, `'sequential'`, `'pipeline'`, `'auto'` | Biases orchestration strategy without forcing impossible task shapes.      |

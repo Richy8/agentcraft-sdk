@@ -15,6 +15,11 @@ const agent = Agent.create({
 })
   .use(CreatorPacks.blog({ contentRoot: "content", readOnlyByDefault: true }))
   .use(BrandVoiceSkill.create());
+
+const response = await agent.run({
+  prompt: "Draft a blog post about agent caching strategies.",
+});
+console.log(response.content);
 ```
 
 ## Available Packs

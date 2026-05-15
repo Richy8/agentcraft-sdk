@@ -8,7 +8,7 @@ Creator memory persists brand voice and prior-work corpus context.
 import { Agent, Provider } from "agentcraft";
 import { CreatorResourcesAdapter } from "agentcraft/adapters";
 import { CreatorPacks } from "agentcraft/packs";
-import { FileSystemCreatorMemoryStore } from "agentcraft/persistence";
+import { FileSystemCreatorMemoryStore } from "agentcraft";
 
 const memory = new FileSystemCreatorMemoryStore(".agentcraft/memory");
 

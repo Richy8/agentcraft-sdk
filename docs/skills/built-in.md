@@ -14,9 +14,10 @@ const agent = Agent.create({
   .use(ResearchSkill.create())
   .use(WritingSkill.create());
 
-await agent.run({
+const response = await agent.run({
   prompt: "Research this topic, then write a clear executive summary.",
 });
+console.log(response.content);
 ```
 
 ## General Skills

@@ -24,3 +24,8 @@ test-ws/
 
 # Added by code-review-graph
 .code-review-graph/
+
+# Local reports and planning files
+reports/
+setup-ai-dev.sh
+plan.md

@@ -13,8 +13,10 @@ import type { AgentAdapter } from "./adapters/types.js";
 import type { CreatorPack } from "./creator/types.js";
 import type { ToolPolicy } from "./adapters/tool-policy.js";
 import type { TraceSink, TraceSpan } from "./observability.js";
+import type { AgentMemoryStore, MemoryRetrievalOptions } from "./memory/index.js";
 import type { AgentSkill } from "./skills/types.js";
 import type { AgentWorkspaceInstance } from "./workspace.js";
+import type { CacheEfficiencySummary } from "./cache.js";
 import type {
   StructuredOutputOptions,
   StructuredOutputSchema,
@@ -65,6 +67,7 @@ export interface AgentResponse {
   structuredResponse?: unknown;
   tokensUsed: TokenUsage;
   cost: number;
+  costReport?: CostReport;
   finishReason: FinishReason;
   toolCalls?: ToolCall[];
   model: string;
@@ -81,8 +84,18 @@ export interface AgentResponse {
     skillActivation: "always" | "auto" | "directive-only";
     toolSelection: "all" | "auto";
     activeSkills: string[];
+    activationReasons?: SkillActivationReason[];
     exposedTools: string[];
     executedToolCalls?: number;
+  };
+  measurement?: {
+    promptChars: number;
+    systemChars: number;
+    assembledPromptChars: number;
+    estimatedPromptTokens: number;
+    exposedToolCount: number;
+    modelToolCount: number;
+    promptMinified: boolean;
   };
   cache?: {
     hits: number;
@@ -95,7 +108,25 @@ export interface AgentResponse {
     oversized: number;
     toolCallsAvoided: number;
     estimatedSavedTokens: number;
+    summary?: CacheEfficiencySummary;
   };
+}
+
+export type SkillActivationReasonCode =
+  | "always"
+  | "directive"
+  | "exact-alias"
+  | "creator-artifact"
+  | "capability"
+  | "keyword"
+  | "semantic"
+  | "not-activated";
+
+export interface SkillActivationReason {
+  readonly skill: string;
+  readonly reason: SkillActivationReasonCode;
+  readonly confidence: number;
+  readonly matched?: string;
 }
 
 export interface CachePolicy {
@@ -107,7 +138,14 @@ export interface CachePolicy {
   requireCachedFor?: string[];
 }
 
+export type BudgetMode =
+  | "fail-closed"
+  | "prefer-cache"
+  | "downgrade-model"
+  | "request-approval";
+
 export interface RunBudget {
+  mode?: BudgetMode;
   maxRuns?: number;
   maxTokens?: number;
   maxInputTokens?: number;
@@ -117,6 +155,29 @@ export interface RunBudget {
   costOptions?: CostOptions;
   cachePolicy?: CachePolicy;
 }
+
+export interface CostReport {
+  readonly scope: "run" | "team" | "workflow";
+  readonly provider: string;
+  readonly model: string;
+  readonly tokens: {
+    readonly estimated?: TokenUsage;
+    readonly actual: TokenUsage;
+  };
+  readonly costs: {
+    readonly estimatedModelCost?: number;
+    readonly actualModelCost: number;
+    readonly toolCostEstimate: number;
+    readonly searchCostEstimate: number;
+    readonly cacheSavingsEstimate: number;
+    readonly totalEstimate: number;
+  };
+  readonly cache?: CacheEfficiencySummary;
+  readonly stalePricing: boolean;
+  readonly budgetMode: BudgetMode;
+}
+
+export type PromptCompressionMode = "none" | "safe" | "balanced" | "aggressive";
 
 export interface AgentRunParams {
   prompt?: string;
@@ -136,6 +197,7 @@ export interface AgentRunParams {
     allowOutsideRoot?: boolean;
     loader?: IPromptLoader;
   };
+  promptCompression?: PromptCompressionMode;
   system?: string;
   temperature?: number;
   maxTokens?: number;
@@ -164,6 +226,13 @@ export interface AgentRunParams {
   budget?: RunBudget;
   replay?: AgentResponse | { responses: AgentResponse[]; index?: number };
   cache?: false | { bypass?: boolean };
+  memory?:
+    | false
+    | AgentMemoryStore
+    | (MemoryRetrievalOptions & {
+        readonly store?: AgentMemoryStore;
+        readonly includeContext?: boolean;
+      });
 }
 
 export type AgentRunAttachment = AgentAdapter | CreatorPack;

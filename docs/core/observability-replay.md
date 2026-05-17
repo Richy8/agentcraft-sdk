@@ -2,6 +2,8 @@
 
 Tracing makes agent runs inspectable — every model call, tool invocation, and adapter hook is captured as a span. Replay makes tests and demos deterministic by returning a fixture response without calling the provider.
 
+For production-ready artifacts you can attach to CI, support tickets, or release reviews, use [Observability Reports](../production/observability-reports.md). Reports consume the same spans and response metadata described on this page.
+
 ## Tracing
 
 Pass `trace: true` to collect spans into `response.trace`, or pass a `TraceSink` to stream spans in real time.
@@ -57,6 +59,33 @@ export interface TraceSink {
 | `error`        | `string`                                                                                 | Error message if `status` is `"error"`. |
 
 ## Patterns
+
+### Generate a Report from a Run
+
+```ts
+import { Agent, AgentReports, Provider } from "agentcraft";
+
+const collector = AgentReports.traceCollector();
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+const response = await agent.run({
+  prompt: "Audit this draft for unsupported claims.",
+  trace: collector,
+});
+
+await AgentReports.writeMarkdown(response, "reports/runs/claim-audit.md", {
+  title: "Claim Audit Run",
+});
+
+await AgentReports.writeJson(
+  collector.spans(),
+  "reports/runs/claim-audit-trace.json",
+);
+```
 
 ### Stream Spans in Real Time
 

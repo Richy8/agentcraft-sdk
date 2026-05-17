@@ -28,6 +28,19 @@ export interface ToolDefinition {
     sideEffect: 'none' | 'read' | 'write' | 'external';
     requiresConfirmation?: boolean;
     scopes?: string[];
+    cache?: {
+      /**
+       * Marks the tool result safe to cache under conservative strategy.
+       * Use only for deterministic, non-sensitive read results.
+       */
+      safe?: boolean;
+      /** Result is deterministic for stable arguments. */
+      deterministic?: boolean;
+      /** Result may contain private/user-specific data and should not be cached by default. */
+      sensitive?: boolean;
+      /** Optional per-result TTL override in milliseconds. */
+      ttlMs?: number;
+    };
   };
   execute(args: Record<string, unknown>): Promise<unknown>;
 }

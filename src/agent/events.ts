@@ -11,6 +11,10 @@ export interface AgentEventMap {
     toolName: string;
     key: string;
   };
+  'cache.write': {
+    toolName: string;
+    key: string;
+  };
   'cost.updated': {
     model: string;
     provider: string;
@@ -31,6 +35,16 @@ export interface AgentEventMap {
   'approval.denied': {
     toolName: string;
   };
+  'approval.queued': {
+    toolName: string;
+    requestId: string;
+    reviewer?: string;
+    expiresAt?: string;
+  };
+  'approval.expired': {
+    toolName: string;
+    requestId: string;
+  };
   'workflow.step.started': {
     stepId: string;
     type: string;
@@ -47,6 +61,34 @@ export interface AgentEventMap {
     type: string;
     id: string;
     operation: 'put' | 'update' | 'delete';
+  };
+  'memory.read': {
+    query?: string;
+    scopes?: readonly string[];
+    count: number;
+    maxContextChars?: number;
+    provider?: string;
+    connection?: string;
+  };
+  'memory.write': {
+    id: string;
+    scope: string;
+    operation: 'add';
+    source?: string;
+    provider?: string;
+    connection?: string;
+  };
+  'memory.delete': {
+    id: string;
+    scope?: string;
+    provider?: string;
+    connection?: string;
+  };
+  'memory.blocked': {
+    operation: 'write' | 'delete';
+    scope?: string;
+    reason: string;
+    preview?: string;
   };
 }
 

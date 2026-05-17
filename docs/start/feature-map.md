@@ -11,7 +11,8 @@ Use this as the package inventory. Each feature has a purpose page, config page,
 | Structured output | Validated JSON outputs.                                  | [Structured Output](../core/structured-output.md)       | [Structured output](../examples.md#structured-output)       |
 | Prompt assembly   | File-based reusable prompts.                             | [Prompt Assembly](../core/prompt-assembly.md)           | [Prompt assembly](../examples.md#prompt-assembly)           |
 | Budgets/cost      | Token, cost, and tool call limits.                       | [Budgets And Cost](../core/budgets-cost.md)             | [Cost examples](../examples.md#cost-budgeting)              |
-| Observability     | Traces, replay, OpenTelemetry-like export.               | [Observability](../core/observability-replay.md)        | [Production](../examples-cookbook/production.md)            |
+| Observability     | Traces, replay, and redacted run reports.                | [Observability](../core/observability-replay.md)        | [Reports](../production/observability-reports.md)           |
+| AgentEval         | Quality, cost, cache, skill, and tool gates.             | [AgentEval](../production/agent-eval.md)                | [Production](../examples-cookbook/production.md)            |
 | Tools             | Model-callable typed functions.                          | [Tools](../tools/tools.md)                              | [Tool examples](../examples-cookbook/tools-adapters.md)     |
 | Tool policy       | Approvals, read-only mode, redaction, guardrails.        | [Tool Policy](../tools/tool-policy.md)                  | [Approvals](../tools/approvals.md)                          |
 | Adapters          | Built-in and custom tool bundles.                        | [Adapters](../adapters/overview.md)                     | [Adapter examples](../examples-cookbook/tools-adapters.md)  |

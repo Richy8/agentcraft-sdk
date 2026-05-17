@@ -12,6 +12,8 @@ Approvals make write-capable tools safe for production. A tool that declares `re
    - Otherwise — denied, and a `ToolExecutionError` is thrown.
 3. An audit event fires: `approval_required`, then `approval_granted` or `approval_denied`.
 
+For durable approvals with reviewer assignment and expiry, use [Governance Queue](../production/governance-queue.md).
+
 ## Quick Start
 
 ```ts
@@ -133,6 +135,34 @@ const agent = Agent.create({
       return approved;
     },
   },
+});
+```
+
+### Governance Queue
+
+Use `ApprovalQueue` when the approval should be recorded and approved later.
+
+```ts
+import { Agent, ApprovalQueue, Provider } from "agentcraft";
+
+const approvals = ApprovalQueue.memory({
+  defaultReviewer: "editor@example.com",
+  expiresInMs: 30 * 60 * 1000,
+});
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  toolPolicy: {
+    approvalQueue: approvals,
+  },
+});
+
+const pending = await approvals.list({ status: "pending" });
+await approvals.approve({
+  id: pending[0]!.id,
+  reviewer: "editor@example.com",
+  reason: "Safe to create a draft.",
 });
 ```
 

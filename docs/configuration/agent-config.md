@@ -28,12 +28,13 @@
 
 ### Tools and Skills
 
-| Field             | Default    | Purpose                                                                                             |
-| ----------------- | ---------- | --------------------------------------------------------------------------------------------------- |
-| `tools`           | `[]`       | Static tool definitions available on every run.                                                     |
-| `toolPolicy`      | Permissive | Controls approval, read-only mode, guardrails, result truncation, and secret redaction.             |
-| `skillActivation` | `"always"` | `"always"` — all skills active. `"auto"` — keyword-activated. `"directive-only"` — `/name` trigger. |
-| `toolSelection`   | `"all"`    | `"all"` — all adapters expose tools. `"auto"` — only adapters relevant to active skills.            |
+| Field               | Default    | Purpose                                                                                             |
+| ------------------- | ---------- | --------------------------------------------------------------------------------------------------- |
+| `tools`             | `[]`       | Static tool definitions available on every run.                                                     |
+| `toolPolicy`        | Permissive | Controls approval, read-only mode, guardrails, result truncation, and secret redaction.             |
+| `skillActivation`   | `"always"` | `"always"` — all skills active. `"auto"` — keyword-activated. `"directive-only"` — `/name` trigger. |
+| `toolSelection`     | `"all"`    | `"all"` — all adapters expose tools. `"auto"` — only adapters relevant to active skills.            |
+| `promptCompression` | `"none"`   | `"none"`, `"safe"`, `"balanced"`, or `"aggressive"` skill prompt compression.                       |
 
 ### Retry
 
@@ -58,12 +59,14 @@ Backoff options: `"exponential"` (doubles delay), `"linear"` (adds delay linearl
 | `project`         | Vertex             | GCP project ID.                                      |
 | `location`        | Vertex             | GCP location (e.g. `"us-central1"`).                 |
 
-### Cache and Logging
+### Workspace, Cache, Memory, and Logging
 
-| Field    | Default  | Purpose                                              |
-| -------- | -------- | ---------------------------------------------------- |
-| `cache`  | Disabled | `AgentCacheController` from `AgentCache.file()` etc. |
-| `logger` | Console  | Custom logger implementing the `Logger` interface.   |
+| Field       | Default  | Purpose                                                                  |
+| ----------- | -------- | ------------------------------------------------------------------------ |
+| `workspace` | None     | Shared cache, memory, store, adapters, policies, trace sink, and events. |
+| `cache`     | Disabled | `AgentCacheController` from `AgentCache.file()` etc.                     |
+| `memory`    | None     | `AgentMemoryStore` used for bounded semantic retrieval.                  |
+| `logger`    | Console  | Custom logger implementing the `Logger` interface.                       |
 
 ## Examples
 
@@ -191,6 +194,42 @@ console.log(response.cache?.hits); // cache hits this run
 console.log(response.cache?.toolCallsAvoided); // avoided tool calls
 ```
 
+### With Workspace Memory
+
+```ts
+import {
+  Agent,
+  AgentMemory,
+  AgentWorkspace,
+  Provider,
+} from "@deskcreate/agentcraft";
+
+const workspace = AgentWorkspace.create({
+  memory: AgentMemory.local({
+    root: ".agentcraft/memory",
+    namespace: "support-agent",
+    writes: { requireApproval: false },
+  }),
+});
+
+await workspace.memory?.add({
+  scope: "customer",
+  text: "Customer prefers concise updates with implementation examples.",
+  source: "onboarding",
+});
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  workspace,
+});
+
+const response = await agent.run({
+  prompt: "Draft a customer update about the cache rollout.",
+});
+console.log(response.content);
+```
+
 ### With Skill Activation Modes
 
 ```ts
@@ -222,6 +261,28 @@ const directive = Agent.create({
 const r1 = await always.run({ prompt: "Do the thing." });
 const r2 = await auto.run({ prompt: "Do something related to some-skill." });
 const r3 = await directive.run({ prompt: "/some-skill do the thing." });
+```
+
+### With Prompt Compression
+
+```ts
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  skillActivation: "auto",
+  toolSelection: "auto",
+  promptCompression: "balanced",
+}).use(CreatorPacks.blog({ cache: "auto" }));
+
+const response = await agent.run({
+  prompt: "Create a Medium article plan about lowering agent token waste.",
+  budget: { mode: "prefer-cache", maxCost: 0.03 },
+});
+
+console.log(response.measurement?.estimatedPromptTokens);
 ```
 
 ### Azure OpenAI Provider

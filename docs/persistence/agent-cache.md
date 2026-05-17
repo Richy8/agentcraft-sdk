@@ -37,7 +37,13 @@ console.log(`Tool calls avoided: ${response.cache?.toolCallsAvoided}`);
 | -------------------------------- | ---------- | ------------------------------------------------ |
 | `AgentCache.file(root, options)` | Filesystem | Local and single-process production deployments. |
 | `AgentCache.memory(options)`     | In-process | Tests, demos, and ephemeral short-lived scripts. |
+| `AgentCache.redis(options)`      | Redis      | Multi-instance production cache and locks.       |
+| `AgentCache.postgres(options)`   | Postgres   | SQL-backed cache, including Supabase Postgres.   |
+| `AgentCache.sqlite(options)`     | SQLite     | Local durable single-node cache.                 |
+| `AgentCache.custom(controller)`  | Custom     | User-owned cache provider.                       |
 | `AgentCache.disabled()`          | None       | Explicitly disabling cache while keeping config. |
+
+For Redis, Postgres, and SQLite setup details, see [Distributed Cache](./distributed-cache.md). Optional infrastructure dependencies are lazy-loaded so local memory/file cache users do not pay for distributed drivers.
 
 ## Configuration
 
@@ -50,6 +56,10 @@ console.log(`Tool calls avoided: ${response.cache?.toolCallsAvoided}`);
 | `version`       | No       | `"v1"`      | Invalidation boundary for prompt/tool changes. |
 | `defaultTtlMs`  | No       | None        | Default TTL for cache entries in milliseconds. |
 | `maxEntryBytes` | No       | None        | Reject entries larger than this byte count.    |
+
+Runtime cache keys intentionally include provider and model. This is conservative: it prevents one model/provider from replaying another model/provider's tool context when a tool result is not truly model-independent. If a deployment needs model-independent reuse, implement a custom `AgentCacheController` or normalize at the tool/adapter layer where the safety boundary is explicit.
+
+In-flight deduplication is process-local. Repeated calls for the same safe tool key inside one Node process share the pending promise, but separate Node processes can still race unless your custom cache backend adds distributed locking.
 
 ### `AgentCache.memory(options)`
 
@@ -66,6 +76,33 @@ console.log(`Tool calls avoided: ${response.cache?.toolCallsAvoided}`);
 | `"conservative"` | Only tools explicitly marked safe (e.g. `sideEffect: "read"` with no writes). |
 | `"auto"`         | All safe read tools — the recommended default.                                |
 | `"aggressive"`   | All tool outputs including external calls. Use with care.                     |
+
+Runtime semantics:
+
+- `conservative` caches `sideEffect: "none"` tools and read tools with explicit `security.cache.safe` or `security.cache.deterministic` metadata.
+- `auto` caches safe `none` and `read` tools unless they are marked sensitive or require confirmation.
+- `aggressive` may cache `external` tool results too, but still refuses writes, confirmation-gated tools, and sensitive results.
+
+```ts
+import { tool } from "@deskcreate/agentcraft/adapters";
+
+const readDocs = tool({
+  name: "read_docs_page",
+  description: "Read a deterministic docs page.",
+  security: {
+    sideEffect: "read",
+    cache: {
+      safe: true,
+      deterministic: true,
+      ttlMs: 60 * 60 * 1000,
+    },
+  },
+  params: {
+    slug: { type: "string", description: "Docs page slug." },
+  },
+  run: async ({ slug }) => ({ slug, content: "..." }),
+});
+```
 
 ## `response.cache` Stats
 
@@ -84,11 +121,16 @@ console.log(response.cache?.corrupt); // corrupt entries (could not be parsed)
 console.log(response.cache?.oversized); // entries rejected for exceeding maxEntryBytes
 console.log(response.cache?.toolCallsAvoided); // total tool calls saved by cache hits
 console.log(response.cache?.estimatedSavedTokens); // estimated tokens saved
+console.log(response.cache?.summary?.hitRate); // 0..1 cache hit rate
+console.log(response.cache?.summary?.avoidedCallRate); // 0..1 avoided-call rate
+console.log(response.cache?.summary?.estimatedCostSaved); // estimate when cost hints are supplied
 ```
+
+`estimatedSavedTokens` is estimator-grade. The built-in cache estimates saved tool-result tokens from cached payload size, while live benchmark reports compare provider-reported prompt/completion tokens separately. Treat exact token-saving claims as benchmark-specific, not as a guarantee from the cache counter alone.
 
 ## `CachePolicy` (Per-Run)
 
-Use `cachePolicy` on `agent.run()` to require cache hits for specific tools — useful in replay or test scenarios where you want to guarantee no live calls are made.
+Use `budget.cachePolicy` on `agent.run()` to require cache hits for specific tools — useful in replay or test scenarios where you want to guarantee no live calls are made.
 
 ```ts
 import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
@@ -105,8 +147,10 @@ const agent = Agent.create({
 // If web_search has no cached result, the run fails rather than making a live call
 const response = await agent.run({
   prompt: "Search for TypeScript 5.5 release notes.",
-  cachePolicy: {
-    requireCachedFor: ["web_search"],
+  budget: {
+    cachePolicy: {
+      requireCachedFor: ["web_search"],
+    },
   },
 });
 
@@ -117,15 +161,16 @@ console.log(response.content);
 
 `AgentCacheController` is the interface implemented by all cache drivers. You can pass your own implementation for distributed backends.
 
-| Method         | Signature                                 | Purpose                                       |
-| -------------- | ----------------------------------------- | --------------------------------------------- |
-| `config`       | `AgentCacheConfig`                        | Read-only config describing the cache setup.  |
-| `get`          | `(key) => Promise<unknown \| undefined>`  | Retrieve a cached value by key.               |
-| `getEntry`     | `(key) => Promise<AgentCacheLookup>`      | Retrieve with full metadata (status, TTL).    |
-| `set`          | `(key, value, options?) => Promise<void>` | Write a value with optional TTL override.     |
-| `delete`       | `(key) => Promise<boolean>`               | Remove an entry. Returns true if removed.     |
-| `clear`        | `() => Promise<void>`                     | Remove all entries in the current scope.      |
-| `pruneExpired` | `() => Promise<number>`                   | Remove expired entries. Returns count pruned. |
+| Method         | Signature                                 | Purpose                                        |
+| -------------- | ----------------------------------------- | ---------------------------------------------- |
+| `config`       | `AgentCacheConfig`                        | Read-only config describing the cache setup.   |
+| `get`          | `(key) => Promise<unknown \| undefined>`  | Retrieve a cached value by key.                |
+| `getEntry`     | `(key) => Promise<AgentCacheLookup>`      | Retrieve with full metadata (status, TTL).     |
+| `set`          | `(key, value, options?) => Promise<void>` | Write a value with optional TTL override.      |
+| `delete`       | `(key) => Promise<boolean>`               | Remove an entry. Returns true if removed.      |
+| `clear`        | `() => Promise<void>`                     | Remove all entries in the current scope.       |
+| `pruneExpired` | `() => Promise<number>`                   | Remove expired entries. Returns count pruned.  |
+| `withLock`     | `(key, run) => Promise<T>`                | Optional distributed lock around cache misses. |
 
 All methods except `config` are optional — implement only what your backend supports.
 

@@ -138,6 +138,8 @@ export default defineConfig({
         text: 'Persistence And Cache',
         items: [
           { text: 'AgentCache', link: '/persistence/agent-cache' },
+          { text: 'Distributed Cache', link: '/persistence/distributed-cache' },
+          { text: 'Semantic Memory', link: '/persistence/semantic-memory' },
           { text: 'Artifact Store', link: '/persistence/artifact-store' },
           { text: 'Artifact Registry', link: '/persistence/artifact-registry' },
           { text: 'Citation Store', link: '/persistence/citation-store' },
@@ -183,6 +185,9 @@ export default defineConfig({
         text: 'Production',
         items: [
           { text: 'Security Model', link: '/production/security-model' },
+          { text: 'AgentEval', link: '/production/agent-eval' },
+          { text: 'Observability Reports', link: '/production/observability-reports' },
+          { text: 'Governance Queue', link: '/production/governance-queue' },
           { text: 'API Stability', link: '/production/api-stability' },
         ],
       },

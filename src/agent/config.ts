@@ -2,10 +2,12 @@ import { z } from 'zod';
 import { ProviderConfigSchema } from '../provider-registry/schema.js';
 import type { Logger } from '../types/logger.js';
 import type { ToolDefinition } from '../protocols/types.js';
-import type { ResponseFormat, RetryConfig } from './types.js';
+import type { PromptCompressionMode, ResponseFormat, RetryConfig } from './types.js';
 import type { ToolPolicy } from './adapters/tool-policy.js';
 import type { ProviderModel } from './provider-catalog.js';
 import type { AgentCacheController } from './creator/types.js';
+import type { AgentMemoryStore } from './memory/index.js';
+import type { AgentWorkspaceInstance } from './workspace.js';
 
 export interface AgentCreateConfig {
   model: ProviderModel | (string & {});
@@ -35,8 +37,11 @@ export interface AgentCreateConfig {
   location?: string;
   baseUrl?: string;
   cache?: AgentCacheController;
+  memory?: AgentMemoryStore;
+  workspace?: AgentWorkspaceInstance;
   skillActivation?: 'always' | 'auto' | 'directive-only';
   toolSelection?: 'all' | 'auto';
+  promptCompression?: PromptCompressionMode;
 }
 
 export const AGENT_DEFAULTS = {
@@ -52,6 +57,7 @@ export const AGENT_DEFAULTS = {
   tools: [],
   skillActivation: 'always',
   toolSelection: 'all',
+  promptCompression: 'none',
 } satisfies Partial<AgentCreateConfig>;
 
 const retrySchema = z.object({
@@ -75,8 +81,11 @@ const agentLevelSchema = z.object({
   retry: retrySchema.optional(),
   toolPolicy: z.custom<ToolPolicy>().optional(),
   cache: z.custom<AgentCacheController>().optional(),
+  memory: z.custom<AgentMemoryStore>().optional(),
+  workspace: z.custom<AgentWorkspaceInstance>().optional(),
   skillActivation: z.enum(['always', 'auto', 'directive-only']).optional(),
   toolSelection: z.enum(['all', 'auto']).optional(),
+  promptCompression: z.enum(['none', 'safe', 'balanced', 'aggressive']).optional(),
 });
 
 export const AgentConfigSchema = ProviderConfigSchema.and(agentLevelSchema);

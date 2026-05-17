@@ -35,13 +35,23 @@ import {
 } from "./adapters/tool-policy.js";
 import { AGENT_DEFAULTS, AgentConfigSchema } from "./config.js";
 import type { AgentCreateConfig, ValidatedAgentConfig } from "./config.js";
-import { createCacheKey, type AgentCacheLookup } from "./cache.js";
+import {
+  createCacheKey,
+  summarizeCacheStats,
+  type AgentCacheLookup,
+} from "./cache.js";
 import { RunTracer, type TraceSink } from "./observability.js";
 import type { AgentEventEmitter } from "./events.js";
+import {
+  AgentMemory,
+  type AgentMemoryStore,
+  type MemoryRetrievalOptions,
+} from "./memory/index.js";
 import {
   enforcePostRunBudget,
   enforcePreflight,
   estimateRunCost,
+  createRunCostReport,
   type CostEstimate,
 } from "./budgets.js";
 import type { AdapterRef, AgentSkill } from "./skills/types.js";
@@ -55,11 +65,14 @@ import type {
   AgentRunParams,
   CatalogFilter,
   ModelInfo,
+  PromptCompressionMode,
   RetryConfig,
+  SkillActivationReason,
 } from "./types.js";
 import { assembleResponse } from "./utils/assemble-response.js";
 import { preprocessDirectives } from "./utils/directives.js";
 import { resolvePrompt } from "./utils/resolve-prompt.js";
+import type { AgentWorkspaceInstance } from "./workspace.js";
 
 export class Agent {
   readonly name: string | undefined;
@@ -74,6 +87,7 @@ export class Agent {
   private readonly externallyManagedAdapters = new Set<AgentAdapter>();
   private readonly cacheInflight = new Map<string, Promise<unknown>>();
   private events: AgentEventEmitter | undefined;
+  private memory: AgentMemoryStore | undefined;
   private initialized = false;
   private disposed = false;
   private cacheStats = {
@@ -132,7 +146,10 @@ export class Agent {
     const logger = merged.logger ?? new ConsoleLogger();
     const retry = toResolvedRetry(merged.retry ?? AGENT_DEFAULTS.retry);
 
-    return new Agent(provider, modelId, result.data, logger, retry, costFactor);
+    const agent = new Agent(provider, modelId, result.data, logger, retry, costFactor);
+    if (merged.workspace) agent.applyWorkspace(merged.workspace);
+    if (merged.memory) agent.setMemory(merged.memory);
+    return agent;
   }
 
   async run(params: AgentRunParams): Promise<AgentResponse> {
@@ -160,7 +177,14 @@ export class Agent {
 
     try {
       const executionBudget = createToolExecutionBudget(params);
+      params = await this.applyMemoryContext(params);
       params = this.applySkillSystemPrompts(params, runScope.adapters);
+      const promptCompression = this.resolvePromptCompression(params);
+      const activeSkillMatches = this.selectActiveSkillMatches(
+        params,
+        runScope.adapters,
+      );
+      params = this.applyPromptCompression(params, promptCompression);
       params = this.preprocessDirectives(params, runScope.adapters);
       params = this.applyStructuredOutputPrompt(params);
       const allTools = await this.collectTools(
@@ -190,6 +214,13 @@ export class Agent {
       }
 
       const llmParams = this.toLLMParams(runParams);
+      const measurement = measureRunPrompt(
+        llmParams,
+        allTools.length,
+        modelTools.length,
+        Boolean(params.assembly?.minify),
+        promptCompression,
+      );
       const modelSpan = tracer.start(
         "model",
         "model.call",
@@ -223,17 +254,49 @@ export class Agent {
         selection: {
           skillActivation: this.config.skillActivation ?? "always",
           toolSelection: this.config.toolSelection ?? "all",
-          activeSkills: this.selectActiveSkills(params, runScope.adapters).map(
-            (skill) => skill.name,
-          ),
+          activeSkills: activeSkillMatches.map((match) => match.skill.name),
+          activationReasons: activeSkillMatches.map(({ skill, ...reason }) => ({
+            skill: skill.name,
+            ...reason,
+          })),
           exposedTools: allTools.map((tool) => tool.name),
           executedToolCalls: executionBudget.count,
         },
+        measurement,
         cache: {
           ...this.cacheStats,
           bypassed: this.isCacheBypassed(params),
+          summary: summarizeCacheStats(this.cacheStats),
         },
         ...(raw.toolCalls && { toolCalls: raw.toolCalls }),
+      };
+
+      const costEstimateParams: Pick<
+        AgentRunParams,
+        "maxTokens" | "system" | "tools" | "prompt"
+      > = {
+        tools: modelTools,
+        ...(runParams.prompt !== undefined && { prompt: runParams.prompt }),
+        ...(runParams.system !== undefined && { system: runParams.system }),
+        ...(runParams.maxTokens !== undefined && {
+          maxTokens: runParams.maxTokens,
+        }),
+      };
+      response = {
+        ...response,
+        costReport: createRunCostReport({
+          scope: "run",
+          provider: this.provider,
+          model: this.model,
+          caps: this.getCapabilities(),
+          response,
+          ...(params.budget !== undefined && { budget: params.budget }),
+          estimate: estimateRunCost(
+            costEstimateParams,
+            this.getCapabilities(),
+            params.budget?.costOptions,
+          ),
+        }),
       };
 
       if (structuredResponse !== undefined)
@@ -282,6 +345,7 @@ export class Agent {
 
     try {
       const executionBudget = createToolExecutionBudget(params);
+      params = await this.applyMemoryContext(params);
       params = this.applySkillSystemPrompts(params, runScope.adapters);
       params = this.preprocessDirectives(params, runScope.adapters);
       params = this.applyStructuredOutputPrompt(params);
@@ -555,6 +619,21 @@ export class Agent {
 
   setEventEmitter(events: AgentEventEmitter | undefined): void {
     this.events = events;
+    this.memory?.setEventEmitter?.(events);
+  }
+
+  setMemory(memory: AgentMemoryStore | undefined): void {
+    this.memory = memory;
+    this.memory?.setEventEmitter?.(this.events);
+  }
+
+  applyWorkspace(workspace: AgentWorkspaceInstance): void {
+    if (workspace.cache) this.setCache(workspace.cache);
+    this.setEventEmitter(workspace.events);
+    this.mergeToolPolicy(workspace.toolPolicy);
+    this.setMemory(workspace.memory);
+    for (const adapter of workspace.adapters) this.use(adapter);
+    for (const mcp of workspace.mcps) this.use(mcp);
   }
 
   cloneWithSystem(system: string, name?: string): Agent {
@@ -621,6 +700,18 @@ export class Agent {
     };
   }
 
+  private applyPromptCompression(
+    params: AgentRunParams,
+    mode: PromptCompressionMode,
+  ): AgentRunParams {
+    if (mode === "none" || !params.system) return params;
+    return { ...params, system: compressSkillPromptSystem(params.system, mode) };
+  }
+
+  private resolvePromptCompression(params: AgentRunParams): PromptCompressionMode {
+    return params.promptCompression ?? this.config.promptCompression ?? "none";
+  }
+
   private async collectTools(
     params: AgentRunParams,
     traceContext?: { tracer: RunTracer; parentSpanId: string },
@@ -673,15 +764,14 @@ export class Agent {
           : (args: Record<string, unknown>) =>
               runToolWithPolicy(tool, args, policy);
       const executeWithCache = async (args: Record<string, unknown>) =>
-        await this.executeToolWithCache(tool, args, executeWithPolicy, params);
-      const executeWithBudget = async (args: Record<string, unknown>) =>
-        await this.executeToolWithBudget(
+        await this.executeToolWithCache(
           tool,
           args,
-          executeWithCache,
+          executeWithPolicy,
+          params,
           executionBudget,
         );
-      if (!traceContext) return { ...tool, execute: executeWithBudget };
+      if (!traceContext) return { ...tool, execute: executeWithCache };
       return {
         ...tool,
         execute: async (args: Record<string, unknown>) => {
@@ -692,7 +782,7 @@ export class Agent {
             traceContext.parentSpanId,
           );
           try {
-            const result = await executeWithBudget(args);
+            const result = await executeWithCache(args);
             traceContext.tracer.end(span);
             return result;
           } catch (error) {
@@ -743,6 +833,7 @@ export class Agent {
     args: Record<string, unknown>,
     execute: (args: Record<string, unknown>) => Promise<unknown>,
     params: AgentRunParams,
+    budget: ToolExecutionBudget,
   ): Promise<unknown> {
     const cache = this.config.cache;
     const sideEffect = tool.security?.sideEffect ?? "external";
@@ -758,12 +849,16 @@ export class Agent {
       this.isCacheBypassed(params)
     ) {
       if (requireCached) this.throwRequiredCacheMiss(tool.name, "unavailable");
-      return await execute(args);
+      return await this.executeToolWithBudget(tool, args, execute, budget);
     }
-    if (sideEffect !== "none" && sideEffect !== "read") {
+    const cacheEligibility = getCacheEligibility(
+      tool,
+      cache.config.strategy ?? "auto",
+    );
+    if (!cacheEligibility.allowed) {
       this.cacheStats.skippedUnsafe++;
-      if (requireCached) this.throwRequiredCacheMiss(tool.name, "unsafe");
-      return await execute(args);
+      if (requireCached) this.throwRequiredCacheMiss(tool.name, cacheEligibility.reason);
+      return await this.executeToolWithBudget(tool, args, execute, budget);
     }
 
     const key = this.createToolCacheKey(tool, sideEffect, args, cache);
@@ -793,12 +888,29 @@ export class Agent {
       return await existing;
     }
 
-    const pending = (async () => {
-      const result = await execute(args);
-      await cache.set!(key, result);
+    const runAndWrite = async () => {
+      const result = await this.executeToolWithBudget(
+        tool,
+        args,
+        execute,
+        budget,
+      );
+      await cache.set!(key, result, cacheEligibility.ttlMs !== undefined ? { ttlMs: cacheEligibility.ttlMs } : {});
       this.cacheStats.writes++;
+      this.events?.emit("cache.write", { toolName: tool.name, key });
       return result;
-    })();
+    };
+    const pending = cache.withLock
+      ? cache.withLock(key, async () => {
+          const lockedEntry = await this.readCacheEntry(cache, key);
+          if (lockedEntry.status === "hit") {
+            this.cacheStats.hits++;
+            this.cacheStats.toolCallsAvoided++;
+            return lockedEntry.value;
+          }
+          return runAndWrite();
+        })
+      : runAndWrite();
     this.cacheInflight.set(key, pending);
     try {
       return await pending;
@@ -909,8 +1021,56 @@ export class Agent {
           this.events?.emit("approval.granted", { toolName: event.toolName });
         if (event.type === "approval_denied")
           this.events?.emit("approval.denied", { toolName: event.toolName });
+        if (event.type === "approval_queued")
+          this.events?.emit("approval.queued", {
+            toolName: event.toolName,
+            requestId: event.requestId,
+            ...(event.reviewer !== undefined && { reviewer: event.reviewer }),
+            ...(event.expiresAt !== undefined && { expiresAt: event.expiresAt }),
+          });
+        if (event.type === "approval_expired")
+          this.events?.emit("approval.expired", {
+            toolName: event.toolName,
+            requestId: event.requestId,
+          });
       },
     };
+  }
+
+  private async applyMemoryContext(params: AgentRunParams): Promise<AgentRunParams> {
+    const request = this.resolveMemoryRequest(params);
+    if (!request || request.includeContext === false) return params;
+    const query = request.query ?? params.prompt ?? "";
+    if (!query.trim()) return params;
+    const results = await request.store.search(query, request);
+    if (results.length === 0) return params;
+    const context = request.store.summarize
+      ? await request.store.summarize(query, request)
+      : AgentMemory.formatContext(results, request);
+    if (!context.trim()) return params;
+    return {
+      ...params,
+      system: [params.system, context].filter(Boolean).join("\n\n"),
+    };
+  }
+
+  private resolveMemoryRequest(
+    params: AgentRunParams,
+  ): (MemoryRetrievalOptions & {
+    readonly store: AgentMemoryStore;
+    readonly includeContext?: boolean;
+  }) | undefined {
+    if (params.memory === false) return undefined;
+    if (isAgentMemoryStore(params.memory)) {
+      return { store: params.memory };
+    }
+    if (params.memory && typeof params.memory === "object") {
+      const store = params.memory.store ?? this.memory;
+      if (!store) return undefined;
+      return { ...params.memory, store };
+    }
+    if (!this.memory) return undefined;
+    return { store: this.memory };
   }
 
   private preprocessDirectives(
@@ -931,11 +1091,25 @@ export class Agent {
     params: AgentRunParams,
     adapters: readonly AgentAdapter[] = this.adapters,
   ): AgentSkill[] {
+    return this.selectActiveSkillMatches(params, adapters).map(
+      (match) => match.skill,
+    );
+  }
+
+  private selectActiveSkillMatches(
+    params: AgentRunParams,
+    adapters: readonly AgentAdapter[] = this.adapters,
+  ): ActiveSkillMatch[] {
     const skills = adapters.filter(isAgentSkill);
     const mode = this.config.skillActivation ?? "always";
-    if (mode === "always") return skills;
+    if (mode === "always")
+      return skills.map((skill) => ({
+        skill,
+        reason: "always",
+        confidence: 1,
+      }));
 
-    const prompt = params.prompt ?? "";
+    const prompt = trustedActivationText(params.prompt ?? "");
     const normalizedPrompt = normalizeActivationText(prompt);
     const directiveNames = new Set(
       Array.from(prompt.matchAll(/(?:^|\s)\/([a-zA-Z][\w-]*)/g)).map(
@@ -943,19 +1117,54 @@ export class Agent {
       ),
     );
     if (mode === "directive-only") {
-      return skills.filter(
-        (skill) => skill.directive && directiveNames.has(skill.directive),
+      return skills.flatMap<ActiveSkillMatch>((skill) =>
+        skill.directive && directiveNames.has(skill.directive)
+          ? [
+              {
+                skill,
+                reason: "directive" as const,
+                confidence: 1,
+                matched: `/${skill.directive}`,
+              },
+            ]
+          : [],
       );
     }
 
-    return skills.filter((skill) => {
-      if (skill.directive && directiveNames.has(skill.directive)) return true;
+    return skills.flatMap<ActiveSkillMatch>((skill) => {
+      if (skill.directive && directiveNames.has(skill.directive)) {
+        return [
+          {
+            skill,
+            reason: "directive" as const,
+            confidence: 1,
+            matched: `/${skill.directive}`,
+          },
+        ];
+      }
       const manifest = skill.skillMetadata?.creator;
       const terms = manifest
         ? creatorActivationTerms(manifest)
         : genericSkillActivationTerms(skill);
-      return terms.some((term) => normalizedPrompt.includes(term));
-    });
+      const matched = terms.find(
+        (term) =>
+          normalizedPrompt.includes(term.term) &&
+          !isNegatedActivation(prompt, term.term.trim()) &&
+          !shouldSkipAutoActivation(skill.name, prompt),
+      );
+      return matched
+        ? [
+            {
+              skill,
+              reason: matched.reason,
+              confidence: adjustedAutoSkillConfidence(skill.name, prompt, matched),
+              matched: matched.term.trim(),
+            },
+          ]
+        : [];
+    })
+      .sort((left, right) => right.confidence - left.confidence)
+      .slice(0, AUTO_SKILL_ACTIVATION_CAP);
   }
 
   private selectToolAdapters(
@@ -1446,6 +1655,218 @@ function promptProvenance(
   };
 }
 
+function measureRunPrompt(
+  params: LLMCallParams,
+  exposedToolCount: number,
+  modelToolCount: number,
+  promptMinified: boolean,
+  promptCompression: PromptCompressionMode,
+): NonNullable<AgentResponse["measurement"]> {
+  const system = params.systemMessage ?? "";
+  const prompt = params.prompt ?? "";
+  const assembledPromptChars = system.length + prompt.length;
+  return {
+    promptChars: prompt.length,
+    systemChars: system.length,
+    assembledPromptChars,
+    estimatedPromptTokens: Math.ceil(assembledPromptChars / 4),
+    exposedToolCount,
+    modelToolCount,
+    promptMinified: promptMinified || promptCompression !== "none",
+  };
+}
+
+const SHARED_SKILL_SECTION_NAMES = ["Failure Behavior", "Safety Notes"] as const;
+
+function compressSkillPromptSystem(
+  system: string,
+  mode: PromptCompressionMode,
+): string {
+  const blocks = system.split(/\n{2,}(?=# Skill: )/g);
+  const sharedLines: string[] = [];
+  const prepared = blocks.map((block) =>
+    block.startsWith("# Skill: ")
+      ? removeSharedSkillSections(block, sharedLines)
+      : block,
+  );
+  const sharedQualityLines = collectRepeatedSkillBullets(prepared);
+  const compressed = prepared.map((block) => {
+    const withoutRepeated = removeRepeatedSkillBullets(block, sharedQualityLines);
+    if (!withoutRepeated.startsWith("# Skill: "))
+      return compactLines(withoutRepeated, mode);
+    return compactSkillBlock(withoutRepeated, mode);
+  });
+  if (sharedLines.length > 0) {
+    compressed.push(
+      [
+        "# Shared Skill Safety",
+        "## Failure Behavior",
+        ...unique(sharedLines.filter((line) => /^failure:/i.test(line)).map((line) => line.replace(/^failure:\s*/i, "- "))),
+        "## Safety Notes",
+        ...unique(sharedLines.filter((line) => /^safety:/i.test(line)).map((line) => line.replace(/^safety:\s*/i, "- "))),
+      ]
+        .filter((line) => line.trim().length > 0)
+        .join("\n"),
+    );
+  }
+  if (sharedQualityLines.length > 0) {
+    compressed.push(
+      [
+        "# Shared Skill Quality",
+        ...sharedQualityLines.map((line) => line.replace(/^\s*-\s*/, "- ")),
+      ].join("\n"),
+    );
+  }
+  return compressed.filter(Boolean).join(mode === "aggressive" ? "\n" : "\n\n");
+}
+
+function removeSharedSkillSections(block: string, sharedLines: string[]): string {
+  let output = block;
+  for (const sectionName of SHARED_SKILL_SECTION_NAMES) {
+    const pattern = new RegExp(`\\n## ${sectionName}\\n([\\s\\S]*?)(?=\\n## |$)`, "m");
+    const match = output.match(pattern);
+    if (!match) continue;
+    const prefix = sectionName === "Failure Behavior" ? "failure" : "safety";
+    for (const line of match[1]!.split("\n")) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("- ")) sharedLines.push(`${prefix}: ${trimmed.slice(2)}`);
+    }
+    output = output.replace(pattern, "");
+  }
+  return output;
+}
+
+function compactSkillBlock(block: string, mode: PromptCompressionMode): string {
+  const lines = limitPromptSectionBullets(
+    minifyLines(block).split("\n"),
+    "## Quality Checklist",
+    mode === "safe" ? Number.POSITIVE_INFINITY : 2,
+  );
+  return lines.map((line) => compactPromptLine(line, mode)).join("\n");
+}
+
+function limitPromptSectionBullets(
+  lines: readonly string[],
+  sectionName: string,
+  maxBullets: number,
+): string[] {
+  if (!Number.isFinite(maxBullets)) return [...lines];
+  let inSection = false;
+  let count = 0;
+  return lines.filter((line) => {
+    if (line.startsWith("## ")) {
+      inSection = line === sectionName;
+      count = 0;
+      return true;
+    }
+    if (!inSection || !line.startsWith("- ")) return true;
+    count += 1;
+    return count <= maxBullets;
+  });
+}
+
+function compactPromptLine(line: string, mode: PromptCompressionMode): string {
+  const compacted = line
+    .replace(/^# Skill: /, "Skill: ")
+    .replace(/^## Role$/, "Role:")
+    .replace(/^## Goal$/, "Goal:")
+    .replace(/^## Constraints$/, "Constraints:")
+    .replace(/^## Tool Use Policy$/, "Tools:")
+    .replace(/^## Output Format$/, "Output:")
+    .replace(/^## Quality Checklist$/, "Quality:")
+    .replace(/^- /, "- ");
+  if (mode !== "aggressive") return compacted;
+  return compacted
+    .replace(/^Constraints:$/, "Rules:")
+    .replace(/^Quality:$/, "QA:");
+}
+
+function collectRepeatedSkillBullets(blocks: readonly string[]): string[] {
+  const counts = new Map<string, number>();
+  for (const block of blocks) {
+    if (!block.startsWith("# Skill: ")) continue;
+    for (const line of block.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("- ")) continue;
+      counts.set(trimmed, (counts.get(trimmed) ?? 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .filter(([, count]) => count > 1)
+    .map(([line]) => line);
+}
+
+function removeRepeatedSkillBullets(
+  block: string,
+  repeatedLines: readonly string[],
+): string {
+  if (repeatedLines.length === 0 || !block.startsWith("# Skill: ")) return block;
+  const repeated = new Set(repeatedLines);
+  return block
+    .split("\n")
+    .filter((line) => !repeated.has(line.trim()))
+    .join("\n");
+}
+
+function compactLines(value: string, mode: PromptCompressionMode): string {
+  const minified = minifyLines(value);
+  return mode === "aggressive" ? minified.replace(/\n{2,}/g, "\n") : minified;
+}
+
+function minifyLines(value: string): string {
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n")
+    .replace(/[ \t]{2,}/g, " ");
+}
+
+function unique(values: readonly string[]): string[] {
+  return Array.from(new Set(values));
+}
+
+function getCacheEligibility(
+  tool: ToolDefinition,
+  strategy: NonNullable<
+    NonNullable<ValidatedAgentConfig["cache"]>["config"]["strategy"]
+  >,
+): {
+  allowed: boolean;
+  reason: string;
+  ttlMs?: number;
+} {
+  const sideEffect = tool.security?.sideEffect ?? "external";
+  const cacheMetadata = tool.security?.cache;
+  const ttlMs = cacheMetadata?.ttlMs;
+
+  if (cacheMetadata?.sensitive) return { allowed: false, reason: "sensitive" };
+  if (sideEffect === "write") return { allowed: false, reason: "unsafe" };
+  if (tool.security?.requiresConfirmation)
+    return { allowed: false, reason: "approval-required" };
+
+  if (strategy === "conservative") {
+    const explicitSafe =
+      cacheMetadata?.safe === true || cacheMetadata?.deterministic === true;
+    if (sideEffect === "none" || (sideEffect === "read" && explicitSafe)) {
+      return { allowed: true, reason: "eligible", ...(ttlMs !== undefined && { ttlMs }) };
+    }
+    return { allowed: false, reason: "not-cache-safe" };
+  }
+
+  if (strategy === "aggressive") {
+    if (sideEffect === "none" || sideEffect === "read" || sideEffect === "external") {
+      return { allowed: true, reason: "eligible", ...(ttlMs !== undefined && { ttlMs }) };
+    }
+    return { allowed: false, reason: "unsafe" };
+  }
+
+  if (sideEffect === "none" || sideEffect === "read") {
+    return { allowed: true, reason: "eligible", ...(ttlMs !== undefined && { ttlMs }) };
+  }
+  return { allowed: false, reason: "unsafe" };
+}
+
 function toResolvedRetry(config: RetryConfig): ResolvedRetryStrategy {
   const multiplier =
     config.backoff === "fixed" ? 1 : config.backoff === "linear" ? 1 : 2;
@@ -1500,6 +1921,12 @@ interface RunAdapterScope {
   runOnlyAdapters: readonly AgentAdapter[];
 }
 
+interface ActiveSkillMatch
+  extends Omit<SkillActivationReason, "skill" | "matched"> {
+  readonly skill: AgentSkill;
+  readonly matched?: string;
+}
+
 function createToolExecutionBudget(
   params: AgentRunParams,
 ): ToolExecutionBudget {
@@ -1524,32 +1951,83 @@ function normalizeActivationText(value: string): string {
   return ` ${value.toLowerCase().replace(/[^a-z0-9/]+/g, " ")} `;
 }
 
-function creatorActivationTerms(manifest: CreatorSkillManifest): string[] {
-  return uniqueActivationTerms([
-    manifest.directive,
-    manifest.name,
-    ...manifest.name.split("-"),
-    ...manifest.producesArtifacts,
-    ...creatorActivationAliases(manifest.name),
-  ]);
+interface ActivationTerm {
+  readonly term: string;
+  readonly reason: Exclude<SkillActivationReason["reason"], "always" | "directive" | "not-activated" | "semantic">;
+  readonly confidence: number;
+}
+
+const AUTO_SKILL_ACTIVATION_CAP = 4;
+
+function creatorActivationTerms(manifest: CreatorSkillManifest): ActivationTerm[] {
+  const terms: Array<
+    { readonly value?: string } & Omit<ActivationTerm, "term">
+  > = [
+    { value: manifest.name, reason: "exact-alias", confidence: 0.92 },
+    ...(manifest.directive !== undefined
+      ? [
+          {
+            value: manifest.directive,
+            reason: "exact-alias" as const,
+            confidence: 0.9,
+          },
+        ]
+      : []),
+    ...manifest.producesArtifacts.map((value) => ({
+      value,
+      reason: "creator-artifact" as const,
+      confidence: 0.82,
+    })),
+    ...flattenCapabilityExpressions(manifest.requiredCapabilities).map((value) => ({
+      value,
+      reason: "capability" as const,
+      confidence: 0.78,
+    })),
+    ...flattenCapabilityExpressions(manifest.optionalCapabilities).map((value) => ({
+      value,
+      reason: "capability" as const,
+      confidence: 0.72,
+    })),
+    ...creatorActivationAliases(manifest.name).map((value) => ({
+      value,
+      reason: "keyword" as const,
+      confidence: 0.84,
+    })),
+  ];
+  return uniqueActivationTerms(terms);
 }
 
 function creatorActivationAliases(skillName: string): string[] {
   return CREATOR_SKILL_ACTIVATION_ALIASES[skillName] ?? [];
 }
 
-function genericSkillActivationTerms(skill: AgentSkill): string[] {
-  return uniqueActivationTerms([
-    skill.directive,
-    skill.name,
-    ...skill.name.split("-"),
-    ...skill.description.split(/\s+/),
-  ]);
+function genericSkillActivationTerms(skill: AgentSkill): ActivationTerm[] {
+  const terms: Array<
+    { readonly value?: string } & Omit<ActivationTerm, "term">
+  > = [
+    { value: skill.name, reason: "exact-alias", confidence: 0.9 },
+    ...(skill.directive !== undefined
+      ? [
+          {
+            value: skill.directive,
+            reason: "exact-alias" as const,
+            confidence: 0.88,
+          },
+        ]
+      : []),
+    ...skill.name.split("-").map((value) => ({ value, reason: "keyword" as const, confidence: 0.7 })),
+    ...skill.description.split(/\s+/).map((value) => ({
+      value,
+      reason: "keyword" as const,
+      confidence: 0.62,
+    })),
+  ];
+  return uniqueActivationTerms(terms);
 }
 
 function uniqueActivationTerms(
-  values: readonly (string | undefined)[],
-): string[] {
+  values: readonly ({ readonly value?: string } & Omit<ActivationTerm, "term">)[],
+): ActivationTerm[] {
   const stopWords = new Set([
     "and",
     "for",
@@ -1560,21 +2038,65 @@ function uniqueActivationTerms(
     "content",
     "creator",
   ]);
-  const terms = new Set<string>();
-  for (const value of values) {
-    if (!value) continue;
-    const normalized = value
+  const terms = new Map<string, ActivationTerm>();
+  for (const candidate of values) {
+    if (!candidate.value) continue;
+    const normalized = candidate.value
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, " ")
       .trim();
-    if (normalized.length > 3 && !stopWords.has(normalized)) {
-      terms.add(` ${normalized} `);
+    if (
+      normalized.length > 3 &&
+      !stopWords.has(normalized) &&
+      !isAmbiguousArtifactTerm(candidate.reason, normalized)
+    ) {
+      terms.set(` ${normalized} `, {
+        term: ` ${normalized} `,
+        reason: candidate.reason,
+        confidence: candidate.confidence,
+      });
+    }
+    if (
+      candidate.reason === "creator-artifact" ||
+      candidate.reason === "capability" ||
+      candidate.reason === "exact-alias"
+    ) {
+      continue;
     }
     for (const part of normalized.split(/\s+/)) {
-      if (part.length > 3 && !stopWords.has(part)) terms.add(` ${part} `);
+      if (part.length > 3 && !stopWords.has(part)) {
+        const term = ` ${part} `;
+        if (!terms.has(term)) {
+          terms.set(term, {
+            term,
+            reason: candidate.reason,
+            confidence: Math.min(candidate.confidence, 0.72),
+          });
+        }
+      }
     }
   }
-  return [...terms];
+  return [...terms.values()].sort((left, right) => right.confidence - left.confidence);
+}
+
+function isAmbiguousArtifactTerm(
+  reason: ActivationTerm["reason"],
+  normalized: string,
+): boolean {
+  return reason === "creator-artifact" && ["draft"].includes(normalized);
+}
+
+function trustedActivationText(value: string): string {
+  const withoutFences = value.replace(/```[\s\S]*?```/g, " ");
+  return withoutFences
+    .split("\n")
+    .filter((line) => !/^\s*(retrieved|external|tool output|page content|source)\b/i.test(line))
+    .join("\n");
+}
+
+function isNegatedActivation(prompt: string, term: string): boolean {
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`\\b(?:do not|don't|dont|avoid|without|no)\\b.{0,24}\\b${escaped}\\b`, "i").test(prompt);
 }
 
 function isAttachedTo(
@@ -1583,6 +2105,16 @@ function isAttachedTo(
 ): boolean {
   const expected = adapterRefName(ref);
   return adapters.some((adapter) => adapter.name === expected);
+}
+
+function isAgentMemoryStore(value: unknown): value is AgentMemoryStore {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<AgentMemoryStore>;
+  return (
+    typeof candidate.add === "function" &&
+    typeof candidate.search === "function" &&
+    typeof candidate.delete === "function"
+  );
 }
 
 function assertNoDeclaredToolConflicts(
@@ -1634,7 +2166,7 @@ const CREATOR_SKILL_ACTIVATION_ALIASES: Record<string, string[]> = {
   "fact-check": ["fact", "verify", "claim", "claims", "citation"],
   "seo-strategy": ["seo", "keyword", "keywords", "search intent"],
   "serp-brief": ["serp", "ranking", "competitor", "search results"],
-  "blog-writer": ["blog", "article", "post", "medium", "draft", "longform"],
+  "blog-writer": ["blog", "article", "post", "medium", "longform"],
   copywriter: ["copy", "copywriting", "landing page", "conversion"],
   "video-scriptwriter": ["video", "script", "youtube", "voiceover"],
   repurposing: ["repurpose", "repurposing", "thread", "carousel", "snippet"],
@@ -1656,6 +2188,44 @@ const CREATOR_SKILL_ACTIVATION_ALIASES: Record<string, string[]> = {
   "performance-analysis": ["performance", "analytics", "metrics"],
   "experiment-planner": ["experiment", "a b test", "hypothesis"],
 };
+
+function shouldSkipAutoActivation(skillName: string, prompt: string): boolean {
+  if (!CREATION_SKILL_NAMES.has(skillName)) return false;
+  const normalized = prompt.toLowerCase();
+  const creationIntent = hasCreationIntent(normalized);
+  if (creationIntent) return false;
+  return /\b(research|source|fact[- ]?check|verify|audit|review|analy[sz]e|audience|persona|objection)\b/.test(
+    normalized,
+  );
+}
+
+function adjustedAutoSkillConfidence(
+  skillName: string,
+  prompt: string,
+  matched: ActivationTerm,
+): number {
+  if (!CREATION_SKILL_NAMES.has(skillName)) return matched.confidence;
+  if (!hasCreationIntent(prompt.toLowerCase())) return matched.confidence;
+  if (matched.reason === "exact-alias" || matched.reason === "keyword") {
+    return Math.max(matched.confidence, 0.93);
+  }
+  return matched.confidence;
+}
+
+function hasCreationIntent(normalizedPrompt: string): boolean {
+  return /\b(write|draft|compose|create|produce|generate|turn|make)\b/.test(
+    normalizedPrompt,
+  );
+}
+
+const CREATION_SKILL_NAMES = new Set([
+  "blog-writer",
+  "copywriter",
+  "video-scriptwriter",
+  "book-writer",
+  "newsletter-writer",
+  "social-writer",
+]);
 
 function optional<T extends string, V>(
   key: T,

@@ -374,13 +374,22 @@ export interface CreatorPackConfig {
 }
 
 export interface AgentCacheConfig {
-  readonly type: "disabled" | "file" | "memory";
+  readonly type: "disabled" | "file" | "memory" | "redis" | "postgres" | "sqlite" | "custom";
   readonly root?: string;
   readonly strategy?: "conservative" | "auto" | "aggressive";
   readonly defaultTtlMs?: number;
   readonly namespace?: string;
   readonly version?: string;
   readonly maxEntryBytes?: number;
+  readonly keyPrefix?: string;
+  readonly tableName?: string;
+  readonly connection?: string;
+  readonly locking?: {
+    readonly enabled?: boolean;
+    readonly ttlMs?: number;
+    readonly waitMs?: number;
+    readonly pollIntervalMs?: number;
+  };
 }
 
 export interface AgentCacheController {
@@ -395,6 +404,7 @@ export interface AgentCacheController {
   delete?(key: string): Promise<boolean>;
   clear?(): Promise<void>;
   pruneExpired?(): Promise<number>;
+  withLock?<T>(key: string, run: () => Promise<T>): Promise<T>;
 }
 
 export interface AgentCacheLookup {

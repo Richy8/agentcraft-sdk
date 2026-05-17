@@ -4,12 +4,20 @@ AgentCraft does not require environment variables for mocked unit tests, but liv
 
 ## Common Variables
 
-| Variable            | Required for       | Default | Purpose                     |
-| ------------------- | ------------------ | ------- | --------------------------- |
-| `OPENAI_API_KEY`    | OpenAI provider    | None    | Model calls.                |
-| `ANTHROPIC_API_KEY` | Anthropic provider | None    | Model calls.                |
-| `GOOGLE_API_KEY`    | Google provider    | None    | Model calls.                |
-| `INTEGRATION_TESTS` | Live tests         | `false` | Enables integration suites. |
+| Variable                          | Required for                  | Default | Purpose                                                    |
+| --------------------------------- | ----------------------------- | ------- | ---------------------------------------------------------- |
+| `OPENAI_API_KEY`                  | OpenAI provider               | None    | Model calls.                                               |
+| `ANTHROPIC_API_KEY`               | Anthropic provider            | None    | Model calls.                                               |
+| `GOOGLE_API_KEY`                  | Google provider               | None    | Model calls.                                               |
+| `INTEGRATION_TESTS`               | Live tests                    | `false` | Enables integration suites.                                |
+| `AGENTCRAFT_LIVE_EVALS`           | Live AgentEval/report tests   | `false` | Enables light eval/report smoke tests.                     |
+| `AGENTCRAFT_LIVE_REDIS_URL`       | Redis cache live tests        | None    | Optional Redis URL for distributed cache certification.    |
+| `AGENTCRAFT_LIVE_POSTGRES_URL`    | Postgres cache live tests     | None    | Optional Postgres URL for distributed cache certification. |
+| `AGENTCRAFT_LIVE_SUPABASE_DB_URL` | Supabase Postgres cache tests | None    | Optional Supabase direct Postgres URL.                     |
+| `AGENTCRAFT_LIVE_SEMANTIC_MEMORY` | Vector memory live tests      | `false` | Enables optional semantic memory provider certification.   |
+| `AGENTCRAFT_LIVE_QDRANT_URL`      | Qdrant memory live tests      | None    | Qdrant endpoint for `AgentMemory.vector()`.                |
+| `AGENTCRAFT_LIVE_PINECONE_URL`    | Pinecone memory live tests    | None    | Pinecone index host for `AgentMemory.vector()`.            |
+| `AGENTCRAFT_LIVE_SUPABASE_URL`    | Supabase memory live tests    | None    | Supabase project URL for pgvector memory.                  |
 
 ## Tool Variables
 

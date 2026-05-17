@@ -16,6 +16,7 @@
 | `secretPatterns`     | Built-in set    | Additional regex patterns for secret redaction (used with `redactSecrets`).     |
 | `guardrailMode`      | `"enforce"`     | `"enforce"` blocks tool calls that fail guardrails; `"warn"` logs and proceeds. |
 | `retry`              | None            | `{ attempts: number, delayMs?: number }` — retry failed tool calls.             |
+| `approvalQueue`      | None            | Durable approval queue for confirmation-gated write/external tools.             |
 | `onApprovalRequired` | Deny by default | `(context) => boolean` callback for dynamic per-call approval decisions.        |
 | `onAuditEvent`       | None            | Callback fired for every tool audit event (called, approved, denied, etc.).     |
 | `inputGuardrails`    | `[]`            | `ToolGuardrail[]` run before tool execution — block unsafe inputs.              |
@@ -83,6 +84,29 @@ const agent = Agent.create({
   },
 });
 ```
+
+### Governance Queue
+
+Queue approval requests instead of resolving them inline.
+
+```ts
+import { Agent, ApprovalQueue, Provider } from "agentcraft";
+
+const approvals = ApprovalQueue.memory({
+  defaultReviewer: "ops@example.com",
+  requireReason: true,
+});
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  toolPolicy: {
+    approvalQueue: approvals,
+  },
+});
+```
+
+The existing `onApprovalRequired` callback still works when no queue is configured.
 
 ### Secret Redaction
 

@@ -81,6 +81,35 @@ describe('AgentWorkspace', () => {
     expect(() => workspace.events.emit('cache.miss', { toolName: 'x', key: 'y' })).not.toThrow();
   });
 
+  it('aggregates workspace metrics from events', () => {
+    const workspace = AgentWorkspace.create({});
+
+    workspace.events.emit('cost.updated', {
+      model: 'mock',
+      provider: 'mock',
+      cost: 0.01,
+      tokensUsed: { prompt: 10, completion: 5, total: 15 },
+    });
+    workspace.events.emit('cache.hit', { toolName: 'read', key: 'a' });
+    workspace.events.emit('cache.miss', { toolName: 'read', key: 'b' });
+    workspace.events.emit('cache.write', { toolName: 'read', key: 'b' });
+    workspace.events.emit('tool.called', { toolName: 'read', sideEffectLevel: 'read' });
+    workspace.events.emit('artifact.read', { type: 'Draft', id: 'draft-1' });
+    workspace.events.emit('artifact.write', { type: 'Draft', id: 'draft-1', operation: 'put' });
+    workspace.events.emit('artifact.write', { type: 'Draft', id: 'draft-1', operation: 'update' });
+
+    expect(workspace.metrics.snapshot()).toMatchObject({
+      cost: 0.01,
+      tokensUsed: { prompt: 10, completion: 5, total: 15 },
+      cache: { hits: 1, misses: 1, writes: 1 },
+      toolCalls: 1,
+      artifacts: { reads: 1, writes: 1, updates: 1, deletes: 0 },
+    });
+
+    workspace.metrics.reset();
+    expect(workspace.metrics.snapshot().tokensUsed.total).toBe(0);
+  });
+
   it('AgentTeam attaches workspace adapters and role policies to members', async () => {
     const adapter = createAdapter({
       name: 'workspace-adapter',

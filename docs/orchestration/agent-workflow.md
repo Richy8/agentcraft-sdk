@@ -96,6 +96,16 @@ result.input; // the validated input object
 result.steps; // WorkflowStepResult[] — one entry per executed step
 result.totalCost; // number — sum of cost across all steps
 result.durationMs; // number — total wall-clock time in milliseconds
+result.metrics; // workspace metric delta for this workflow run
+```
+
+`result.metrics` includes aggregate cost, tokens, cache hits/misses/writes, tool calls, and artifact reads/writes observed through the workflow workspace.
+
+```ts
+console.log(result.metrics?.tokensUsed.total);
+console.log(result.metrics?.cache.hits);
+console.log(result.metrics?.toolCalls);
+console.log(result.metrics?.artifacts.writes);
 ```
 
 ### `WorkflowStepResult` Fields
@@ -457,6 +467,52 @@ ApprovalStep({
 ```
 
 **`ApprovalStep` config fields:**
+
+### Governance Queue for Write Tools
+
+Use `ApprovalQueue` when a workflow step calls a confirmation-gated write tool and the decision should be durable.
+
+```ts
+import {
+  AgentWorkflow,
+  AgentWorkspace,
+  ApprovalQueue,
+  CustomStep,
+} from "agentcraft";
+import { runToolWithPolicy, tool } from "agentcraft/adapters";
+
+const approvals = ApprovalQueue.memory({
+  defaultReviewer: "editor@example.com",
+  requireReason: true,
+});
+
+const createDraft = tool({
+  name: "create_draft",
+  description: "Create a publishable draft.",
+  security: { sideEffect: "write", requiresConfirmation: true },
+  params: {},
+  run: async () => ({ created: true }),
+});
+
+const workflow = AgentWorkflow.create({
+  workspace: AgentWorkspace.create({
+    toolPolicy: { approvalQueue: approvals },
+  }),
+  steps: [
+    CustomStep({
+      id: "prepare-draft",
+      run: async (ctx) =>
+        runToolWithPolicy(createDraft, {}, ctx.workspace.toolPolicy),
+    }),
+  ],
+});
+
+const result = await workflow.run({ input: {} });
+console.log(result.status); // "failed" until the queued request is approved
+console.log(await approvals.list({ status: "pending" }));
+```
+
+More detail: [Governance Queue](../production/governance-queue.md).
 
 | Field         | Required | Default      | Purpose                                                                         |
 | ------------- | -------- | ------------ | ------------------------------------------------------------------------------- |

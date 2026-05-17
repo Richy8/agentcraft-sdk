@@ -4,12 +4,14 @@ The cookbook is the variant library. Feature chapters include short local exampl
 
 ## Paths
 
-| Goal               | Start here                   | Then read                                 | Runnable example                     |
-| ------------------ | ---------------------------- | ----------------------------------------- | ------------------------------------ |
-| First agent        | [Beginner](./beginner.md)    | [Agents](../core/agents.md)               | `examples/basic-chat.ts`             |
-| Provider routing   | [Provider](./provider.md)    | [Models](../core/models-and-providers.md) | `examples/provider-routing.ts`       |
-| Tools and adapters | [Tools](./tools-adapters.md) | [Adapters](../adapters/overview.md)       | `examples/adapter-skill-workflow.ts` |
-| Creator system     | [Creator](./creator.md)      | [Creator Packs](../creator/packs.md)      | `examples/creator-pack-workflow.ts`  |
+| Goal               | Start here                    | Then read                                         | Runnable example                        |
+| ------------------ | ----------------------------- | ------------------------------------------------- | --------------------------------------- |
+| First agent        | [Beginner](./beginner.md)     | [Agents](../core/agents.md)                       | `examples/basic-chat.ts`                |
+| Provider routing   | [Provider](./provider.md)     | [Models](../core/models-and-providers.md)         | `examples/provider-routing.ts`          |
+| Tools and adapters | [Tools](./tools-adapters.md)  | [Adapters](../adapters/overview.md)               | `examples/adapter-skill-workflow.ts`    |
+| Creator system     | [Creator](./creator.md)       | [Creator Packs](../creator/packs.md)              | `examples/creator-pack-workflow.ts`     |
+| Cost control       | [Production](./production.md) | [Budgets](../core/budgets-cost.md)                | `examples/cost-cache-compression.ts`    |
+| Durable state      | [Production](./production.md) | [ArtifactStore](../persistence/artifact-store.md) | `examples/artifact-memory-hardening.ts` |
 
 ## Run Examples
 

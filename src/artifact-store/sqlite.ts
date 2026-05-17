@@ -1,11 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
-import type { ArtifactFilter, ArtifactHistory, ArtifactRef, ArtifactStore } from './types.js';
-import { applyArtifactFilter, makeArtifactEntry } from './memory.js';
+import type { ArtifactFilter, ArtifactHistory, ArtifactLink, ArtifactRef, ArtifactStore } from './types.js';
+import { applyArtifactFilter, asRecord, makeArtifactEntry } from './memory.js';
+import type { ArtifactValidationOptions } from './validation.js';
+import { validateArtifactForStore } from './validation.js';
 
 /** Options for the optional better-sqlite3 artifact store. */
 export interface SQLiteArtifactStoreOptions {
   readonly dbPath: string;
+  readonly validateSchemas?: boolean;
 }
 
 type Statement = {
@@ -69,6 +72,7 @@ export function SQLiteArtifactStore(options: SQLiteArtifactStoreOptions): Artifa
     query: db.prepare('SELECT data FROM artifacts WHERE type = ?'),
     update: db.prepare('UPDATE artifacts SET data = ? WHERE type = ? AND id = ?'),
     findById: db.prepare('SELECT type, data FROM artifacts WHERE id = ?'),
+    findAllById: db.prepare('SELECT type FROM artifacts WHERE id = ?'),
     delete: db.prepare('DELETE FROM artifacts WHERE type = ? AND id = ?'),
     listTypes: db.prepare('SELECT DISTINCT type FROM artifacts'),
     insertHistory: db.prepare(
@@ -80,13 +84,32 @@ export function SQLiteArtifactStore(options: SQLiteArtifactStoreOptions): Artifa
     insertLink: db.prepare(
       'INSERT INTO artifact_links (source_type, source_id, target_type, target_id) VALUES (?, ?, ?, ?)',
     ),
+    listLinksForSource: db.prepare(
+      'SELECT source_type, source_id, target_type, target_id FROM artifact_links WHERE source_type = ? AND source_id = ?',
+    ),
+    listLinks: db.prepare(
+      'SELECT source_type, source_id, target_type, target_id FROM artifact_links',
+    ),
   };
+
+  function updateByType(type: string, id: string, patch: unknown): void {
+    const row = statements.get.get(type, id) as { data: string } | undefined;
+    if (!row) throw new Error(`ArtifactStore: artifact '${type}:${id}' not found`);
+    const existing = JSON.parse(row.data) as Record<string, unknown>;
+    const data = JSON.stringify({ ...existing, ...asRecord(patch), id, type });
+    validateArtifactForStore(type, JSON.parse(data) as unknown, options satisfies ArtifactValidationOptions);
+    db.transaction(() => {
+      statements.update.run(data, type, id);
+      statements.insertHistory.run(type, id, new Date().toISOString(), data);
+    })();
+  }
 
   return {
     async put(type: string, artifact: unknown): Promise<string> {
       const id = randomUUID();
       const createdAt = new Date().toISOString();
       const entry = makeArtifactEntry(type, id, artifact);
+      validateArtifactForStore(type, entry, options);
       const data = JSON.stringify(entry);
       db.transaction(() => {
         statements.insert.run(id, type, data, createdAt);
@@ -107,14 +130,14 @@ export function SQLiteArtifactStore(options: SQLiteArtifactStoreOptions): Artifa
     },
 
     async update(id: string, patch: unknown): Promise<void> {
-      const row = statements.findById.get(id) as { type: string; data: string } | undefined;
-      if (!row) throw new Error(`ArtifactStore: artifact '${id}' not found`);
-      const existing = JSON.parse(row.data) as Record<string, unknown>;
-      const data = JSON.stringify({ ...existing, ...(patch as object) });
-      db.transaction(() => {
-        statements.update.run(data, row.type, id);
-        statements.insertHistory.run(row.type, id, new Date().toISOString(), data);
-      })();
+      const matches = statements.findAllById.all(id) as Array<{ type: string }>;
+      if (matches.length > 1) throw new Error(`ArtifactStore: artifact id '${id}' is ambiguous; use updateByType(type, id, patch)`);
+      if (matches.length === 1) return updateByType(matches[0]!.type, id, patch);
+      throw new Error(`ArtifactStore: artifact '${id}' not found`);
+    },
+
+    async updateByType(type: string, id: string, patch: unknown): Promise<void> {
+      updateByType(type, id, patch);
     },
 
     async delete(type: string, id: string): Promise<boolean> {
@@ -142,6 +165,31 @@ export function SQLiteArtifactStore(options: SQLiteArtifactStoreOptions): Artifa
 
     async link(source: ArtifactRef, target: ArtifactRef): Promise<void> {
       statements.insertLink.run(source.type, source.id, target.type, target.id);
+    },
+
+    async listLinks(source?: ArtifactRef): Promise<ArtifactLink[]> {
+      const rows = source
+        ? statements.listLinksForSource.all(source.type, source.id)
+        : statements.listLinks.all();
+      return (rows as Array<{
+        source_type: string;
+        source_id: string;
+        target_type: string;
+        target_id: string;
+      }>).map((row) => ({
+        source: { type: row.source_type, id: row.source_id },
+        target: { type: row.target_type, id: row.target_id },
+      }));
+    },
+
+    capabilities() {
+      return {
+        history: true,
+        links: true,
+        transactions: true,
+        schemaValidation: options.validateSchemas === true,
+        concurrentWrites: true,
+      };
     },
   };
 }

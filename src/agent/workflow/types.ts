@@ -3,10 +3,10 @@ import type { AgentAdapter } from '../adapters/types.js';
 import type { ToolPolicy } from '../adapters/tool-policy.js';
 import type { Agent } from '../agent.js';
 import type { AgentTeam } from '../agent-team.js';
-import type { AgentWorkspaceInstance } from '../workspace.js';
+import type { AgentWorkspaceInstance, AgentWorkspaceMetricsSnapshot } from '../workspace.js';
 import type { ArtifactStore } from '../../artifact-store/types.js';
 import type { StructuredOutputSchema } from '../structured-output.js';
-import type { TokenUsage } from '../types.js';
+import type { CostReport, TokenUsage } from '../types.js';
 
 /** Status values recorded for workflow steps. */
 export type WorkflowStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'awaiting_approval';
@@ -30,6 +30,8 @@ export interface WorkflowResult<TInput = unknown> {
   readonly steps: WorkflowStepResult[];
   readonly totalCost: number;
   readonly durationMs: number;
+  readonly metrics?: AgentWorkspaceMetricsSnapshot;
+  readonly costReport?: CostReport;
 }
 
 /** Context object passed to every workflow step. */

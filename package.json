@@ -75,6 +75,8 @@
     "examples:typecheck": "node ./scripts/typecheck-public-examples.mjs",
     "test": "vitest run",
     "test:skills": "vitest run src/agent/skills/__tests__/creator-skills.test.ts src/agent/skills/__tests__/skill-quality-benchmark.test.ts src/agent/skills/__tests__/skill-comparison.test.ts src/agent/skills/__tests__/skills.test.ts src/agent/packs/__tests__/packs.test.ts",
+    "benchmark:mock": "vitest run src/agent/__tests__/benchmark.test.ts",
+    "benchmark:live:light": "INTEGRATION_TESTS=true AGENTCRAFT_LIVE_BENCHMARKS=true AGENTCRAFT_LIVE_PROVIDERS=openai vitest run --config vitest.integration.config.ts src/__tests__/integration/live-cost-cache-benchmark.test.ts",
     "test:watch": "vitest",
     "test:int": "INTEGRATION_TESTS=true vitest run --config vitest.integration.config.ts",
     "test:int:light": "INTEGRATION_TESTS=true AGENTCRAFT_LIVE_PROVIDERS=openai vitest run --config vitest.integration.config.ts",
@@ -105,10 +107,18 @@
     "zod": "^3.22.0"
   },
   "peerDependencies": {
-    "better-sqlite3": ">=9.0.0"
+    "better-sqlite3": ">=9.0.0",
+    "pg": ">=8.0.0",
+    "redis": ">=4.0.0"
   },
   "peerDependenciesMeta": {
     "better-sqlite3": {
+      "optional": true
+    },
+    "pg": {
+      "optional": true
+    },
+    "redis": {
       "optional": true
     }
   },

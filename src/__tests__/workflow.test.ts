@@ -119,6 +119,72 @@ describe('AgentWorkflow', () => {
     expect(seenInput).toEqual({ value: 42 });
   });
 
+  it('returns workflow-level workspace metric deltas', async () => {
+    const workspace = AgentWorkspace.create({});
+    const workflow = AgentWorkflow.create({
+      workspace,
+      steps: [
+        CustomStep({
+          id: 'metrics',
+          run: async (ctx) => {
+            ctx.workspace.events.emit('cost.updated', {
+              model: 'mock',
+              provider: 'mock',
+              cost: 0.02,
+              tokensUsed: { prompt: 20, completion: 10, total: 30 },
+            });
+            ctx.workspace.events.emit('cache.hit', { toolName: 'read', key: 'hit' });
+            ctx.workspace.events.emit('tool.called', { toolName: 'read', sideEffectLevel: 'read' });
+            return 'ok';
+          },
+        }),
+      ],
+    });
+
+    const result = await workflow.run({ input: {} });
+
+    expect(result.metrics).toMatchObject({
+      cost: 0.02,
+      tokensUsed: { prompt: 20, completion: 10, total: 30 },
+      cache: { hits: 1, misses: 0, writes: 0 },
+      toolCalls: 1,
+    });
+    expect(result.costReport).toMatchObject({
+      scope: 'workflow',
+      costs: { actualModelCost: 0.02 },
+      tokens: { actual: { total: 30 } },
+    });
+  });
+
+  it('stops a workflow after aggregate workspace maxCost is exceeded', async () => {
+    const second = vi.fn(async () => 'should-not-run');
+    const workspace = AgentWorkspace.create({ budget: { maxCost: 0.01, mode: 'fail-closed' } });
+    const workflow = AgentWorkflow.create({
+      workspace,
+      steps: [
+        CustomStep({
+          id: 'expensive',
+          run: async (ctx) => {
+            ctx.workspace.events.emit('cost.updated', {
+              model: 'mock',
+              provider: 'mock',
+              cost: 0.02,
+              tokensUsed: { prompt: 20, completion: 10, total: 30 },
+            });
+            return 'expensive';
+          },
+        }),
+        CustomStep({ id: 'second', run: second }),
+      ],
+    });
+
+    const result = await workflow.run({ input: {} });
+
+    expect(result.status).toBe('failed');
+    expect(result.steps.at(-1)?.stepId).toBe('workflow-budget');
+    expect(second).not.toHaveBeenCalled();
+  });
+
   it('AgentStep exposes configured id and type and returns agent content', async () => {
     const agent = mockAgent('writer', 'draft');
     const step = AgentStep({ id: 'write', agent, prompt: 'Write' });

@@ -20,14 +20,30 @@ export interface ArtifactHistory {
   readonly snapshot: unknown;
 }
 
+export interface ArtifactStoreCapabilities {
+  readonly history: boolean;
+  readonly links: boolean;
+  readonly transactions: boolean;
+  readonly schemaValidation: boolean;
+  readonly concurrentWrites: boolean;
+}
+
+export interface ArtifactLink {
+  readonly source: ArtifactRef;
+  readonly target: ArtifactRef;
+}
+
 /** Durable persistence interface for structured artifacts. */
 export interface ArtifactStore {
   put(type: string, artifact: unknown): Promise<string>;
   get(type: string, id: string): Promise<unknown | undefined>;
   query(type: string, filter?: ArtifactFilter): Promise<unknown[]>;
   update(id: string, patch: unknown): Promise<void>;
+  updateByType(type: string, id: string, patch: unknown): Promise<void>;
   delete(type: string, id: string): Promise<boolean>;
   listTypes(): Promise<string[]>;
   history(type: string, id: string): Promise<ArtifactHistory[]>;
   link(source: ArtifactRef, target: ArtifactRef): Promise<void>;
+  listLinks(source?: ArtifactRef): Promise<ArtifactLink[]>;
+  capabilities(): ArtifactStoreCapabilities;
 }

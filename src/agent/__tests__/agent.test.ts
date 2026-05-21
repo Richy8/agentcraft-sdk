@@ -586,21 +586,28 @@ describe('AgentPool', () => {
 
   it('keeps all skill prompt injection as the default behavior', async () => {
     const agent = Agent.create({ model: Provider.ollama['llama3.2'] }).use(createSkillByName('blog-writer'));
-    const spy = vi.spyOn(agent as unknown as { collectTools: () => Promise<unknown[]> }, 'collectTools').mockResolvedValue([]);
-    vi.spyOn(agent as unknown as { callModelWithStructuredOutput: (...args: unknown[]) => Promise<unknown> }, 'callModelWithStructuredOutput').mockResolvedValue({
-      raw: {
-        success: true,
-        content: 'ok',
-        tokensUsed: { prompt: 1, completion: 1, total: 2 },
-        finishReason: 'stop',
-      },
-    });
+    const provider = (
+      agent as unknown as {
+        unifiedProvider: {
+          call: ReturnType<typeof vi.fn>;
+          callWithTools: ReturnType<typeof vi.fn>;
+        };
+      }
+    ).unifiedProvider;
+    const raw: LLMResponse = {
+      success: true,
+      content: 'ok',
+      tokensUsed: { prompt: 1, completion: 1, total: 2 },
+      finishReason: 'stop',
+    };
+    provider.call = vi.fn(async () => raw);
+    provider.callWithTools = vi.fn(async () => raw);
 
     const response = await agent.run({ prompt: 'hello' });
     expect(response.content).toBe('ok');
     expect(response.selection?.skillActivation).toBe('always');
     expect(response.selection?.activeSkills).toContain('blog-writer');
-    expect(spy).toHaveBeenCalled();
+    expect(provider.call).toHaveBeenCalled();
   });
 
   it('assembles skill prompts adaptively while preserving core domain intelligence', async () => {
@@ -695,12 +702,27 @@ describe('AgentPool', () => {
       .use(FetchAdapter.connect({ allowedDomains: ['example.com'] }))
       .use(SeoAdapter.connect());
 
-    const tools = await (
-      agent as unknown as { collectTools: (params: { prompt: string }) => Promise<Array<{ name: string }>> }
-    ).collectTools({ prompt: '/research-blog-evidence use web fetch' });
+    const provider = (
+      agent as unknown as {
+        unifiedProvider: {
+          call: ReturnType<typeof vi.fn>;
+          callWithTools: ReturnType<typeof vi.fn>;
+        };
+      }
+    ).unifiedProvider;
+    const response: LLMResponse = {
+      success: true,
+      content: 'ok',
+      tokensUsed: { prompt: 1, completion: 1, total: 2 },
+      finishReason: 'stop',
+    };
+    provider.call = vi.fn(async () => response);
+    provider.callWithTools = vi.fn(async () => response);
 
-    expect(tools.map((tool) => tool.name)).toContain('fetch_url');
-    expect(tools.map((tool) => tool.name)).not.toContain('get_serp_results');
+    const result = await agent.run({ prompt: '/research-blog-evidence use web fetch' });
+
+    expect(result.selection?.exposedTools).toContain('fetch_url');
+    expect(result.selection?.exposedTools).not.toContain('get_serp_results');
   });
 
   it('auto-activates only prompt-relevant skills instead of every attached creator skill', async () => {

@@ -74,7 +74,7 @@ export interface AgentRuntimeContext {
   ) => AgentRunParams;
   readonly collectTools: (
     params: AgentRunParams,
-    traceContext: { tracer: RunTracer; parentSpanId: string },
+    traceContext: { tracer: RunTracer; parentSpanId: string } | undefined,
     adapters: readonly AgentAdapter[],
     executionBudget: ToolExecutionBudget,
   ) => Promise<ToolDefinition[]>;
@@ -131,18 +131,18 @@ export async function runAgentRuntime(
       runScope.adapters,
     );
     params = context.applyPromptCompression(params, promptCompression);
-    params = context.preprocessDirectives(
-      params,
-      runScope.adapters,
-      skillPromptAssemblyRecords,
-    );
-    params = applyStructuredOutputPrompt(params, context.getCapabilities());
     const allTools = await context.collectTools(
       params,
       { tracer, parentSpanId: agentSpan.spanId },
       runScope.adapters,
       executionBudget,
     );
+    params = context.preprocessDirectives(
+      params,
+      runScope.adapters,
+      skillPromptAssemblyRecords,
+    );
+    params = applyStructuredOutputPrompt(params, context.getCapabilities());
     const structuredTool = createStructuredOutputToolForRun(params, context.getCapabilities());
     const modelTools = structuredTool
       ? [
@@ -309,18 +309,18 @@ export async function* streamAgentRuntime(
     );
     const promptCompression = context.resolvePromptCompression(params);
     params = context.applyPromptCompression(params, promptCompression);
-    params = context.preprocessDirectives(
-      params,
-      runScope.adapters,
-      skillPromptAssemblyRecords,
-    );
-    params = applyStructuredOutputPrompt(params, context.getCapabilities());
     const allTools = await context.collectTools(
       params,
       { tracer, parentSpanId: agentSpan.spanId },
       runScope.adapters,
       executionBudget,
     );
+    params = context.preprocessDirectives(
+      params,
+      runScope.adapters,
+      skillPromptAssemblyRecords,
+    );
+    params = applyStructuredOutputPrompt(params, context.getCapabilities());
     let runParams = params;
     for (const adapter of runScope.adapters) {
       if (adapter.onBeforeRun) runParams = await adapter.onBeforeRun(runParams);

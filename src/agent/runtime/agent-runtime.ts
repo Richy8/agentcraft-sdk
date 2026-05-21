@@ -2,24 +2,20 @@ import { costCalculator } from "../../cost-calculator/index.js";
 import type { ToolDefinition } from "../../protocols/types.js";
 import type { BaseLLMProvider } from "../../providers/base.provider.js";
 import type { LLMCallParams, LLMResponse, ModelCapabilities, StreamChunk } from "../../types/provider.types.js";
-import { applyMemoryContext } from "../memory/context-injector.js";
 import type { AgentMemoryStore } from "../memory/index.js";
-import { RunTracer, type TraceSink } from "../observability.js";
+import { RunTracer } from "../observability.js";
 import { summarizeCacheStats, type CacheStatsLike } from "../cache/index.js";
 import {
   createRunCostReport,
   enforcePostRunBudget,
-  enforcePreflight,
   estimateRunCost,
 } from "../budgets.js";
 import type { AgentEventEmitter } from "../events.js";
 import type { AgentAdapter } from "../adapters/types.js";
 import type { RunAdapterScope } from "../adapters/run-scope.js";
-import { createToolExecutionBudget, wrapToolExecutionBudget, type ToolExecutionBudget } from "../tools/tool-budget.js";
+import { wrapToolExecutionBudget, type ToolExecutionBudget } from "../tools/tool-budget.js";
 import { assembleResponse } from "../utils/assemble-response.js";
-import { resolvePrompt } from "../utils/resolve-prompt.js";
 import {
-  applyStructuredOutputPrompt,
   createStructuredOutputToolForRun,
 } from "./structured-output-flow.js";
 import type { StructuredOutputToolState } from "./structured-output-handler.js";
@@ -32,6 +28,11 @@ import type {
   SkillPromptAssemblyRecord,
 } from "../types.js";
 import type { ActiveSkillMatch } from "../skills/activation-engine.js";
+import {
+  applyBeforeRunAdapters,
+  preparePromptAndTools,
+  prepareRuntimeInvocation,
+} from "./run-preparation.js";
 
 export interface AgentRuntimeContext {
   readonly provider: string;
@@ -97,70 +98,33 @@ export async function runAgentRuntime(
   const replayed = resolveReplay(params);
   if (replayed) return replayed;
   context.resetCacheStats();
-  const tracer = new RunTracer(toTraceSink(params.trace));
-  const agentSpan = tracer.start("agent", "agent.run", {
-    model: context.model,
-    provider: context.provider,
-  });
-  params = { ...params, prompt: await resolvePrompt(params) };
-  const runScope = context.createRunAdapterScope(params);
-  context.validateInputs(params);
-  context.validateCachePolicy(params);
-  enforcePreflight(
-    params,
-    context.getCapabilities(),
-    context.model,
-    context.provider,
-    params.budget,
-  );
-  await context.ensureAttachedAdaptersInitialized();
-  await context.initRunAdapters(runScope.runOnlyAdapters);
+  const prepared = await prepareRuntimeInvocation(context, params, "run");
+  const { tracer, agentSpan, runScope } = prepared;
+  params = prepared.params;
 
   try {
-    const executionBudget = createToolExecutionBudget(params);
-    const skillPromptAssemblyRecords: SkillPromptAssemblyRecord[] = [];
-    params = await applyMemoryContext(params, context.memory);
-    params = context.applySkillSystemPrompts(
+    const promptState = await preparePromptAndTools(context, {
       params,
-      runScope.adapters,
-      skillPromptAssemblyRecords,
-    );
-    const promptCompression = context.resolvePromptCompression(params);
-    const activeSkillMatches = context.selectActiveSkillMatches(
-      params,
-      runScope.adapters,
-    );
-    params = context.applyPromptCompression(params, promptCompression);
-    const allTools = await context.collectTools(
-      params,
-      { tracer, parentSpanId: agentSpan.spanId },
-      runScope.adapters,
+      runScope,
+      tracer,
+      agentSpan,
+    });
+    params = promptState.params;
+    const {
       executionBudget,
-    );
-    params = context.preprocessDirectives(
-      params,
-      runScope.adapters,
       skillPromptAssemblyRecords,
-    );
-    params = applyStructuredOutputPrompt(params, context.getCapabilities());
+      promptCompression,
+      activeSkillMatches,
+      allTools,
+    } = promptState;
     const structuredTool = createStructuredOutputToolForRun(params, context.getCapabilities());
-    const modelTools = structuredTool
+    const modelTools: ToolDefinition[] = structuredTool
       ? [
           ...allTools,
           wrapToolExecutionBudget(structuredTool.tool, executionBudget, context.provider),
         ]
-      : allTools;
-    let runParams = params;
-    for (const adapter of runScope.adapters) {
-      const adapterSpan = tracer.start(
-        "adapter",
-        `${adapter.name}.onBeforeRun`,
-        undefined,
-        agentSpan.spanId,
-      );
-      if (adapter.onBeforeRun) runParams = await adapter.onBeforeRun(runParams);
-      tracer.end(adapterSpan);
-    }
+      : [...allTools];
+    const runParams = await applyBeforeRunAdapters(params, runScope, tracer, agentSpan);
 
     const llmParams = context.toLLMParams(runParams);
     const measurement = measureRunPrompt(
@@ -286,58 +250,32 @@ export async function* streamAgentRuntime(
   context: AgentRuntimeContext,
   params: AgentRunParams,
 ): AsyncGenerator<StreamChunk> {
-  const tracer = new RunTracer(toTraceSink(params.trace));
-  const agentSpan = tracer.start("agent", "agent.stream", {
-    model: context.model,
-    provider: context.provider,
-  });
-  params = { ...params, prompt: await resolvePrompt(params) };
-  const runScope = context.createRunAdapterScope(params);
-  context.validateInputs(params);
-  context.validateCachePolicy(params);
-  await context.ensureAttachedAdaptersInitialized();
-  await context.initRunAdapters(runScope.runOnlyAdapters);
+  const prepared = await prepareRuntimeInvocation(context, params, "stream");
+  const { tracer, agentSpan, runScope } = prepared;
+  params = prepared.params;
 
   try {
-    const executionBudget = createToolExecutionBudget(params);
-    const skillPromptAssemblyRecords: SkillPromptAssemblyRecord[] = [];
-    params = await applyMemoryContext(params, context.memory);
-    params = context.applySkillSystemPrompts(
+    const promptState = await preparePromptAndTools(context, {
       params,
-      runScope.adapters,
-      skillPromptAssemblyRecords,
-    );
-    const promptCompression = context.resolvePromptCompression(params);
-    params = context.applyPromptCompression(params, promptCompression);
-    const allTools = await context.collectTools(
-      params,
-      { tracer, parentSpanId: agentSpan.spanId },
-      runScope.adapters,
-      executionBudget,
-    );
-    params = context.preprocessDirectives(
-      params,
-      runScope.adapters,
-      skillPromptAssemblyRecords,
-    );
-    params = applyStructuredOutputPrompt(params, context.getCapabilities());
-    let runParams = params;
-    for (const adapter of runScope.adapters) {
-      if (adapter.onBeforeRun) runParams = await adapter.onBeforeRun(runParams);
-    }
+      runScope,
+      tracer,
+      agentSpan,
+    });
+    params = promptState.params;
+    const runParams = await applyBeforeRunAdapters(params, runScope);
 
     const llmParams = context.toLLMParams(runParams);
     yield* streamWithHooks({
       context,
       llmParams,
-      allTools,
+      allTools: promptState.allTools,
       tracer,
       parentSpanId: agentSpan.spanId,
       ...(params.signal !== undefined && { signal: params.signal }),
       ...(() => {
         const promptAssembly = buildSkillPromptAssemblyReport(
           context.resolveSkillPromptAssembly(params),
-          skillPromptAssemblyRecords,
+          promptState.skillPromptAssemblyRecords,
         );
         return promptAssembly === undefined ? {} : { promptAssembly };
       })(),
@@ -416,11 +354,6 @@ async function* streamWithHooks(options: {
       }
     }
   }
-}
-
-function toTraceSink(trace: AgentRunParams["trace"]): TraceSink | undefined {
-  if (!trace || trace === true) return undefined;
-  return trace;
 }
 
 function resolveReplay(params: AgentRunParams): AgentResponse | undefined {

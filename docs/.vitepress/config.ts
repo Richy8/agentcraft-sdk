@@ -125,6 +125,10 @@ export default defineConfig({
         ],
       },
       {
+        text: 'Industry Packs',
+        items: [{ text: 'Overview', link: '/packs/industry' }],
+      },
+      {
         text: 'Orchestration',
         items: [
           { text: 'Agent Pool', link: '/orchestration/agent-pool' },
@@ -188,6 +192,7 @@ export default defineConfig({
           { text: 'AgentEval', link: '/production/agent-eval' },
           { text: 'Observability Reports', link: '/production/observability-reports' },
           { text: 'Governance Queue', link: '/production/governance-queue' },
+          { text: 'Runtime Hardening', link: '/production/runtime-hardening' },
           { text: 'API Stability', link: '/production/api-stability' },
         ],
       },

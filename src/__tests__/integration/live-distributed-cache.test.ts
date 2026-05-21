@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AgentCache } from "../../agent/cache.js";
+import { AgentCache } from "../../agent/cache/index.js";
 
 const integrationEnabled = process.env.INTEGRATION_TESTS === "true";
 const redisUrl = process.env.AGENTCRAFT_LIVE_REDIS_URL;

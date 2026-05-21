@@ -478,8 +478,8 @@ import {
   AgentWorkspace,
   ApprovalQueue,
   CustomStep,
-} from "agentcraft";
-import { runToolWithPolicy, tool } from "agentcraft/adapters";
+} from "@deskcreate/agentcraft";
+import { runToolWithPolicy, tool } from "@deskcreate/agentcraft/adapters";
 
 const approvals = ApprovalQueue.memory({
   defaultReviewer: "editor@example.com",

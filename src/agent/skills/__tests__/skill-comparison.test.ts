@@ -36,12 +36,12 @@ describe('skill prompt comparison', () => {
   it('turns skill directives into bounded instruction regions', async () => {
     const agent = agentWithFakeProvider().use(HumanizerSkill.create());
 
-    await agent.run({ prompt: '/humanizer This copy sounds robotic.' });
+    await agent.run({ prompt: '/humanize This copy sounds robotic.' });
 
     const call = providerFor(agent).calls[0]!;
-    expect(call.prompt).toContain('[APPLY_HUMANIZER_START]');
-    expect(call.prompt).toContain('[APPLY_HUMANIZER_END]');
-    expect(call.prompt).not.toContain('/humanizer');
+    expect(call.prompt).toContain('[APPLY_HUMANIZE_START]');
+    expect(call.prompt).toContain('[APPLY_HUMANIZE_END]');
+    expect(call.prompt).not.toContain('/humanize');
     expect(call.systemMessage).toContain('apply the following rules strictly within those boundaries');
     expect(call.systemMessage).toContain('# Skill: humanizer');
   });

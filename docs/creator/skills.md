@@ -1,6 +1,6 @@
 # Creator Skills
 
-AgentCraft ships 28 creator skills across strategy, SEO, creation, review, and operations.
+AgentCraft creator skills are now platform/category-specific domain skills. Use `createSkillByName(...)` for one skill, or `CreatorPacks.*()` for a full category pack with auto activation.
 
 ## Categories
 
@@ -16,20 +16,30 @@ AgentCraft ships 28 creator skills across strategy, SEO, creation, review, and o
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { BlogWriterSkill, FactCheckSkill } from "@deskcreate/agentcraft/skills";
+import { createSkillByName } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   skillActivation: "auto",
 })
-  .use(BlogWriterSkill.create())
-  .use(FactCheckSkill.create());
+  .use(createSkillByName("blog-writer"))
+  .use(createSkillByName("blog-fact-check"));
 
 const response = await agent.run({
   prompt: "Write and fact-check a post about TypeScript 5.5.",
 });
 console.log(response.content);
+```
+
+You can also extract a skill from a pack:
+
+```ts
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+
+const blog = CreatorPacks.blog();
+agent.use(blog.blogWriter.create());
+console.log(blog.blogWriter.inspect());
 ```
 
 ## Drill Down

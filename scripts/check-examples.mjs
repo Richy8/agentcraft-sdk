@@ -7,12 +7,12 @@ const packageRoot = process.cwd();
 const examplesDir = path.join(packageRoot, 'examples');
 const docsDir = path.join(packageRoot, 'docs');
 const allowedPackageImports = new Set([
-  'agentcraft',
-  'agentcraft/adapters',
-  'agentcraft/skills',
-  'agentcraft/packs',
-  'agentcraft/mcp',
-  'agentcraft/team',
+  '@deskcreate/agentcraft',
+  '@deskcreate/agentcraft/adapters',
+  '@deskcreate/agentcraft/skills',
+  '@deskcreate/agentcraft/packs',
+  '@deskcreate/agentcraft/mcp',
+  '@deskcreate/agentcraft/team',
 ]);
 
 const failures = [];
@@ -79,7 +79,10 @@ function checkImports(filePath, source) {
   sourceFile.forEachChild((node) => {
     if (!ts.isImportDeclaration(node) || !ts.isStringLiteral(node.moduleSpecifier)) return;
     const specifier = node.moduleSpecifier.text;
-    if (specifier.startsWith('agentcraft') && !allowedPackageImports.has(specifier)) {
+    if (
+      (specifier.startsWith('agentcraft') || specifier.startsWith('@deskcreate/agentcraft')) &&
+      !allowedPackageImports.has(specifier)
+    ) {
       failures.push(`${relative(filePath)}: unsupported package import '${specifier}'`);
     }
     if (specifier.startsWith('.')) {

@@ -87,6 +87,7 @@ export type {
 } from "./workflow/index.js";
 export type {
   AgentEventEmitter,
+  AgentEventEmitterOptions,
   AgentEventMap,
   AgentEventType,
 } from "./events.js";
@@ -106,6 +107,10 @@ export type {
   CostReport,
   ModelInfo,
   PromptCompressionMode,
+  SkillPromptAssemblyMode,
+  SkillPromptAssemblyRecord,
+  SkillPromptAssemblyReport,
+  SkillPromptAssemblySection,
   ResponseFormat,
   RetryConfig,
   RunBudget,
@@ -125,7 +130,7 @@ export * from "./adapters/index.js";
 export * from "./skills/index.js";
 export * from "./mcp-servers/index.js";
 export * from "./guardrails.js";
-export { summarizeCacheStats } from "./cache.js";
+export { summarizeCacheStats } from "./cache/index.js";
 export type {
   AgentCacheLookup,
   CacheEfficiencyOptions,
@@ -133,5 +138,5 @@ export type {
   CacheStatsLike,
   FileCacheOptions,
   MemoryCacheOptions,
-} from "./cache.js";
+} from "./cache/index.js";
 export type { CostEstimate, PricingStalenessReport } from "./budgets.js";

@@ -1,11 +1,11 @@
 # Creator Packs
 
-Creator packs are `.use(...)` bundles over creator skills. They are imported from `agentcraft/packs`, and every skill inside a pack remains directly importable from `agentcraft/skills`.
+Creator packs are `.use(...)` bundles over creator skills. They are imported from `@deskcreate/agentcraft/packs`. Every skill inside a pack can also be used directly through `createSkillByName(...)` or through the pack's generated skill accessors.
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { CreatorPacks } from "@deskcreate/agentcraft/packs";
-import { BrandVoiceSkill } from "@deskcreate/agentcraft/skills";
+import { createSkillByName } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -14,7 +14,7 @@ const agent = Agent.create({
   toolSelection: "auto",
 })
   .use(CreatorPacks.blog({ contentRoot: "content", readOnlyByDefault: true }))
-  .use(BrandVoiceSkill.create());
+  .use(createSkillByName("brand-voice"));
 
 const response = await agent.run({
   prompt: "Draft a blog post about agent caching strategies.",
@@ -26,7 +26,7 @@ console.log(response.content);
 
 ### Default Pack
 
-Use [Default Pack](./packs/default.md) for a safe starter writing flow. It includes `AudienceResearchSkill`, `ContentPositioningSkill`, `ContentBriefSkill`, `BlogWriterSkill`, and `EditorialReviewSkill`.
+Use [Default Pack](./packs/default.md) for a safe starter writing flow. It includes audience research, positioning, briefing, blog drafting, and editorial review skills.
 
 ### Blog Pack
 
@@ -60,6 +60,29 @@ Use [Publishing Pack](./packs/publishing.md) for publish QA, content calendars, 
 
 Use [Analytics Pack](./packs/analytics.md) for performance analysis, experiment planning, SEO learning, and future content calendars.
 
+## Full Category Skill Packs
+
+The `CreatorPacks.*()` helpers are curated workflows. If you want every skill in a creator category, use the category-level skill packs instead. They are named `<domain>-<category>-skills`.
+
+```ts
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { createSkillPackByName } from "@deskcreate/agentcraft/packs";
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  skillActivation: "auto",
+  toolSelection: "auto",
+}).use(createSkillPackByName("creator-youtube-skills"));
+
+const response = await agent.run({
+  prompt:
+    "Plan a YouTube video from topic research through title, thumbnail, retention, chapters, and description tags.",
+});
+```
+
+Use this pattern for full platform coverage such as `creator-linkedin-skills`, `creator-tiktok-skills`, `creator-medium-skills`, `creator-newsletter-skills`, and `creator-resume-skills`.
+
 ## Shared Config
 
 `contentRoot` points the pack at a content workspace. It is optional and defaults to no preferred root.
@@ -92,7 +115,16 @@ agent
 Use a pack plus one direct skill:
 
 ```ts
-agent.use(CreatorPacks.social()).use(ClaimRiskReviewSkill.create());
+agent.use(CreatorPacks.social()).use(createSkillByName("claim-risk-review"));
+```
+
+Extract one skill from a pack:
+
+```ts
+const blog = CreatorPacks.blog();
+
+agent.use(blog.blogWriter.create());
+console.log(blog.blogWriter.inspect());
 ```
 
 Use a pack with cache and memory:
@@ -117,7 +149,7 @@ Use this matrix when deciding whether a pack should be attached globally, per ru
 
 Best trigger terms: `audience`, `positioning`, `brief`, `blog`, `article`, `editorial review`.
 
-Primary skills: [`AudienceResearchSkill`](../skills/built-in.md#audienceresearchskill), [`ContentPositioningSkill`](../skills/built-in.md#contentpositioningskill), [`ContentBriefSkill`](../skills/built-in.md#contentbriefskill), [`BlogWriterSkill`](../skills/built-in.md#blogwriterskill), [`EditorialReviewSkill`](../skills/built-in.md#editorialreviewskill).
+Primary skills: `audience-research`, `content-positioning`, `content-brief`, `blog-writer`, and `editorial-review`.
 
 Recommended config:
 
@@ -133,7 +165,7 @@ const response = await agent.run({
 
 Best trigger terms: `blog`, `article`, `medium`, `draft`, `longform`, `brief`, `research`, `fact-check`.
 
-Primary skills: [`AudienceResearchSkill`](../skills/built-in.md#audienceresearchskill), [`ContentPositioningSkill`](../skills/built-in.md#contentpositioningskill), [`ContentBriefSkill`](../skills/built-in.md#contentbriefskill), [`ResearchSynthesisSkill`](../skills/built-in.md#researchsynthesisskill), [`BlogWriterSkill`](../skills/built-in.md#blogwriterskill), [`EditorialReviewSkill`](../skills/built-in.md#editorialreviewskill), [`FactCheckSkill`](../skills/built-in.md#factcheckskill).
+Primary skills: `blog-topic-research`, `blog-serp-research`, `blog-brief`, `blog-writer`, `blog-seo-review`, `blog-fact-check`, `blog-citation`, and `blog-refresh-review`.
 
 Recommended config:
 
@@ -170,7 +202,7 @@ const response = await agent.run({
 
 Best trigger terms: `seo`, `keyword`, `search intent`, `serp`, `ranking`, `metadata`, `slug`.
 
-Primary skills: [`SeoStrategySkill`](../skills/built-in.md#seostrategyskill), [`SerpBriefSkill`](../skills/built-in.md#serpbriefskill), [`SeoAuditSkill`](../skills/built-in.md#seoauditskill), [`SeoReviewSkill`](../skills/built-in.md#seoreviewskill), [`CompetitorAnalysisSkill`](../skills/built-in.md#competitoranalysisskill).
+Primary skills: `seo-keyword-research`, `seo-serp-analysis`, `seo-content-brief`, `seo-technical-audit`, `seo-internal-link-planner`, and `seo-content-refresh-review`.
 
 Use with [`SeoAdapter`](../adapters/built-in.md#seoadapter), [`TavilySearchAdapter`](../adapters/built-in.md#tavilysearchadapter), or [`FirecrawlAdapter`](../adapters/built-in.md#firecrawladapter) when live SERP or page inspection is needed.
 
@@ -178,7 +210,7 @@ Use with [`SeoAdapter`](../adapters/built-in.md#seoadapter), [`TavilySearchAdapt
 
 Best trigger terms: `social`, `linkedin`, `x post`, `tweet`, `caption`, `repurpose`, `brand voice`, `copy review`.
 
-Primary skills: [`SocialWriterSkill`](../skills/built-in.md#socialwriterskill), [`RepurposingSkill`](../skills/built-in.md#repurposingskill), [`BrandVoiceSkill`](../skills/built-in.md#brandvoiceskill), [`CopyReviewSkill`](../skills/built-in.md#copyreviewskill), [`ClaimRiskReviewSkill`](../skills/built-in.md#claimriskreviewskill).
+Primary skills: platform-native post, thread, caption, hook review, engagement, and brand-safety skills from the social creator categories.
 
 ```ts
 const response = await agent.run({
@@ -192,16 +224,16 @@ const response = await agent.run({
 
 Best trigger terms: `video`, `script`, `youtube`, `voiceover`, `video idea`, `creative direction`, `shorts`.
 
-Primary skills: [`VideoIdeationSkill`](../skills/built-in.md#videoideationskill), [`VideoScriptwriterSkill`](../skills/built-in.md#videoscriptwriterskill), [`CreativeDirectionSkill`](../skills/built-in.md#creativedirectionskill), [`RepurposingSkill`](../skills/built-in.md#repurposingskill).
+Primary skills: YouTube, TikTok, short-video, Snapchat, and repurposing skills for topic research, scripting, shot planning, retention review, and platform adaptation.
 
 ### Book Pack
 
 Best trigger terms: `book`, `chapter`, `manuscript`, `continuity`, `brand voice`, `research synthesis`.
 
-Primary skills: [`BookWriterSkill`](../skills/built-in.md#bookwriterskill), [`ContentBriefSkill`](../skills/built-in.md#contentbriefskill), [`ResearchSynthesisSkill`](../skills/built-in.md#researchsynthesisskill), [`EditorialReviewSkill`](../skills/built-in.md#editorialreviewskill), [`BrandVoiceSkill`](../skills/built-in.md#brandvoiceskill).
+Primary skills: `book-positioning`, `book-outline-writer`, `book-chapter-writer`, `book-continuity-review`, `book-developmental-edit`, and `book-citation-review`.
 
 ### Copy Pack
 
 Best trigger terms: `copy`, `copywriting`, `landing page`, `conversion`, `offer review`, `claim risk`.
 
-Primary skills: [`CopywriterSkill`](../skills/built-in.md#copywriterskill), [`CopyReviewSkill`](../skills/built-in.md#copyreviewskill), [`ContentPositioningSkill`](../skills/built-in.md#contentpositioningskill), [`AudienceResearchSkill`](../skills/built-in.md#audienceresearchskill), [`ClaimRiskReviewSkill`](../skills/built-in.md#claimriskreviewskill).
+Primary skills: landing-page, ads, campaign, email, positioning, and claim-risk skills from creator and marketing packs.

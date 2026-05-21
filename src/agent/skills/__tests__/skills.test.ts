@@ -27,12 +27,12 @@ import {
 describe("skills", () => {
   it("preprocesses attached directives into bounded sections and system additions", () => {
     const skill = HumanizerSkill.create();
-    const result = preprocessDirectives("/humanizer Write this naturally.", [
+    const result = preprocessDirectives("/humanize Write this naturally.", [
       skill,
     ]);
 
-    expect(result.processedPrompt).toContain("[APPLY_HUMANIZER_START]");
-    expect(result.processedPrompt).toContain("[APPLY_HUMANIZER_END]");
+    expect(result.processedPrompt).toContain("[APPLY_HUMANIZE_START]");
+    expect(result.processedPrompt).toContain("[APPLY_HUMANIZE_END]");
     expect(result.additionalSystemContent).toContain("BANNED AI PHRASES");
   });
 
@@ -89,7 +89,7 @@ describe("skills", () => {
       expect(prompt).toContain("## Quality Checklist");
       expect(prompt).toContain("## Failure Behavior");
       expect(prompt).toContain("## Safety Notes");
-      expect(skill.skillMetadata?.promptVersion).toBe("2026-05-12");
+      expect(skill.skillMetadata?.promptVersion).toBe("2026-05-18");
       expect(skill.skillMetadata?.requiredCapabilities).toEqual(skill.requires);
       expect(skill.skillMetadata?.sideEffectRisk).toBeTruthy();
     }

@@ -7,8 +7,13 @@ Use it when a tool should prepare a write, publish, send, schedule, update, or e
 ## Quick Start
 
 ```ts
-import { Agent, AgentWorkspace, ApprovalQueue, Provider } from "agentcraft";
-import { tool } from "agentcraft/adapters";
+import {
+  Agent,
+  AgentWorkspace,
+  ApprovalQueue,
+  Provider,
+} from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 const approvals = ApprovalQueue.memory({
   defaultReviewer: "editor@example.com",
@@ -73,7 +78,11 @@ await agent.run({
 Use an artifact store when approval records should survive process restarts.
 
 ```ts
-import { ApprovalQueue, FileArtifactStore, AgentWorkspace } from "agentcraft";
+import {
+  ApprovalQueue,
+  FileArtifactStore,
+  AgentWorkspace,
+} from "@deskcreate/agentcraft";
 
 const store = FileArtifactStore({ root: ".agentcraft/approvals" });
 
@@ -116,14 +125,126 @@ const approvals = ApprovalQueue.memory({
 });
 ```
 
+## Deny a Risky Write
+
+Use denial when the tool preview is not acceptable. The matching tool call remains blocked.
+
+```ts
+const [pending] = await approvals.list({ status: "pending" });
+
+await approvals.deny({
+  id: pending!.id,
+  reviewer: "editor@example.com",
+  reason: "The target channel is wrong.",
+});
+
+const denied = await approvals.get(pending!.id);
+console.log(denied?.status); // "denied"
+```
+
+## Custom Queue Backed By Your App
+
+Use `ApprovalQueue.custom()` when approvals live in Airtable, Notion, a SQL table, or your own reviewer UI.
+
+```ts
+import {
+  ApprovalQueue,
+  type ApprovalQueueController,
+} from "@deskcreate/agentcraft";
+
+const myApprovalService: ApprovalQueueController = ApprovalQueue.memory({
+  defaultReviewer: "reviewer@example.com",
+});
+
+const approvals = ApprovalQueue.custom({
+  async requestApproval(input) {
+    return myApprovalService.requestApproval(input);
+  },
+  async approve(decision) {
+    return myApprovalService.approve(decision);
+  },
+  async deny(decision) {
+    return myApprovalService.deny(decision);
+  },
+  async get(id) {
+    return myApprovalService.get(id);
+  },
+  async list(filter) {
+    return myApprovalService.list(filter);
+  },
+  async expire(now) {
+    return myApprovalService.expire?.(now) ?? 0;
+  },
+});
+```
+
+## Workflow Write Gate
+
+Use this shape when a workflow prepares a write-capable step but a reviewer decides when it can execute.
+
+```ts
+import {
+  AgentWorkflow,
+  ApprovalQueue,
+  CustomStep,
+  AgentWorkspace,
+} from "@deskcreate/agentcraft";
+
+const approvals = ApprovalQueue.memory({
+  defaultReviewer: "ops@example.com",
+});
+
+const workspace = AgentWorkspace.create({
+  toolPolicy: { approvalQueue: approvals },
+});
+
+const workflow = AgentWorkflow.create({
+  workspace,
+  steps: [
+    CustomStep({
+      id: "prepare-publish",
+      run: async (ctx) => {
+        const pending = await approvals.list({ status: "pending" });
+        return { approvalCount: pending.length, input: ctx.input };
+      },
+    }),
+  ],
+});
+
+await workflow.run({ input: { title: "Launch post" } });
+```
+
 ## Reports
 
 Approval queue events are visible in [Observability Reports](./observability-reports.md) when you attach the workspace event collector.
 
 ```ts
-import { AgentReports } from "agentcraft";
+import {
+  Agent,
+  AgentReports,
+  AgentWorkspace,
+  Provider,
+} from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
+
+const workspace = AgentWorkspace.create();
+const createDraft = tool({
+  name: "create_draft",
+  description: "Prepare a draft for reviewer approval.",
+  security: { sideEffect: "write", requiresConfirmation: true },
+  params: {
+    title: { type: "string", description: "Draft title." },
+  },
+  run: async ({ title }) => ({ draftId: "draft_123", title }),
+});
 
 const events = AgentReports.eventCollector(workspace.events);
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  workspace,
+});
 
 const response = await agent.run({
   prompt: "Prepare a publish action.",

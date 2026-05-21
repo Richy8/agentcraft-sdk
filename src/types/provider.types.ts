@@ -48,7 +48,7 @@ export interface LLMResponse {
 }
 
 export interface StreamChunk {
-  type?: 'model_delta' | 'tool_call' | 'tool_result' | 'final';
+  type?: 'model_delta' | 'tool_call' | 'tool_result' | 'final' | 'metadata';
   runId?: string;
   spanId?: string;
   parentSpanId?: string;
@@ -61,13 +61,18 @@ export interface StreamChunk {
   };
   toolCall?: ToolCall;
   toolResult?: ToolCallResult;
+  promptAssembly?: {
+    readonly mode: string;
+    readonly records: readonly object[];
+  };
 }
 
 export type StreamEvent =
   | (StreamChunk & { type: 'model_delta'; delta: string })
   | (StreamChunk & { type: 'tool_call'; toolCall: ToolCall })
   | (StreamChunk & { type: 'tool_result'; toolResult: ToolCallResult })
-  | (StreamChunk & { type: 'final'; finishReason: FinishReason });
+  | (StreamChunk & { type: 'final'; finishReason: FinishReason })
+  | (StreamChunk & { type: 'metadata'; delta: '' });
 
 export interface ModelCapabilities {
   maxContextLength: number;

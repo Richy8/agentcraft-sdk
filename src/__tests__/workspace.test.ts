@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { describe, expect, it, vi } from 'vitest';
 import { AgentTeam } from '../agent/agent-team.js';
 import { Agent } from '../agent/agent.js';
-import { AgentCache } from '../agent/cache.js';
+import { AgentCache } from '../agent/cache/index.js';
 import { AgentWorkspace } from '../agent/workspace.js';
 import { Provider } from '../agent/provider-catalog.js';
 import { createAdapter } from '../agent/adapters/types.js';

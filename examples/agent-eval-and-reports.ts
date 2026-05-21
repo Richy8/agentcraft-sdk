@@ -4,8 +4,8 @@ import {
   AgentEval,
   AgentReports,
   Provider,
-} from "agentcraft";
-import { CreatorPacks } from "agentcraft/packs";
+} from "@deskcreate/agentcraft";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 // AgentEval gives you a repeatable gate for quality, cost, cache behavior,
 // skill activation, and tool-call budgets before you ship a workflow.

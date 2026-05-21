@@ -4,7 +4,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { AgentCache, createCacheKey, summarizeCacheStats } from "../cache.js";
+import { AgentCache, createCacheKey, summarizeCacheStats } from "../cache/index.js";
 import { Agent } from "../agent.js";
 import { Provider } from "../provider-catalog.js";
 import { createAdapter, tool } from "../adapters/index.js";

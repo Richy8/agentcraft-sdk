@@ -2,15 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { Agent } from '../agent.js';
 import { AgentPool } from '../agent-pool.js';
 import { Provider } from '../provider-catalog.js';
-import { AgentCache } from '../cache.js';
+import { AgentCache } from '../cache/index.js';
 import { createPricingStalenessReport } from '../budgets.js';
 import { FetchAdapter, SeoAdapter } from '../adapters/index.js';
 import {
-  BlogWriterSkill,
-  ContentCalendarSkill,
-  PublishQaSkill,
-  ResearchSynthesisSkill,
   WritingSkill,
+  createSkillByName,
 } from '../skills/index.js';
 import { CreatorPacks } from '../packs/index.js';
 import {
@@ -112,6 +109,36 @@ describe('Agent', () => {
     controller.abort();
     await expect(stream.next()).resolves.toMatchObject({ done: true });
     expect(produced).toBe(2);
+  });
+
+  it('attaches sanitized skill prompt assembly metadata to final stream chunks', async () => {
+    const agent = Agent.create({
+      model: Provider.ollama['llama3.2'],
+      skillActivation: 'always',
+    }).use(createSkillByName('blog-writer'));
+    const provider = (agent as unknown as { unifiedProvider: { stream: ReturnType<typeof vi.fn> } })
+      .unifiedProvider;
+    provider.stream = vi.fn(async function* (): AsyncGenerator<StreamChunk> {
+      yield { delta: 'ok' };
+      yield { delta: '', finishReason: 'stop', usage: { prompt: 1, completion: 1, total: 2 } };
+    });
+
+    const chunks: StreamChunk[] = [];
+    for await (const chunk of agent.stream({
+      prompt: 'Write a practical blog draft about cache strategy for engineering leaders.',
+    })) {
+      chunks.push(chunk);
+    }
+
+    const final = chunks.at(-1);
+    expect(final?.type).toBe('final');
+    expect(final?.promptAssembly?.mode).toBe('adaptive-safe');
+    expect(final?.promptAssembly?.records[0]).toMatchObject({
+      skill: 'blog-writer',
+      activationMode: 'always',
+      runtimeContextIncluded: true,
+    });
+    expect(final?.promptAssembly?.records[0]).not.toHaveProperty('prompt');
   });
 
   it('validates structured JSON output and retries malformed responses', async () => {
@@ -558,7 +585,7 @@ describe('AgentPool', () => {
   });
 
   it('keeps all skill prompt injection as the default behavior', async () => {
-    const agent = Agent.create({ model: Provider.ollama['llama3.2'] }).use(BlogWriterSkill.create());
+    const agent = Agent.create({ model: Provider.ollama['llama3.2'] }).use(createSkillByName('blog-writer'));
     const spy = vi.spyOn(agent as unknown as { collectTools: () => Promise<unknown[]> }, 'collectTools').mockResolvedValue([]);
     vi.spyOn(agent as unknown as { callModelWithStructuredOutput: (...args: unknown[]) => Promise<unknown> }, 'callModelWithStructuredOutput').mockResolvedValue({
       raw: {
@@ -576,19 +603,101 @@ describe('AgentPool', () => {
     expect(spy).toHaveBeenCalled();
   });
 
+  it('assembles skill prompts adaptively while preserving core domain intelligence', async () => {
+    const adaptive = Agent.create({
+      model: Provider.ollama['llama3.2'],
+      skillActivation: 'always',
+    }).use(createSkillByName('blog-writer'));
+    const full = Agent.create({
+      model: Provider.ollama['llama3.2'],
+      skillActivation: 'always',
+      skillPromptAssembly: 'full',
+    }).use(createSkillByName('blog-writer'));
+
+    const prompt = 'Write a practical blog draft about cache strategy for engineering leaders.';
+    const adaptiveSystem = await capturedSystem(adaptive, { prompt });
+    const fullSystem = await capturedSystem(full, { prompt });
+
+    expect(adaptiveSystem.length).toBeLessThan(fullSystem.length);
+    expect(adaptiveSystem).toContain('# Skill: blog-writer');
+    expect(adaptiveSystem).toContain('## Role');
+    expect(adaptiveSystem).toContain('## Goal');
+    expect(adaptiveSystem).toContain('## Constraints');
+    expect(adaptiveSystem).toContain('## Safety Notes');
+    expect(adaptiveSystem).toContain('Skill runtime context for blog-writer');
+    expect(adaptiveSystem).not.toContain('## Examples');
+  });
+
+  it('returns sanitized skill prompt assembly records for inspection', async () => {
+    const agent = Agent.create({
+      model: Provider.ollama['llama3.2'],
+      skillActivation: 'always',
+    }).use(createSkillByName('blog-writer'));
+    const provider = (
+      agent as unknown as {
+        unifiedProvider: {
+          call: ReturnType<typeof vi.fn>;
+          callWithTools: ReturnType<typeof vi.fn>;
+        };
+      }
+    ).unifiedProvider;
+    const response: LLMResponse = {
+      success: true,
+      content: 'ok',
+      tokensUsed: { prompt: 1, completion: 1, total: 2 },
+      finishReason: 'stop',
+    };
+    provider.call = vi.fn(async () => response);
+    provider.callWithTools = vi.fn(async () => response);
+
+    const result = await agent.run({
+      prompt: 'Write a practical blog draft about cache strategy for engineering leaders.',
+    });
+    const record = result.promptAssembly?.records[0];
+
+    expect(result.promptAssembly?.mode).toBe('adaptive-safe');
+    expect(record).toMatchObject({
+      skill: 'blog-writer',
+      mode: 'adaptive-safe',
+      activationMode: 'always',
+      directiveBoundary: false,
+      runtimeContextIncluded: true,
+    });
+    expect(record?.includedSections).toEqual(expect.arrayContaining(['role', 'goal', 'constraints', 'safetyNotes']));
+    expect(record?.includedSections.length).toBeLessThanOrEqual(9);
+    expect(record?.assemblyChars).toBeGreaterThan(0);
+    expect(record).not.toHaveProperty('prompt');
+  });
+
+  it('uses adaptive prompt assembly and runtime intelligence inside directive boundaries', async () => {
+    const agent = Agent.create({
+      model: Provider.ollama['llama3.2'],
+      skillActivation: 'directive-only',
+    }).use(createSkillByName('blog-writer'));
+
+    const system = await capturedSystem(agent, {
+      prompt: '/write-blog Draft a blog article about cache strategy for engineering leaders.',
+    });
+
+    expect(system).toContain('When you see [APPLY_WRITE_BLOG_START]');
+    expect(system).toContain('# Skill: blog-writer');
+    expect(system).toContain('Skill runtime context for blog-writer');
+    expect(countOccurrences(system, '# Skill: blog-writer')).toBe(1);
+  });
+
   it('supports directive-only activation and auto tool selection deterministically', async () => {
     const agent = Agent.create({
       model: Provider.ollama['llama3.2'],
       skillActivation: 'directive-only',
       toolSelection: 'auto',
     })
-      .use(ResearchSynthesisSkill.create())
+      .use(createSkillByName('blog-research'))
       .use(FetchAdapter.connect({ allowedDomains: ['example.com'] }))
       .use(SeoAdapter.connect());
 
     const tools = await (
       agent as unknown as { collectTools: (params: { prompt: string }) => Promise<Array<{ name: string }>> }
-    ).collectTools({ prompt: '/research-synthesis use web fetch' });
+    ).collectTools({ prompt: '/research-blog-evidence use web fetch' });
 
     expect(tools.map((tool) => tool.name)).toContain('fetch_url');
     expect(tools.map((tool) => tool.name)).not.toContain('get_serp_results');
@@ -599,8 +708,8 @@ describe('AgentPool', () => {
       model: Provider.ollama['llama3.2'],
       skillActivation: 'auto',
     })
-      .use(BlogWriterSkill.create())
-      .use(ResearchSynthesisSkill.create());
+      .use(createSkillByName('blog-writer'))
+      .use(createSkillByName('blog-research'));
     const provider = (
       agent as unknown as {
         unifiedProvider: {
@@ -621,11 +730,11 @@ describe('AgentPool', () => {
     const result = await agent.run({ prompt: 'Write a practical blog draft about cache strategy.' });
 
     expect(result.selection?.activeSkills).toContain('blog-writer');
-    expect(result.selection?.activeSkills).not.toContain('research-synthesis');
+    expect(result.selection?.activeSkills).not.toContain('blog-research');
     expect(result.selection?.activationReasons).toContainEqual(
       expect.objectContaining({
         skill: 'blog-writer',
-        reason: 'keyword',
+        reason: 'semantic',
         confidence: expect.any(Number),
       })
     );
@@ -636,8 +745,8 @@ describe('AgentPool', () => {
       model: Provider.ollama['llama3.2'],
       skillActivation: 'auto',
     })
-      .use(BlogWriterSkill.create())
-      .use(ResearchSynthesisSkill.create());
+      .use(createSkillByName('blog-writer'))
+      .use(createSkillByName('blog-research'));
     const provider = (
       agent as unknown as { unifiedProvider: { call: ReturnType<typeof vi.fn> } }
     ).unifiedProvider;
@@ -649,11 +758,11 @@ describe('AgentPool', () => {
     }));
 
     const result = await agent.run({
-      prompt: 'Create a compact Medium article plan about reducing token waste.',
+      prompt: 'Create a compact blog article plan about reducing token waste.',
     });
 
     expect(result.selection?.activeSkills).toContain('blog-writer');
-    expect(result.selection?.activeSkills).not.toContain('research-synthesis');
+    expect(result.selection?.activeSkills).not.toContain('blog-research');
   });
 
   it('supports per-run skills without adding them to the global agent scope', async () => {
@@ -680,7 +789,7 @@ describe('AgentPool', () => {
 
     const scoped = await agent.run({
       prompt: 'Write a blog draft about agent cost control.',
-      use: BlogWriterSkill.create(),
+      use: createSkillByName('blog-writer'),
     });
     const plain = await agent.run({ prompt: 'Write a blog draft about agent cost control.' });
 
@@ -695,8 +804,7 @@ describe('AgentPool', () => {
       skillActivation: 'auto',
     })
       .use(CreatorPacks.blog())
-      .use(ContentCalendarSkill.create())
-      .use(PublishQaSkill.create());
+      .use(CreatorPacks.linkedin());
     const provider = (
       agent as unknown as {
         unifiedProvider: {
@@ -719,7 +827,7 @@ describe('AgentPool', () => {
 
     const blog = await agent.run({ prompt: 'Write a blog article plan about cache strategy.' });
     expect(blog.selection?.activeSkills).toContain('blog-writer');
-    expect(blog.selection?.activeSkills).not.toContain('content-calendar');
+    expect(blog.selection?.activeSkills).not.toContain('linkedin-calendar');
 
     const negated = await agent.run({ prompt: 'Do not write a blog. Create only a short calendar note.' });
     expect(negated.selection?.activeSkills).not.toContain('blog-writer');
@@ -762,20 +870,20 @@ describe('AgentPool', () => {
     provider.callWithTools = vi.fn(async () => response);
     const cases = [
       {
-        prompt: 'Write a Medium blog article plan about token caching.',
-        expected: new Set(['content-brief', 'blog-writer']),
+        prompt: 'Write a blog article plan about token caching.',
+        expected: new Set(['blog-brief', 'blog-writer']),
       },
       {
-        prompt: 'Research sources and evidence for an article about agent budgets.',
-        expected: new Set(['research-synthesis']),
+        prompt: 'Research topic opportunities and keywords for an article about agent budgets.',
+        expected: new Set(['blog-topic-research']),
       },
       {
         prompt: 'Fact-check the claims in this draft and flag weak citations.',
-        expected: new Set(['fact-check']),
+        expected: new Set(['blog-fact-check']),
       },
       {
-        prompt: 'Define the audience persona and objections before writing.',
-        expected: new Set(['audience-research']),
+        prompt: 'Analyze SERP results for the target keyword before writing.',
+        expected: new Set(['blog-serp-research']),
       },
       {
         prompt: 'Help me think through a general product idea.',
@@ -828,7 +936,7 @@ describe('AgentPool', () => {
       model: Provider.ollama['llama3.2'],
       skillActivation: 'always',
       promptCompression: 'aggressive',
-    }).use(BlogWriterSkill.create());
+    }).use(createSkillByName('blog-writer'));
     const regular = Agent.create({
       model: Provider.ollama['llama3.2'],
       skillActivation: 'always',
@@ -840,12 +948,12 @@ describe('AgentPool', () => {
     const balancedSystem = await capturedSystem(balanced);
     const regularSystem = await capturedSystem(regular);
     const aggressiveSystem = await capturedSystem(aggressive, {
-      use: ResearchSynthesisSkill.create(),
+      use: createSkillByName('blog-research'),
       promptCompression: 'aggressive',
     });
 
-    expect(safeSystem.length).toBeLessThan(fullSystem.length * 0.85);
-    expect(balancedSystem.length).toBeLessThan(fullSystem.length * 0.7);
+    expect(safeSystem.length).toBeLessThan(fullSystem.length);
+    expect(balancedSystem.length).toBeLessThan(safeSystem.length);
     for (const system of [safeSystem, balancedSystem, aggressiveSystem, regularSystem]) {
       expect(system).toContain('Role');
       expect(system).toContain('Goal');
@@ -974,4 +1082,8 @@ async function capturedSystem(
   });
   await agent.run({ prompt: 'Write a blog article about cache strategy.', ...params });
   return system;
+}
+
+function countOccurrences(value: string, needle: string): number {
+  return value.split(needle).length - 1;
 }

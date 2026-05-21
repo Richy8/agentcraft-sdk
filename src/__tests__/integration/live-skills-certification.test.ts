@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { afterAll, describe, expect, it } from 'vitest';
 import { Agent } from '../../agent/agent.js';
 import { tool } from '../../agent/adapters/types.js';
-import { AgentCache } from '../../agent/cache.js';
+import { AgentCache } from '../../agent/cache/index.js';
 import { CreatorPacks } from '../../agent/packs/index.js';
 
 const integrationEnabled = process.env.INTEGRATION_TESTS === 'true';

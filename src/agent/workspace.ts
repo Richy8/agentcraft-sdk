@@ -1,5 +1,5 @@
 import { mkdirSync } from 'node:fs';
-import { AgentCache } from './cache.js';
+import { AgentCache } from './cache/index.js';
 import type { AgentAdapter } from './adapters/types.js';
 import type { ToolPolicy } from './adapters/tool-policy.js';
 import type { AgentCacheController } from './creator/types.js';

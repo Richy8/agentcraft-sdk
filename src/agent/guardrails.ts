@@ -1,12 +1,7 @@
 import type { ToolGuardrail } from './adapters/tool-policy.js';
+import { secretDetectionPatterns } from '../security/secret-patterns.js';
 
-const SECRET_PATTERNS = [
-  /sk-[a-zA-Z0-9_-]{8,}/,
-  /Bearer\s+[a-zA-Z0-9._-]+/,
-  /api[_-]?key\s*[:=]/i,
-  /password\s*[:=]/i,
-  /secret\s*[:=]/i,
-];
+const SECRET_PATTERNS = secretDetectionPatterns();
 
 const PROMPT_INJECTION_PATTERNS = [
   /ignore (all )?(previous|prior|above) instructions/i,

@@ -36,7 +36,7 @@ console.log(response.content);
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { BrandVoiceSkill } from "@deskcreate/agentcraft/skills";
+import { createSkillByName } from "@deskcreate/agentcraft/skills";
 import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
@@ -46,7 +46,7 @@ const agent = Agent.create({
 })
   .use(CreatorPacks.seo())
   .use(CreatorPacks.blog())
-  .use(BrandVoiceSkill.create());
+  .use(createSkillByName("brand-voice"));
 
 const response = await agent.run({
   prompt: "Draft an SEO-optimized blog post.",

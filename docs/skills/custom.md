@@ -52,6 +52,87 @@ const response = await agent.run({
 console.log(response.content);
 ```
 
+## Spec-Backed Skills
+
+Use `defineSkillSpec()` when a skill needs to be discoverable by domain, category, stage, artifacts, tools, and future packs. A spec can still become a normal `AgentSkill` with `createSkillFromSpec()`.
+
+```ts
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import {
+  createSkillFromSpec,
+  defineSkillSpec,
+  sourceIntegrityRules,
+  writingQualityStandards,
+} from "@deskcreate/agentcraft/skills";
+
+const BusinessBriefSkillSpec = defineSkillSpec({
+  name: "business-brief-review",
+  displayName: "Business Brief Review",
+  description:
+    "Reviews a business brief for assumptions, evidence gaps, risks, and decision readiness.",
+  directive: "business-brief-review",
+  domain: "business",
+  category: "strategy",
+  stage: "review",
+  priority: 20,
+  requiredCapabilities: ["tools"],
+  optionalAdapters: ["filesystem"],
+  sideEffectRisk: "read",
+  consumesArtifacts: ["BusinessBrief"],
+  producesArtifacts: ["ReviewReport"],
+  domainIntelligence: {
+    vocabulary: ["business model", "unit economics", "risk", "assumption"],
+    metricsAndSignals: ["decision impact", "evidence strength"],
+    toolsAndDataSources: ["artifact store", "filesystem"],
+    riskBoundaries: ["Do not present investment, tax, or legal advice."],
+    minimumInput: ["A business brief, decision question, or strategy memo."],
+  },
+  prompt: {
+    role: "You are a business strategy reviewer who separates operating facts, assumptions, risks, and recommendations.",
+    goal: "Review the brief for decision readiness without padding, jargon stuffing, or unsupported certainty.",
+    constraints: [
+      ...sourceIntegrityRules,
+      "Use business vocabulary only when it clarifies the decision.",
+      "Separate facts, assumptions, and recommendations.",
+    ],
+    toolUsePolicy: ["Read supplied artifacts before judging the brief."],
+    outputFormat: [
+      "Decision summary: what decision this brief supports.",
+      "Findings: severity-ranked risks and missing evidence.",
+      "Next actions: concrete fixes before the decision is made.",
+    ],
+    qualityChecklist: [
+      ...writingQualityStandards,
+      "Every finding names the business impact.",
+    ],
+    failureBehavior: [
+      "If the brief is missing, ask for the smallest useful input.",
+    ],
+    safetyNotes: ["Escalate regulated claims to qualified human review."],
+  },
+});
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+}).use(createSkillFromSpec(BusinessBriefSkillSpec));
+```
+
+For app-level discovery, register specs:
+
+```ts
+import {
+  SkillRegistry,
+  createSkillByName,
+  registerSkillSpecs,
+} from "@deskcreate/agentcraft/skills";
+
+const registry = new SkillRegistry();
+registerSkillSpecs([BusinessBriefSkillSpec], registry);
+
+const skill = createSkillByName("business-brief-review", registry);
+```
+
 ## `defineSkill()` Config
 
 | Field                   | Required    | Default     | Purpose                                                               |

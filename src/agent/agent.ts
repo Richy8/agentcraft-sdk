@@ -1,12 +1,15 @@
-import { costCalculator } from "../cost-calculator/index.js";
+/**
+ * Public Agent facade and runtime orchestrator.
+ *
+ * The class intentionally owns the public fluent API while delegating extracted
+ * policy, cache, validation, and prompt-compression concerns to smaller modules.
+ * Keep new behavior behind focused helpers so this file remains an orchestrator
+ * instead of accumulating backend-specific implementation details.
+ */
 import {
-  AdapterRequirementError,
-  AdapterToolConflictError,
   ConfigurationError,
-  QuotaExceededError,
   UnsupportedInputError,
 } from "../errors/index.js";
-import { MODEL_CATALOG } from "../model-registry/catalog.js";
 import { modelRegistry } from "../model-registry/registry.js";
 import { ProviderFactory } from "../provider-registry/factory.js";
 import { PROVIDER_REGISTRY } from "../provider-registry/registry.js";
@@ -25,41 +28,48 @@ import type {
 } from "../types/provider.types.js";
 import type { ResolvedRetryStrategy } from "../types/retry.types.js";
 import type { AgentAdapter } from "./adapters/types.js";
-import { isCreatorPack } from "./creator/types.js";
-import type { CreatorPack, CreatorSkillManifest } from "./creator/types.js";
+import type { CreatorPack } from "./creator/types.js";
 import {
   mergeToolPolicies,
-  runToolWithPolicy,
   type ToolAuditEvent,
   type ToolPolicy,
 } from "./adapters/tool-policy.js";
 import { AGENT_DEFAULTS, AgentConfigSchema } from "./config.js";
 import type { AgentCreateConfig, ValidatedAgentConfig } from "./config.js";
+import { registerAgentForProcessCleanup, unregisterAgentForProcessCleanup } from "./lifecycle.js";
 import {
-  createCacheKey,
-  summarizeCacheStats,
-  type AgentCacheLookup,
-} from "./cache.js";
-import { RunTracer, type TraceSink } from "./observability.js";
+  createRunAdapterScope as createScopedRunAdapters,
+  type RunAdapterScope,
+} from "./adapters/run-scope.js";
+import { attachAgentAdapter } from "./adapters/attachment-manager.js";
+import {
+  cleanupAttachedAdapters,
+  cleanupRunOnlyAdapters,
+  initializeAttachedAdapters,
+  initializeRunOnlyAdapters,
+  type PendingAdapterInit,
+} from "./adapters/lifecycle-manager.js";
+import type { RunTracer } from "./observability.js";
 import type { AgentEventEmitter } from "./events.js";
+import { type AgentMemoryStore } from "./memory/index.js";
+import { estimateRunCost, type CostEstimate } from "./budgets.js";
+import type { AgentSkill } from "./skills/types.js";
 import {
-  AgentMemory,
-  type AgentMemoryStore,
-  type MemoryRetrievalOptions,
-} from "./memory/index.js";
+  selectActiveSkillMatches as selectActiveSkillMatchesForRun,
+  selectActiveSkills as selectActiveSkillsForRun,
+} from "./skills/activation-engine.js";
 import {
-  enforcePostRunBudget,
-  enforcePreflight,
-  estimateRunCost,
-  createRunCostReport,
-  type CostEstimate,
-} from "./budgets.js";
-import type { AdapterRef, AgentSkill } from "./skills/types.js";
+  estimateModelRunCost,
+  inspectModel,
+  listModelCatalog,
+  modelSupports,
+} from "./model-catalog-service.js";
 import {
-  parseAndValidateStructuredOutput,
-  structuredOutputInstruction,
-  type JsonSchema,
-} from "./structured-output.js";
+  assembleSkillPromptForRun,
+  compileSkillRuntimeContext,
+  inspectSkillPromptAssembly,
+  type SkillPromptAssemblyContext,
+} from "./skills/prompt-assembler.js";
 import type {
   AgentResponse,
   AgentRunParams,
@@ -67,21 +77,29 @@ import type {
   ModelInfo,
   PromptCompressionMode,
   RetryConfig,
-  SkillActivationReason,
+  SkillPromptAssemblyMode,
+  SkillPromptAssemblyRecord,
 } from "./types.js";
-import { assembleResponse } from "./utils/assemble-response.js";
 import { preprocessDirectives } from "./utils/directives.js";
-import { resolvePrompt } from "./utils/resolve-prompt.js";
+import { compressSkillPromptSystem } from "./runtime/prompt-compression.js";
+import { callModelStructuredOutputFlow } from "./runtime/structured-output-flow.js";
+import type { StructuredOutputToolState } from "./runtime/structured-output-handler.js";
+import { createToolExecutionBudget, type ToolExecutionBudget } from "./tools/tool-budget.js";
+import { validateCachePolicy as validateToolCachePolicy } from "./tools/tool-cache-manager.js";
+import { collectToolsForRun } from "./tools/tool-manager.js";
+import { selectToolAdaptersForActiveSkills } from "./tools/tool-selection.js";
+import {
+  runAgentRuntime,
+  streamAgentRuntime,
+  type AgentRuntimeContext,
+} from "./runtime/agent-runtime.js";
 import type { AgentWorkspaceInstance } from "./workspace.js";
 
 export class Agent {
   readonly name: string | undefined;
   private readonly unifiedProvider: BaseLLMProvider;
   private readonly adapters: AgentAdapter[] = [];
-  private readonly pendingInits: Array<{
-    adapter: AgentAdapter;
-    init: () => Promise<void>;
-  }> = [];
+  private readonly pendingInits: PendingAdapterInit[] = [];
   private readonly pendingConflictChecks: Array<() => Promise<void>> = [];
   private readonly resolvedDynamicToolNames = new Set<string>();
   private readonly externallyManagedAdapters = new Set<AgentAdapter>();
@@ -153,306 +171,23 @@ export class Agent {
   }
 
   async run(params: AgentRunParams): Promise<AgentResponse> {
-    const replayed = resolveReplay(params);
-    if (replayed) return replayed;
-    this.resetCacheStats();
-    const tracer = new RunTracer(toTraceSink(params.trace));
-    const agentSpan = tracer.start("agent", "agent.run", {
-      model: this.model,
-      provider: this.provider,
-    });
-    params = { ...params, prompt: await resolvePrompt(params) };
-    const runScope = this.createRunAdapterScope(params);
-    this.validateInputs(params);
-    this.validateCachePolicy(params);
-    enforcePreflight(
-      params,
-      this.getCapabilities(),
-      this.model,
-      this.provider,
-      params.budget,
-    );
-    if (!this.initialized) await this.initAdapters();
-    await this.initRunAdapters(runScope.runOnlyAdapters);
-
-    try {
-      const executionBudget = createToolExecutionBudget(params);
-      params = await this.applyMemoryContext(params);
-      params = this.applySkillSystemPrompts(params, runScope.adapters);
-      const promptCompression = this.resolvePromptCompression(params);
-      const activeSkillMatches = this.selectActiveSkillMatches(
-        params,
-        runScope.adapters,
-      );
-      params = this.applyPromptCompression(params, promptCompression);
-      params = this.preprocessDirectives(params, runScope.adapters);
-      params = this.applyStructuredOutputPrompt(params);
-      const allTools = await this.collectTools(
-        params,
-        { tracer, parentSpanId: agentSpan.spanId },
-        runScope.adapters,
-        executionBudget,
-      );
-      const structuredTool = this.createStructuredOutputTool(params);
-      const modelTools = structuredTool
-        ? [
-            ...allTools,
-            this.wrapToolExecutionBudget(structuredTool.tool, executionBudget),
-          ]
-        : allTools;
-      let runParams = params;
-      for (const adapter of runScope.adapters) {
-        const adapterSpan = tracer.start(
-          "adapter",
-          `${adapter.name}.onBeforeRun`,
-          undefined,
-          agentSpan.spanId,
-        );
-        if (adapter.onBeforeRun)
-          runParams = await adapter.onBeforeRun(runParams);
-        tracer.end(adapterSpan);
-      }
-
-      const llmParams = this.toLLMParams(runParams);
-      const measurement = measureRunPrompt(
-        llmParams,
-        allTools.length,
-        modelTools.length,
-        Boolean(params.assembly?.minify),
-        promptCompression,
-      );
-      const modelSpan = tracer.start(
-        "model",
-        "model.call",
-        { tools: modelTools.length },
-        agentSpan.spanId,
-      );
-      const { raw, structuredResponse } =
-        await this.callModelWithStructuredOutput(
-          llmParams,
-          modelTools,
-          params,
-          structuredTool,
-          tracer,
-          modelSpan.spanId,
-        );
-      tracer.end(modelSpan);
-
-      let response: AgentResponse = {
-        content: raw.content,
-        cost:
-          raw.cost ??
-          (this.costFactor === 0
-            ? 0
-            : costCalculator.calculate(raw.tokensUsed, this.getCapabilities())),
-        tokensUsed: raw.tokensUsed,
-        finishReason: raw.finishReason,
-        model: this.model,
-        provider: this.provider,
-        runId: tracer.runId,
-        promptProvenance: promptProvenance(params),
-        selection: {
-          skillActivation: this.config.skillActivation ?? "always",
-          toolSelection: this.config.toolSelection ?? "all",
-          activeSkills: activeSkillMatches.map((match) => match.skill.name),
-          activationReasons: activeSkillMatches.map(({ skill, ...reason }) => ({
-            skill: skill.name,
-            ...reason,
-          })),
-          exposedTools: allTools.map((tool) => tool.name),
-          executedToolCalls: executionBudget.count,
-        },
-        measurement,
-        cache: {
-          ...this.cacheStats,
-          bypassed: this.isCacheBypassed(params),
-          summary: summarizeCacheStats(this.cacheStats),
-        },
-        ...(raw.toolCalls && { toolCalls: raw.toolCalls }),
-      };
-
-      const costEstimateParams: Pick<
-        AgentRunParams,
-        "maxTokens" | "system" | "tools" | "prompt"
-      > = {
-        tools: modelTools,
-        ...(runParams.prompt !== undefined && { prompt: runParams.prompt }),
-        ...(runParams.system !== undefined && { system: runParams.system }),
-        ...(runParams.maxTokens !== undefined && {
-          maxTokens: runParams.maxTokens,
-        }),
-      };
-      response = {
-        ...response,
-        costReport: createRunCostReport({
-          scope: "run",
-          provider: this.provider,
-          model: this.model,
-          caps: this.getCapabilities(),
-          response,
-          ...(params.budget !== undefined && { budget: params.budget }),
-          estimate: estimateRunCost(
-            costEstimateParams,
-            this.getCapabilities(),
-            params.budget?.costOptions,
-          ),
-        }),
-      };
-
-      if (structuredResponse !== undefined)
-        response = { ...response, structuredResponse };
-
-      this.events?.emit("cost.updated", {
-        model: response.model,
-        provider: response.provider,
-        cost: response.cost,
-        tokensUsed: response.tokensUsed,
-      });
-
-      for (const adapter of runScope.adapters) {
-        if (adapter.onAfterRun) {
-          const adapterSpan = tracer.start(
-            "adapter",
-            `${adapter.name}.onAfterRun`,
-            undefined,
-            agentSpan.spanId,
-          );
-          response = await adapter.onAfterRun(response);
-          tracer.end(adapterSpan);
-        }
-      }
-
-      tracer.end(agentSpan);
-      enforcePostRunBudget(response, params.budget, this.provider);
-      return { ...response, trace: tracer.export() };
-    } finally {
-      await this.cleanupRunAdapters(runScope.runOnlyAdapters);
-    }
+    return await runAgentRuntime(this.createRuntimeContext(), params);
   }
 
   async *stream(params: AgentRunParams): AsyncGenerator<StreamChunk> {
-    const tracer = new RunTracer(toTraceSink(params.trace));
-    const agentSpan = tracer.start("agent", "agent.stream", {
-      model: this.model,
-      provider: this.provider,
-    });
-    params = { ...params, prompt: await resolvePrompt(params) };
-    const runScope = this.createRunAdapterScope(params);
-    this.validateInputs(params);
-    this.validateCachePolicy(params);
-    if (!this.initialized) await this.initAdapters();
-    await this.initRunAdapters(runScope.runOnlyAdapters);
-
-    try {
-      const executionBudget = createToolExecutionBudget(params);
-      params = await this.applyMemoryContext(params);
-      params = this.applySkillSystemPrompts(params, runScope.adapters);
-      params = this.preprocessDirectives(params, runScope.adapters);
-      params = this.applyStructuredOutputPrompt(params);
-      const allTools = await this.collectTools(
-        params,
-        { tracer, parentSpanId: agentSpan.spanId },
-        runScope.adapters,
-        executionBudget,
-      );
-      let runParams = params;
-      for (const adapter of runScope.adapters) {
-        if (adapter.onBeforeRun)
-          runParams = await adapter.onBeforeRun(runParams);
-      }
-
-      const llmParams = this.toLLMParams(runParams);
-      yield* this.streamWithHooks(
-        llmParams,
-        allTools,
-        tracer,
-        agentSpan.spanId,
-        params.signal,
-      );
-      tracer.end(agentSpan);
-    } finally {
-      await this.cleanupRunAdapters(runScope.runOnlyAdapters);
-    }
+    yield* streamAgentRuntime(this.createRuntimeContext(), params);
   }
 
   use(adapter: AgentAdapter | CreatorPack): this {
-    if (isCreatorPack(adapter)) {
-      for (const attachment of adapter.attachments) {
-        if (this.adapters.some((item) => item.name === attachment.name))
-          continue;
-        this.use(attachment);
-      }
-      return this;
-    }
-
-    if (this.adapters.some((item) => item.name === adapter.name)) return this;
-
-    const caps = this.getCapabilities();
-    for (const req of adapter.requires ?? []) {
-      const supported = {
-        tools: caps.supportsTools,
-        vision: caps.supportsVision,
-        audio: caps.supportsAudio,
-        video: caps.supportsVideo,
-        files: caps.supportsFiles,
-      }[req];
-      if (!supported) {
-        throw new AdapterRequirementError(
-          `Adapter '${adapter.name}' requires '${req}' but '${this.model}' does not support it.`,
-        );
-      }
-    }
-
-    if (isAgentSkill(adapter)) {
-      for (const dep of adapter.dependsOn ?? []) {
-        if (Array.isArray(dep)) {
-          if (!dep.some((ref) => this.isAttached(ref))) {
-            const names = dep.map(adapterRefName).join(" or ");
-            throw new AdapterRequirementError(
-              `Skill '${adapter.name}' requires at least one of: [${names}]`,
-            );
-          }
-        } else if (!this.isAttached(dep)) {
-          throw new AdapterRequirementError(
-            `Skill '${adapter.name}' requires '${adapterRefName(dep)}' - attach it first`,
-          );
-        }
-      }
-    }
-
-    const existingStaticNames = new Set(
-      this.adapters.flatMap((item) => item.declaredToolNames ?? []),
-    );
-    for (const name of adapter.declaredToolNames ?? []) {
-      if (existingStaticNames.has(name)) {
-        throw new AdapterToolConflictError(
-          `Tool name conflict: '${adapter.name}' registers tool '${name}' which is already registered`,
-        );
-      }
-    }
-
-    if (!adapter.declaredToolNames && adapter.getTools) {
-      this.pendingConflictChecks.push(async () => {
-        const tools = await adapter.getTools!();
-        const allKnown = new Set([
-          ...this.adapters.flatMap((item) => item.declaredToolNames ?? []),
-          ...this.resolvedDynamicToolNames,
-        ]);
-        for (const tool of tools) {
-          if (allKnown.has(tool.name)) {
-            throw new AdapterToolConflictError(
-              `Tool name conflict (post-init): '${adapter.name}' exposes '${tool.name}' which conflicts`,
-            );
-          }
-        }
-        tools.forEach((tool) => this.resolvedDynamicToolNames.add(tool.name));
-      });
-    }
-
-    this.adapters.push(adapter);
-    if (adapter.init)
-      this.pendingInits.push({ adapter, init: () => adapter.init!() });
-    this.initialized = false;
+    const changed = attachAgentAdapter(adapter, {
+      adapters: this.adapters,
+      pendingInits: this.pendingInits,
+      pendingConflictChecks: this.pendingConflictChecks,
+      resolvedDynamicToolNames: this.resolvedDynamicToolNames,
+      capabilities: this.getCapabilities(),
+      model: this.model,
+    });
+    if (changed) this.initialized = false;
     return this;
   }
 
@@ -461,105 +196,25 @@ export class Agent {
     this.disposed = true;
     unregisterAgentForProcessCleanup(this);
 
-    for (const adapter of [...this.adapters].reverse()) {
-      if (!this.externallyManagedAdapters.has(adapter) && adapter.cleanup)
-        await adapter.cleanup();
-    }
+    await cleanupAttachedAdapters({
+      adapters: this.adapters,
+      externallyManagedAdapters: this.externallyManagedAdapters,
+    });
   }
 
   static inspect(model: string): ModelInfo {
-    const { provider, modelId } = parseModelString(model);
-    const caps = modelRegistry.lookup(provider, modelId);
-    return {
-      model: modelId,
-      provider,
-      capabilities: {
-        contextWindow: caps.maxContextLength,
-        maxOutput: caps.maxOutputTokens,
-        vision: caps.supportsVision,
-        audio: caps.supportsAudio,
-        video: caps.supportsVideo,
-        files: caps.supportsFiles,
-        tools: caps.supportsTools,
-        streaming: caps.supportsStreaming,
-        jsonMode: caps.supportsJsonMode,
-      },
-      pricing: {
-        inputPerM: caps.costPerMInputToken,
-        outputPerM: caps.costPerMOutputToken,
-        ...(caps.cachedInputDiscount !== undefined && {
-          cachedDiscount: caps.cachedInputDiscount,
-        }),
-        ...(caps.costPerRequest !== undefined && {
-          perRequest: caps.costPerRequest,
-        }),
-        ...(caps.pricingMetadata !== undefined && {
-          currency: caps.pricingMetadata.currency,
-          sourceUrl: caps.pricingMetadata.sourceUrl,
-          updatedAt: caps.pricingMetadata.updatedAt,
-          ...(caps.pricingMetadata.notes !== undefined && {
-            notes: caps.pricingMetadata.notes,
-          }),
-        }),
-      },
-      scores: { quality: caps.qualityScore, speed: caps.speedScore },
-      optimizedFor: [...caps.optimizedFor],
-      deprecated: caps.deprecated ?? false,
-      local: caps.costPerMInputToken === 0 && caps.costPerMOutputToken === 0,
-    };
+    return inspectModel(model);
   }
 
   static supports(
     model: string,
     capability: keyof ModelInfo["capabilities"],
   ): boolean {
-    return Boolean(Agent.inspect(model).capabilities[capability]);
+    return modelSupports(model, capability);
   }
 
   static catalog(filter?: CatalogFilter): ModelInfo[] {
-    const all = Object.entries(MODEL_CATALOG)
-      .filter(([key]) => key !== "__default__" && !key.endsWith(":__default__"))
-      .map(([key]) => Agent.inspect(key));
-
-    if (!filter) return all.filter((entry) => !entry.deprecated);
-
-    return all.filter((entry) => {
-      if (!filter.deprecated && entry.deprecated) return false;
-      if (filter.provider && entry.provider !== filter.provider) return false;
-      if (
-        filter.optimizedFor &&
-        !entry.optimizedFor.includes(filter.optimizedFor)
-      )
-        return false;
-      if (
-        filter.minQuality !== undefined &&
-        entry.scores.quality < filter.minQuality
-      )
-        return false;
-      if (filter.minSpeed !== undefined && entry.scores.speed < filter.minSpeed)
-        return false;
-      if (
-        filter.vision !== undefined &&
-        entry.capabilities.vision !== filter.vision
-      )
-        return false;
-      if (
-        filter.audio !== undefined &&
-        entry.capabilities.audio !== filter.audio
-      )
-        return false;
-      if (
-        filter.tools !== undefined &&
-        entry.capabilities.tools !== filter.tools
-      )
-        return false;
-      if (
-        filter.streaming !== undefined &&
-        entry.capabilities.streaming !== filter.streaming
-      )
-        return false;
-      return true;
-    });
+    return listModelCatalog(filter);
   }
 
   static estimateCost(
@@ -569,9 +224,7 @@ export class Agent {
       "prompt" | "system" | "maxTokens" | "tools" | "budget"
     >,
   ): CostEstimate {
-    const { provider, modelId } = parseModelString(model);
-    const caps = modelRegistry.lookup(provider, modelId);
-    return estimateRunCost(params, caps, params.budget?.costOptions);
+    return estimateModelRunCost(model, params);
   }
 
   estimateCost(
@@ -658,6 +311,60 @@ export class Agent {
     return clone;
   }
 
+  private createRuntimeContext(): AgentRuntimeContext {
+    return {
+      provider: this.provider,
+      model: this.model,
+      costFactor: this.costFactor,
+      unifiedProvider: this.unifiedProvider,
+      attachedAdapters: this.adapters,
+      skillActivationMode: this.config.skillActivation ?? "always",
+      toolSelectionMode: this.config.toolSelection ?? "all",
+      getCacheStats: () => this.cacheStats,
+      getCapabilities: () => this.getCapabilities(),
+      resetCacheStats: () => this.resetCacheStats(),
+      validateInputs: (params) => this.validateInputs(params),
+      validateCachePolicy: (params) => this.validateCachePolicy(params),
+      ensureAttachedAdaptersInitialized: async () => {
+        if (!this.initialized) await this.initAdapters();
+      },
+      createRunAdapterScope: (params) => this.createRunAdapterScope(params),
+      initRunAdapters: (adapters) => this.initRunAdapters(adapters),
+      cleanupRunAdapters: (adapters) => this.cleanupRunAdapters(adapters),
+      applySkillSystemPrompts: (params, adapters, records) =>
+        this.applySkillSystemPrompts(params, adapters, records),
+      resolvePromptCompression: (params) => this.resolvePromptCompression(params),
+      resolveSkillPromptAssembly: (params) => this.resolveSkillPromptAssembly(params),
+      selectActiveSkillMatches: (params, adapters) =>
+        this.selectActiveSkillMatches(params, adapters),
+      applyPromptCompression: (params, mode) => this.applyPromptCompression(params, mode),
+      preprocessDirectives: (params, adapters, records) =>
+        this.preprocessDirectives(params, adapters, records),
+      collectTools: (params, traceContext, adapters, executionBudget) =>
+        this.collectTools(params, traceContext, adapters, executionBudget),
+      toLLMParams: (params) => this.toLLMParams(params),
+      callModelWithStructuredOutput: (
+        llmParams,
+        tools,
+        runParams,
+        structuredTool,
+        tracer,
+        parentSpanId,
+      ) =>
+        this.callModelWithStructuredOutput(
+          llmParams,
+          tools,
+          runParams,
+          structuredTool,
+          tracer,
+          parentSpanId,
+        ),
+      isCacheBypassed: (params) => this.isCacheBypassed(params),
+      ...(this.events !== undefined && { events: this.events }),
+      ...(this.memory !== undefined && { memory: this.memory }),
+    };
+  }
+
   private validateInputs(params: AgentRunParams): void {
     const caps = this.getCapabilities();
     if (params.images?.length && !caps.supportsVision)
@@ -671,26 +378,55 @@ export class Agent {
   }
 
   private async initAdapters(): Promise<void> {
-    for (const pending of this.pendingInits) await pending.init();
-    for (const check of this.pendingConflictChecks) await check();
-    this.pendingInits.length = 0;
-    this.pendingConflictChecks.length = 0;
+    await initializeAttachedAdapters(this.pendingInits, this.pendingConflictChecks);
     this.initialized = true;
   }
 
   private applySkillSystemPrompts(
     params: AgentRunParams,
     adapters: readonly AgentAdapter[] = this.adapters,
+    assemblyRecords: SkillPromptAssemblyRecord[] = [],
   ): AgentRunParams {
     const seen = new Set<string>();
-    const activeSkills = this.selectActiveSkills(params, adapters);
-    const extensions = activeSkills.flatMap((skill) => {
+    const assemblyMode = this.resolveSkillPromptAssembly(params);
+    const matches = this.selectActiveSkillMatches(params, adapters);
+    const directiveOnlyBoundarySkills = new Set(
+      matches
+        .filter((match) => match.reason === "directive")
+        .map((match) => match.skill.name),
+    );
+    const extensions = matches.flatMap((match) => {
+      const skill = match.skill;
       if (seen.has(skill.name)) return [];
       seen.add(skill.name);
-      if (!skill.systemPromptExtension) return [];
-      return typeof skill.systemPromptExtension === "function"
-        ? [skill.systemPromptExtension()]
-        : [skill.systemPromptExtension];
+      if (
+        directiveOnlyBoundarySkills.has(skill.name) &&
+        (this.config.skillActivation ?? "always") === "directive-only"
+      ) {
+        return [];
+      }
+      const assemblyContext = {
+        prompt: params.prompt ?? "",
+        adapters,
+        activeSkillCount: matches.length,
+        activationMode: this.config.skillActivation ?? "always",
+        assemblyMode,
+      } satisfies SkillPromptAssemblyContext;
+      const promptExtension = assembleSkillPromptForRun(skill, assemblyContext);
+      const runtimeContext = compileSkillRuntimeContext(skill, params.prompt ?? "", adapters);
+      if (promptExtension) {
+        assemblyRecords.push(
+          inspectSkillPromptAssembly(skill, assemblyContext, {
+            promptExtension,
+            runtimeContext,
+            directiveBoundary: false,
+          }),
+        );
+      }
+      return [
+        promptExtension,
+        runtimeContext,
+      ].filter((item): item is string => item !== undefined && item.trim().length > 0);
     });
 
     if (extensions.length === 0) return params;
@@ -712,273 +448,40 @@ export class Agent {
     return params.promptCompression ?? this.config.promptCompression ?? "none";
   }
 
+  private resolveSkillPromptAssembly(params: AgentRunParams): SkillPromptAssemblyMode {
+    return params.skillPromptAssembly ?? this.config.skillPromptAssembly ?? "adaptive-safe";
+  }
+
   private async collectTools(
     params: AgentRunParams,
     traceContext?: { tracer: RunTracer; parentSpanId: string },
     adapters: readonly AgentAdapter[] = this.adapters,
     executionBudget: ToolExecutionBudget = createToolExecutionBudget(params),
   ): Promise<ToolDefinition[]> {
-    const adapterTools: ToolDefinition[] = [];
     const toolAdapters =
       this.config.toolSelection === "auto"
         ? this.selectToolAdapters(params, adapters)
         : adapters.filter((item) => item.getTools);
-    for (const adapter of toolAdapters) {
-      const isMcp = adapter.metadata?.kind === "mcp-backed";
-      const mcpSpan =
-        isMcp && traceContext
-          ? traceContext.tracer.start(
-              "mcp",
-              `${adapter.name}.discoverTools`,
-              { adapter: adapter.name },
-              traceContext.parentSpanId,
-            )
-          : undefined;
-      try {
-        const tools = await adapter.getTools!();
-        adapterTools.push(
-          ...tools.map((tool) =>
-            isMcp && traceContext
-              ? wrapMcpTool(tool, adapter.name, traceContext)
-              : tool,
-          ),
-        );
-        if (mcpSpan) traceContext!.tracer.end(mcpSpan);
-      } catch (error) {
-        if (mcpSpan) traceContext!.tracer.end(mcpSpan, error);
-        throw error;
-      }
-    }
-    const allTools = [...adapterTools, ...(params.tools ?? [])];
-    assertUniqueToolDefinitions(allTools);
-    const policy = this.withEventPolicy(
-      withTracePolicy(
-        mergeToolPolicies(this.config.toolPolicy, params.toolPolicy),
-        traceContext,
-      ),
-    );
-    return allTools.map((tool) => {
-      const executeWithPolicy =
-        !tool.security?.requiresConfirmation && !policy
-          ? tool.execute
-          : (args: Record<string, unknown>) =>
-              runToolWithPolicy(tool, args, policy);
-      const executeWithCache = async (args: Record<string, unknown>) =>
-        await this.executeToolWithCache(
-          tool,
-          args,
-          executeWithPolicy,
-          params,
-          executionBudget,
-        );
-      if (!traceContext) return { ...tool, execute: executeWithCache };
-      return {
-        ...tool,
-        execute: async (args: Record<string, unknown>) => {
-          const span = traceContext.tracer.start(
-            "tool",
-            `tool.${tool.name}`,
-            { toolName: tool.name },
-            traceContext.parentSpanId,
-          );
-          try {
-            const result = await executeWithCache(args);
-            traceContext.tracer.end(span);
-            return result;
-          } catch (error) {
-            traceContext.tracer.end(span, error);
-            throw error;
-          }
-        },
-      };
+    return await collectToolsForRun({
+      params,
+      toolAdapters,
+      ...(traceContext !== undefined && { traceContext }),
+      executionBudget,
+      cacheContext: {
+        provider: this.provider,
+        model: this.model,
+        cache: this.config.cache,
+        cacheStats: this.cacheStats,
+        cacheInflight: this.cacheInflight,
+        ...(this.events !== undefined && { events: this.events }),
+      },
+      ...(this.config.toolPolicy !== undefined && { baseToolPolicy: this.config.toolPolicy }),
+      applyEventPolicy: (policy) => this.withEventPolicy(policy),
     });
-  }
-
-  private async executeToolWithBudget(
-    tool: ToolDefinition,
-    args: Record<string, unknown>,
-    execute: (args: Record<string, unknown>) => Promise<unknown>,
-    budget: ToolExecutionBudget,
-  ): Promise<unknown> {
-    if (budget.max !== undefined && budget.count >= budget.max) {
-      throw new QuotaExceededError(this.provider, {
-        budget: "maxToolCalls",
-        limit: budget.max,
-        actual: budget.count + 1,
-        toolName: tool.name,
-      });
-    }
-    budget.count++;
-    return await execute(args);
-  }
-
-  private wrapToolExecutionBudget(
-    tool: ToolDefinition,
-    budget: ToolExecutionBudget,
-  ): ToolDefinition {
-    return {
-      ...tool,
-      execute: async (args) =>
-        await this.executeToolWithBudget(
-          tool,
-          args,
-          tool.execute.bind(tool),
-          budget,
-        ),
-    };
-  }
-
-  private async executeToolWithCache(
-    tool: ToolDefinition,
-    args: Record<string, unknown>,
-    execute: (args: Record<string, unknown>) => Promise<unknown>,
-    params: AgentRunParams,
-    budget: ToolExecutionBudget,
-  ): Promise<unknown> {
-    const cache = this.config.cache;
-    const sideEffect = tool.security?.sideEffect ?? "external";
-    this.events?.emit("tool.called", {
-      toolName: tool.name,
-      sideEffectLevel: sideEffect as "none" | "read" | "write" | "external",
-    });
-    const requireCached = this.isCacheRequiredForTool(params, tool.name);
-    if (
-      (!cache?.get && !cache?.getEntry) ||
-      !cache.set ||
-      cache.config.type === "disabled" ||
-      this.isCacheBypassed(params)
-    ) {
-      if (requireCached) this.throwRequiredCacheMiss(tool.name, "unavailable");
-      return await this.executeToolWithBudget(tool, args, execute, budget);
-    }
-    const cacheEligibility = getCacheEligibility(
-      tool,
-      cache.config.strategy ?? "auto",
-    );
-    if (!cacheEligibility.allowed) {
-      this.cacheStats.skippedUnsafe++;
-      if (requireCached) this.throwRequiredCacheMiss(tool.name, cacheEligibility.reason);
-      return await this.executeToolWithBudget(tool, args, execute, budget);
-    }
-
-    const key = this.createToolCacheKey(tool, sideEffect, args, cache);
-    const entry = await this.readCacheEntry(cache, key);
-    if (entry.status === "hit") {
-      this.cacheStats.hits++;
-      this.cacheStats.toolCallsAvoided++;
-      this.cacheStats.estimatedSavedTokens +=
-        (entry.bytes ?? JSON.stringify(entry.value).length) / 4;
-      this.events?.emit("cache.hit", {
-        toolName: tool.name,
-        key,
-        estimatedSavedTokens: this.cacheStats.estimatedSavedTokens,
-      });
-      return entry.value;
-    }
-    if (entry.status === "stale") this.cacheStats.stale++;
-    if (entry.status === "corrupt") this.cacheStats.corrupt++;
-    if (entry.status === "oversize") this.cacheStats.oversized++;
-    this.cacheStats.misses++;
-    this.events?.emit("cache.miss", { toolName: tool.name, key });
-    if (requireCached) this.throwRequiredCacheMiss(tool.name, entry.status);
-
-    const existing = this.cacheInflight.get(key);
-    if (existing) {
-      this.cacheStats.toolCallsAvoided++;
-      return await existing;
-    }
-
-    const runAndWrite = async () => {
-      const result = await this.executeToolWithBudget(
-        tool,
-        args,
-        execute,
-        budget,
-      );
-      await cache.set!(key, result, cacheEligibility.ttlMs !== undefined ? { ttlMs: cacheEligibility.ttlMs } : {});
-      this.cacheStats.writes++;
-      this.events?.emit("cache.write", { toolName: tool.name, key });
-      return result;
-    };
-    const pending = cache.withLock
-      ? cache.withLock(key, async () => {
-          const lockedEntry = await this.readCacheEntry(cache, key);
-          if (lockedEntry.status === "hit") {
-            this.cacheStats.hits++;
-            this.cacheStats.toolCallsAvoided++;
-            return lockedEntry.value;
-          }
-          return runAndWrite();
-        })
-      : runAndWrite();
-    this.cacheInflight.set(key, pending);
-    try {
-      return await pending;
-    } finally {
-      this.cacheInflight.delete(key);
-    }
-  }
-
-  private async readCacheEntry(
-    cache: NonNullable<ValidatedAgentConfig["cache"]>,
-    key: string,
-  ): Promise<AgentCacheLookup> {
-    if (cache.getEntry) return await cache.getEntry(key);
-    const value = await cache.get?.(key);
-    return value === undefined ? { status: "miss" } : { status: "hit", value };
-  }
-
-  private createToolCacheKey(
-    tool: ToolDefinition,
-    sideEffect: string,
-    args: Record<string, unknown>,
-    cache: NonNullable<ValidatedAgentConfig["cache"]>,
-  ): string {
-    return createCacheKey([
-      "tool",
-      this.provider,
-      this.model,
-      tool.name,
-      sideEffect,
-      args,
-      cache.config.strategy,
-      cache.config.namespace,
-      cache.config.version,
-    ]);
   }
 
   private validateCachePolicy(params: AgentRunParams): void {
-    const required = params.budget?.cachePolicy?.requireCachedFor ?? [];
-    if (required.length === 0) return;
-    const cache = this.config.cache;
-    if (
-      !cache ||
-      cache.config.type === "disabled" ||
-      (!cache.get && !cache.getEntry) ||
-      this.isCacheBypassed(params)
-    ) {
-      throw new ConfigurationError(
-        "RunBudget cachePolicy.requireCachedFor requires an enabled cache controller.",
-        { requireCachedFor: required },
-      );
-    }
-  }
-
-  private isCacheRequiredForTool(
-    params: AgentRunParams,
-    toolName: string,
-  ): boolean {
-    return (
-      params.budget?.cachePolicy?.requireCachedFor?.includes(toolName) ?? false
-    );
-  }
-
-  private throwRequiredCacheMiss(toolName: string, status: string): never {
-    throw new QuotaExceededError(this.provider, {
-      budget: "cachePolicy.requireCachedFor",
-      toolName,
-      cacheStatus: status,
-    });
+    validateToolCachePolicy(params, this.config.cache);
   }
 
   private isCacheBypassed(params: AgentRunParams): boolean {
@@ -1037,47 +540,40 @@ export class Agent {
     };
   }
 
-  private async applyMemoryContext(params: AgentRunParams): Promise<AgentRunParams> {
-    const request = this.resolveMemoryRequest(params);
-    if (!request || request.includeContext === false) return params;
-    const query = request.query ?? params.prompt ?? "";
-    if (!query.trim()) return params;
-    const results = await request.store.search(query, request);
-    if (results.length === 0) return params;
-    const context = request.store.summarize
-      ? await request.store.summarize(query, request)
-      : AgentMemory.formatContext(results, request);
-    if (!context.trim()) return params;
-    return {
-      ...params,
-      system: [params.system, context].filter(Boolean).join("\n\n"),
-    };
-  }
-
-  private resolveMemoryRequest(
-    params: AgentRunParams,
-  ): (MemoryRetrievalOptions & {
-    readonly store: AgentMemoryStore;
-    readonly includeContext?: boolean;
-  }) | undefined {
-    if (params.memory === false) return undefined;
-    if (isAgentMemoryStore(params.memory)) {
-      return { store: params.memory };
-    }
-    if (params.memory && typeof params.memory === "object") {
-      const store = params.memory.store ?? this.memory;
-      if (!store) return undefined;
-      return { ...params.memory, store };
-    }
-    if (!this.memory) return undefined;
-    return { store: this.memory };
-  }
-
   private preprocessDirectives(
     params: AgentRunParams,
     adapters: readonly AgentAdapter[] = this.adapters,
+    assemblyRecords: SkillPromptAssemblyRecord[] = [],
   ): AgentRunParams {
-    const result = preprocessDirectives(params.prompt!, [...adapters]);
+    const assemblyMode = this.resolveSkillPromptAssembly(params);
+    const result = preprocessDirectives(params.prompt!, [...adapters], {
+      promptForSkill: (skill) => {
+        const assemblyContext = {
+          prompt: params.prompt ?? "",
+          adapters,
+          activeSkillCount: this.selectActiveSkillMatches(params, adapters).length || 1,
+          activationMode: this.config.skillActivation ?? "always",
+          assemblyMode,
+        } satisfies SkillPromptAssemblyContext;
+        const promptExtension = assembleSkillPromptForRun(skill, assemblyContext);
+        const runtimeContext = compileSkillRuntimeContext(skill, params.prompt ?? "", adapters);
+        if (promptExtension) {
+          assemblyRecords.push(
+            inspectSkillPromptAssembly(skill, assemblyContext, {
+              promptExtension,
+              runtimeContext,
+              directiveBoundary: true,
+            }),
+          );
+        }
+        return [
+          promptExtension,
+          runtimeContext,
+        ]
+          .filter((item): item is string => item !== undefined && item.trim().length > 0)
+          .join("\n\n");
+      },
+    });
     return {
       ...params,
       prompt: result.processedPrompt,
@@ -1091,114 +587,31 @@ export class Agent {
     params: AgentRunParams,
     adapters: readonly AgentAdapter[] = this.adapters,
   ): AgentSkill[] {
-    return this.selectActiveSkillMatches(params, adapters).map(
-      (match) => match.skill,
-    );
+    return selectActiveSkillsForRun({
+      params,
+      adapters,
+      mode: this.config.skillActivation ?? "always",
+    });
   }
 
   private selectActiveSkillMatches(
     params: AgentRunParams,
     adapters: readonly AgentAdapter[] = this.adapters,
-  ): ActiveSkillMatch[] {
-    const skills = adapters.filter(isAgentSkill);
-    const mode = this.config.skillActivation ?? "always";
-    if (mode === "always")
-      return skills.map((skill) => ({
-        skill,
-        reason: "always",
-        confidence: 1,
-      }));
-
-    const prompt = trustedActivationText(params.prompt ?? "");
-    const normalizedPrompt = normalizeActivationText(prompt);
-    const directiveNames = new Set(
-      Array.from(prompt.matchAll(/(?:^|\s)\/([a-zA-Z][\w-]*)/g)).map(
-        (match) => match[1]!,
-      ),
-    );
-    if (mode === "directive-only") {
-      return skills.flatMap<ActiveSkillMatch>((skill) =>
-        skill.directive && directiveNames.has(skill.directive)
-          ? [
-              {
-                skill,
-                reason: "directive" as const,
-                confidence: 1,
-                matched: `/${skill.directive}`,
-              },
-            ]
-          : [],
-      );
-    }
-
-    return skills.flatMap<ActiveSkillMatch>((skill) => {
-      if (skill.directive && directiveNames.has(skill.directive)) {
-        return [
-          {
-            skill,
-            reason: "directive" as const,
-            confidence: 1,
-            matched: `/${skill.directive}`,
-          },
-        ];
-      }
-      const manifest = skill.skillMetadata?.creator;
-      const terms = manifest
-        ? creatorActivationTerms(manifest)
-        : genericSkillActivationTerms(skill);
-      const matched = terms.find(
-        (term) =>
-          normalizedPrompt.includes(term.term) &&
-          !isNegatedActivation(prompt, term.term.trim()) &&
-          !shouldSkipAutoActivation(skill.name, prompt),
-      );
-      return matched
-        ? [
-            {
-              skill,
-              reason: matched.reason,
-              confidence: adjustedAutoSkillConfidence(skill.name, prompt, matched),
-              matched: matched.term.trim(),
-            },
-          ]
-        : [];
-    })
-      .sort((left, right) => right.confidence - left.confidence)
-      .slice(0, AUTO_SKILL_ACTIVATION_CAP);
+  ) {
+    return selectActiveSkillMatchesForRun({
+      params,
+      adapters,
+      mode: this.config.skillActivation ?? "always",
+    });
   }
 
   private selectToolAdapters(
     params: AgentRunParams,
     adapters: readonly AgentAdapter[] = this.adapters,
   ): AgentAdapter[] {
-    const activeSkills = this.selectActiveSkills(params, adapters);
-    if (activeSkills.length === 0) return [];
-    const capabilityTerms = new Set(
-      activeSkills.flatMap((skill) => [
-        ...(skill.skillMetadata?.requiredAdapters ?? []),
-        ...(skill.skillMetadata?.optionalAdapters ?? []),
-        ...flattenCapabilityExpressions(
-          skill.skillMetadata?.creator?.requiredCapabilities ?? [],
-        ),
-        ...flattenCapabilityExpressions(
-          skill.skillMetadata?.creator?.optionalCapabilities ?? [],
-        ),
-      ]),
-    );
-
-    return adapters.filter((adapter) => {
-      if (!adapter.getTools) return false;
-      if (isAgentSkill(adapter))
-        return activeSkills.some((skill) => skill.name === adapter.name);
-      if (capabilityTerms.size === 0) return true;
-      const searchable = [
-        adapter.name,
-        ...(adapter.metadata?.scopes ?? []),
-        ...(adapter.metadata?.sideEffects ?? []),
-      ].join(" ");
-      return Array.from(capabilityTerms).some((term) =>
-        searchable.includes(term.split(".")[0]!),
-      );
+    return selectToolAdaptersForActiveSkills({
+      adapters,
+      activeSkills: this.selectActiveSkills(params, adapters),
     });
   }
 
@@ -1232,639 +645,45 @@ export class Agent {
     };
   }
 
-  private async *streamWithHooks(
-    llmParams: LLMCallParams,
-    allTools: ToolDefinition[],
-    tracer: RunTracer,
-    parentSpanId: string,
-    signal?: AbortSignal,
-  ): AsyncGenerator<StreamChunk> {
-    const chunks: StreamChunk[] = [];
-    const modelSpan = tracer.start(
-      "model",
-      "model.stream",
-      { tools: allTools.length },
-      parentSpanId,
-    );
-    const stream =
-      allTools.length > 0
-        ? this.unifiedProvider.streamWithTools(llmParams, allTools)
-        : this.unifiedProvider.stream(llmParams);
-
-    for await (const chunk of stream) {
-      if (signal?.aborted) break;
-      const type = chunk.toolResult
-        ? "tool_result"
-        : chunk.toolCall
-          ? "tool_call"
-          : chunk.finishReason
-            ? "final"
-            : "model_delta";
-      const enriched = {
-        ...chunk,
-        type,
-        runId: tracer.runId,
-        spanId: modelSpan.spanId,
-        parentSpanId,
-      } satisfies StreamChunk;
-      chunks.push(enriched);
-      yield enriched;
-    }
-    tracer.end(modelSpan);
-
-    let assembled = assembleResponse(chunks, {
-      model: this.model,
-      provider: this.provider,
-    });
-    assembled = {
-      ...assembled,
-      cost:
-        this.costFactor === 0
-          ? 0
-          : costCalculator.calculate(
-              assembled.tokensUsed,
-              this.getCapabilities(),
-            ),
-    };
-
-    if (this.adapters.some((adapter) => adapter.onAfterStream)) {
-      for (const adapter of this.adapters) {
-        if (adapter.onAfterStream)
-          assembled = await adapter.onAfterStream(chunks, assembled);
-      }
-    }
-  }
-
-  private applyStructuredOutputPrompt(params: AgentRunParams): AgentRunParams {
-    if (!params.responseSchema) return params;
-    if (this.shouldUseStructuredToolFallback(params)) {
-      return {
-        ...params,
-        system: [
-          params.system,
-          structuredOutputInstruction(params.responseSchema),
-          STRUCTURED_TOOL_FALLBACK_INSTRUCTION,
-        ]
-          .filter(Boolean)
-          .join("\n\n"),
-      };
-    }
-    return {
-      ...params,
-      responseFormat: { type: "json_object" },
-      system: [
-        params.system,
-        structuredOutputInstruction(params.responseSchema),
-      ]
-        .filter(Boolean)
-        .join("\n\n"),
-    };
-  }
-
-  private applyStructuredOutput(
-    response: AgentResponse,
-    params: AgentRunParams,
-  ): AgentResponse {
-    if (!params.responseSchema) return response;
-    const parsed = parseAndValidateStructuredOutput(
-      response.content,
-      params.responseSchema,
-    );
-    return { ...response, structuredResponse: parsed.value };
-  }
-
   private async callModelWithStructuredOutput(
     llmParams: LLMCallParams,
-    allTools: ToolDefinition[],
+    allTools: readonly ToolDefinition[],
     params: AgentRunParams,
     structuredTool?: StructuredOutputToolState,
     tracer?: RunTracer,
     parentSpanId?: string,
   ): Promise<{ raw: LLMResponse; structuredResponse?: unknown }> {
-    const attempts = Math.max(1, (params.structuredOutput?.retries ?? 0) + 1);
-    let currentParams = llmParams;
-    let lastError: unknown;
-    for (let attempt = 1; attempt <= attempts; attempt++) {
-      const raw =
-        allTools.length > 0
-          ? await this.unifiedProvider.callWithTools(currentParams, allTools)
-          : await this.unifiedProvider.call(currentParams);
-      if (!params.responseSchema) return { raw };
-      try {
-        const parsed = parseAndValidateStructuredOutput(
-          raw.content,
-          params.responseSchema,
-        );
-        return { raw, structuredResponse: parsed.value };
-      } catch (error) {
-        if (structuredTool?.value !== undefined)
-          return { raw, structuredResponse: structuredTool.value };
-        lastError = error;
-        if (tracer && parentSpanId && attempt < attempts) {
-          const retrySpan = tracer.start(
-            "retry",
-            "structured-output.retry",
-            { attempt, reason: (error as Error).message },
-            parentSpanId,
-          );
-          tracer.end(retrySpan);
-        }
-        currentParams = {
-          ...currentParams,
-          systemMessage: [
-            currentParams.systemMessage,
-            `Previous response failed structured-output validation: ${(error as Error).message}. Return corrected JSON only.`,
-          ]
-            .filter(Boolean)
-            .join("\n\n"),
-        };
-      }
-    }
-    throw lastError;
-  }
-
-  private shouldUseStructuredToolFallback(params: AgentRunParams): boolean {
-    if (!params.responseSchema) return false;
-    const fallback = params.structuredOutput?.toolFallback ?? "auto";
-    if (fallback === false) return false;
-    const caps = this.getCapabilities();
-    if (!caps.supportsTools) return false;
-    return fallback === true || !caps.supportsJsonMode;
-  }
-
-  private createStructuredOutputTool(
-    params: AgentRunParams,
-  ): StructuredOutputToolState | undefined {
-    if (!this.shouldUseStructuredToolFallback(params) || !params.responseSchema)
-      return undefined;
-    const state: StructuredOutputToolState = {
-      tool: {
-        name: "submit_structured_response",
-        description:
-          "Submit the final answer as structured data matching the requested response schema.",
-        parameters: toStructuredToolParameters(params.responseSchema),
-        security: { sideEffect: "none" },
-        execute: async (args) => {
-          const payload =
-            isPlainJsonSchema(params.responseSchema!) &&
-            params.responseSchema.type !== "object"
-              ? args.value
-              : args;
-          const parsed = parseAndValidateStructuredOutput(
-            JSON.stringify(payload),
-            params.responseSchema!,
-          );
-          state.value = parsed.value;
-          return { accepted: true };
-        },
-      },
-    };
-    return state;
-  }
-
-  private isAttached(ref: AdapterRef): boolean {
-    const expected = adapterRefName(ref);
-    return this.adapters.some((adapter) => adapter.name === expected);
+    return await callModelStructuredOutputFlow({
+      provider: this.unifiedProvider,
+      llmParams,
+      tools: allTools,
+      params,
+      ...(structuredTool !== undefined && { structuredTool }),
+      ...(tracer !== undefined && { tracer }),
+      ...(parentSpanId !== undefined && { parentSpanId }),
+    });
   }
 
   private createRunAdapterScope(params: AgentRunParams): RunAdapterScope {
-    const requested = normalizeRunAttachments(params.use);
-    if (requested.length === 0)
-      return { adapters: this.adapters, runOnlyAdapters: [] };
-
-    const runOnlyAdapters: AgentAdapter[] = [];
-    const seenNames = new Set(this.adapters.map((adapter) => adapter.name));
-    for (const attachment of requested) {
-      const adapters = isCreatorPack(attachment)
-        ? attachment.attachments
-        : [attachment];
-      for (const adapter of adapters) {
-        if (seenNames.has(adapter.name)) continue;
-        seenNames.add(adapter.name);
-        runOnlyAdapters.push(adapter);
-      }
-    }
-
-    const scopedAdapters = [...this.adapters, ...runOnlyAdapters];
-    this.validateScopedAdapters(scopedAdapters, runOnlyAdapters);
-    return { adapters: scopedAdapters, runOnlyAdapters };
-  }
-
-  private validateScopedAdapters(
-    scopedAdapters: readonly AgentAdapter[],
-    scopedOnly: readonly AgentAdapter[],
-  ): void {
-    const caps = this.getCapabilities();
-    for (const adapter of scopedOnly) {
-      for (const req of adapter.requires ?? []) {
-        const supported = {
-          tools: caps.supportsTools,
-          vision: caps.supportsVision,
-          audio: caps.supportsAudio,
-          video: caps.supportsVideo,
-          files: caps.supportsFiles,
-        }[req];
-        if (!supported) {
-          throw new AdapterRequirementError(
-            `Adapter '${adapter.name}' requires '${req}' but '${this.model}' does not support it.`,
-          );
-        }
-      }
-
-      if (isAgentSkill(adapter)) {
-        for (const dep of adapter.dependsOn ?? []) {
-          if (Array.isArray(dep)) {
-            if (!dep.some((ref) => isAttachedTo(scopedAdapters, ref))) {
-              const names = dep.map(adapterRefName).join(" or ");
-              throw new AdapterRequirementError(
-                `Skill '${adapter.name}' requires at least one of: [${names}]`,
-              );
-            }
-          } else if (!isAttachedTo(scopedAdapters, dep)) {
-            throw new AdapterRequirementError(
-              `Skill '${adapter.name}' requires '${adapterRefName(dep)}' - attach it first`,
-            );
-          }
-        }
-      }
-    }
-
-    assertNoDeclaredToolConflicts(scopedAdapters);
+    return createScopedRunAdapters({
+      currentAdapters: this.adapters,
+      params,
+      capabilities: this.getCapabilities(),
+      model: this.model,
+    });
   }
 
   private async initRunAdapters(
     adapters: readonly AgentAdapter[],
   ): Promise<void> {
-    for (const adapter of adapters) {
-      if (adapter.init) await adapter.init();
-    }
+    await initializeRunOnlyAdapters(adapters);
   }
 
   private async cleanupRunAdapters(
     adapters: readonly AgentAdapter[],
   ): Promise<void> {
-    for (const adapter of [...adapters].reverse()) {
-      if (adapter.cleanup) await adapter.cleanup();
-    }
+    await cleanupRunOnlyAdapters(adapters);
   }
-}
-
-function toTraceSink(trace: AgentRunParams["trace"]): TraceSink | undefined {
-  if (!trace || trace === true) return undefined;
-  return trace;
-}
-
-function resolveReplay(params: AgentRunParams): AgentResponse | undefined {
-  if (!params.replay) return undefined;
-  if ("responses" in params.replay) {
-    const index = params.replay.index ?? 0;
-    return params.replay.responses[index];
-  }
-  return params.replay;
-}
-
-interface StructuredOutputToolState {
-  tool: ToolDefinition;
-  value?: unknown;
-}
-
-const STRUCTURED_TOOL_FALLBACK_INSTRUCTION = [
-  "Use the submit_structured_response tool to provide the final structured response.",
-  "Do not treat the tool result as user-visible content; it is the schema delivery channel.",
-].join("\n");
-
-function toStructuredToolParameters(
-  schema: AgentRunParams["responseSchema"],
-): ToolDefinition["parameters"] {
-  if (
-    schema &&
-    isPlainJsonSchema(schema) &&
-    (schema.type === "object" || schema.properties)
-  ) {
-    return {
-      type: "object",
-      properties: Object.fromEntries(
-        Object.entries(schema.properties ?? {}).map(([key, child]) => [
-          key,
-          {
-            type: toToolParamType(child.type),
-            description: `Structured response field '${key}'`,
-            ...(child.enum !== undefined && { enum: child.enum.map(String) }),
-          },
-        ]),
-      ),
-      required: schema.required ?? [],
-    };
-  }
-  return {
-    type: "object",
-    properties: {
-      value: { type: "object", description: "Structured response value" },
-    },
-    required: ["value"],
-  };
-}
-
-function isPlainJsonSchema(
-  schema: NonNullable<AgentRunParams["responseSchema"]>,
-): schema is JsonSchema {
-  return typeof (schema as { safeParse?: unknown }).safeParse !== "function";
-}
-
-function toToolParamType(type: JsonSchema["type"] | undefined): string {
-  if (
-    type === "array" ||
-    type === "object" ||
-    type === "number" ||
-    type === "boolean" ||
-    type === "string"
-  )
-    return type;
-  return "string";
-}
-
-function wrapMcpTool(
-  tool: ToolDefinition,
-  adapterName: string,
-  traceContext: { tracer: RunTracer; parentSpanId: string },
-): ToolDefinition {
-  return {
-    ...tool,
-    execute: async (args) => {
-      const span = traceContext.tracer.start(
-        "mcp",
-        `${adapterName}.${tool.name}`,
-        { adapter: adapterName, toolName: tool.name },
-        traceContext.parentSpanId,
-      );
-      try {
-        const result = await tool.execute(args);
-        traceContext.tracer.end(span);
-        return result;
-      } catch (error) {
-        traceContext.tracer.end(span, error);
-        throw error;
-      }
-    },
-  };
-}
-
-function withTracePolicy(
-  policy: ToolPolicy | undefined,
-  traceContext?: { tracer: RunTracer; parentSpanId: string },
-): ToolPolicy | undefined {
-  if (!traceContext) return policy;
-  const base = policy ?? {};
-  return {
-    ...base,
-    onAuditEvent: async (event: ToolAuditEvent) => {
-      if (event.type === "guardrail_blocked") {
-        const span = traceContext.tracer.start(
-          "guardrail",
-          `guardrail.${event.phase}.${event.toolName}`,
-          {
-            toolName: event.toolName,
-            phase: event.phase,
-            reason: event.reason,
-          },
-          traceContext.parentSpanId,
-        );
-        traceContext.tracer.end(
-          span,
-          base.guardrailMode === "warn" ? undefined : event.reason,
-        );
-      }
-      await base.onAuditEvent?.(event);
-    },
-  };
-}
-
-function promptProvenance(
-  params: AgentRunParams,
-): NonNullable<AgentResponse["promptProvenance"]> {
-  if (params.promptFile)
-    return { source: "file", promptFile: params.promptFile, assembled: true };
-  if (params.promptDir)
-    return { source: "dir", promptDir: params.promptDir, assembled: true };
-  return {
-    source: "inline",
-    assembled:
-      /\{\{\s*(?:config\.[^}]+|(?!include\s)[A-Za-z_][A-Za-z0-9_.-]*)\s*\}\}/.test(
-        params.prompt ?? "",
-      ),
-  };
-}
-
-function measureRunPrompt(
-  params: LLMCallParams,
-  exposedToolCount: number,
-  modelToolCount: number,
-  promptMinified: boolean,
-  promptCompression: PromptCompressionMode,
-): NonNullable<AgentResponse["measurement"]> {
-  const system = params.systemMessage ?? "";
-  const prompt = params.prompt ?? "";
-  const assembledPromptChars = system.length + prompt.length;
-  return {
-    promptChars: prompt.length,
-    systemChars: system.length,
-    assembledPromptChars,
-    estimatedPromptTokens: Math.ceil(assembledPromptChars / 4),
-    exposedToolCount,
-    modelToolCount,
-    promptMinified: promptMinified || promptCompression !== "none",
-  };
-}
-
-const SHARED_SKILL_SECTION_NAMES = ["Failure Behavior", "Safety Notes"] as const;
-
-function compressSkillPromptSystem(
-  system: string,
-  mode: PromptCompressionMode,
-): string {
-  const blocks = system.split(/\n{2,}(?=# Skill: )/g);
-  const sharedLines: string[] = [];
-  const prepared = blocks.map((block) =>
-    block.startsWith("# Skill: ")
-      ? removeSharedSkillSections(block, sharedLines)
-      : block,
-  );
-  const sharedQualityLines = collectRepeatedSkillBullets(prepared);
-  const compressed = prepared.map((block) => {
-    const withoutRepeated = removeRepeatedSkillBullets(block, sharedQualityLines);
-    if (!withoutRepeated.startsWith("# Skill: "))
-      return compactLines(withoutRepeated, mode);
-    return compactSkillBlock(withoutRepeated, mode);
-  });
-  if (sharedLines.length > 0) {
-    compressed.push(
-      [
-        "# Shared Skill Safety",
-        "## Failure Behavior",
-        ...unique(sharedLines.filter((line) => /^failure:/i.test(line)).map((line) => line.replace(/^failure:\s*/i, "- "))),
-        "## Safety Notes",
-        ...unique(sharedLines.filter((line) => /^safety:/i.test(line)).map((line) => line.replace(/^safety:\s*/i, "- "))),
-      ]
-        .filter((line) => line.trim().length > 0)
-        .join("\n"),
-    );
-  }
-  if (sharedQualityLines.length > 0) {
-    compressed.push(
-      [
-        "# Shared Skill Quality",
-        ...sharedQualityLines.map((line) => line.replace(/^\s*-\s*/, "- ")),
-      ].join("\n"),
-    );
-  }
-  return compressed.filter(Boolean).join(mode === "aggressive" ? "\n" : "\n\n");
-}
-
-function removeSharedSkillSections(block: string, sharedLines: string[]): string {
-  let output = block;
-  for (const sectionName of SHARED_SKILL_SECTION_NAMES) {
-    const pattern = new RegExp(`\\n## ${sectionName}\\n([\\s\\S]*?)(?=\\n## |$)`, "m");
-    const match = output.match(pattern);
-    if (!match) continue;
-    const prefix = sectionName === "Failure Behavior" ? "failure" : "safety";
-    for (const line of match[1]!.split("\n")) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith("- ")) sharedLines.push(`${prefix}: ${trimmed.slice(2)}`);
-    }
-    output = output.replace(pattern, "");
-  }
-  return output;
-}
-
-function compactSkillBlock(block: string, mode: PromptCompressionMode): string {
-  const lines = limitPromptSectionBullets(
-    minifyLines(block).split("\n"),
-    "## Quality Checklist",
-    mode === "safe" ? Number.POSITIVE_INFINITY : 2,
-  );
-  return lines.map((line) => compactPromptLine(line, mode)).join("\n");
-}
-
-function limitPromptSectionBullets(
-  lines: readonly string[],
-  sectionName: string,
-  maxBullets: number,
-): string[] {
-  if (!Number.isFinite(maxBullets)) return [...lines];
-  let inSection = false;
-  let count = 0;
-  return lines.filter((line) => {
-    if (line.startsWith("## ")) {
-      inSection = line === sectionName;
-      count = 0;
-      return true;
-    }
-    if (!inSection || !line.startsWith("- ")) return true;
-    count += 1;
-    return count <= maxBullets;
-  });
-}
-
-function compactPromptLine(line: string, mode: PromptCompressionMode): string {
-  const compacted = line
-    .replace(/^# Skill: /, "Skill: ")
-    .replace(/^## Role$/, "Role:")
-    .replace(/^## Goal$/, "Goal:")
-    .replace(/^## Constraints$/, "Constraints:")
-    .replace(/^## Tool Use Policy$/, "Tools:")
-    .replace(/^## Output Format$/, "Output:")
-    .replace(/^## Quality Checklist$/, "Quality:")
-    .replace(/^- /, "- ");
-  if (mode !== "aggressive") return compacted;
-  return compacted
-    .replace(/^Constraints:$/, "Rules:")
-    .replace(/^Quality:$/, "QA:");
-}
-
-function collectRepeatedSkillBullets(blocks: readonly string[]): string[] {
-  const counts = new Map<string, number>();
-  for (const block of blocks) {
-    if (!block.startsWith("# Skill: ")) continue;
-    for (const line of block.split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed.startsWith("- ")) continue;
-      counts.set(trimmed, (counts.get(trimmed) ?? 0) + 1);
-    }
-  }
-  return [...counts.entries()]
-    .filter(([, count]) => count > 1)
-    .map(([line]) => line);
-}
-
-function removeRepeatedSkillBullets(
-  block: string,
-  repeatedLines: readonly string[],
-): string {
-  if (repeatedLines.length === 0 || !block.startsWith("# Skill: ")) return block;
-  const repeated = new Set(repeatedLines);
-  return block
-    .split("\n")
-    .filter((line) => !repeated.has(line.trim()))
-    .join("\n");
-}
-
-function compactLines(value: string, mode: PromptCompressionMode): string {
-  const minified = minifyLines(value);
-  return mode === "aggressive" ? minified.replace(/\n{2,}/g, "\n") : minified;
-}
-
-function minifyLines(value: string): string {
-  return value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .join("\n")
-    .replace(/[ \t]{2,}/g, " ");
-}
-
-function unique(values: readonly string[]): string[] {
-  return Array.from(new Set(values));
-}
-
-function getCacheEligibility(
-  tool: ToolDefinition,
-  strategy: NonNullable<
-    NonNullable<ValidatedAgentConfig["cache"]>["config"]["strategy"]
-  >,
-): {
-  allowed: boolean;
-  reason: string;
-  ttlMs?: number;
-} {
-  const sideEffect = tool.security?.sideEffect ?? "external";
-  const cacheMetadata = tool.security?.cache;
-  const ttlMs = cacheMetadata?.ttlMs;
-
-  if (cacheMetadata?.sensitive) return { allowed: false, reason: "sensitive" };
-  if (sideEffect === "write") return { allowed: false, reason: "unsafe" };
-  if (tool.security?.requiresConfirmation)
-    return { allowed: false, reason: "approval-required" };
-
-  if (strategy === "conservative") {
-    const explicitSafe =
-      cacheMetadata?.safe === true || cacheMetadata?.deterministic === true;
-    if (sideEffect === "none" || (sideEffect === "read" && explicitSafe)) {
-      return { allowed: true, reason: "eligible", ...(ttlMs !== undefined && { ttlMs }) };
-    }
-    return { allowed: false, reason: "not-cache-safe" };
-  }
-
-  if (strategy === "aggressive") {
-    if (sideEffect === "none" || sideEffect === "read" || sideEffect === "external") {
-      return { allowed: true, reason: "eligible", ...(ttlMs !== undefined && { ttlMs }) };
-    }
-    return { allowed: false, reason: "unsafe" };
-  }
-
-  if (sideEffect === "none" || sideEffect === "read") {
-    return { allowed: true, reason: "eligible", ...(ttlMs !== undefined && { ttlMs }) };
-  }
-  return { allowed: false, reason: "unsafe" };
 }
 
 function toResolvedRetry(config: RetryConfig): ResolvedRetryStrategy {
@@ -1879,381 +698,9 @@ function toResolvedRetry(config: RetryConfig): ResolvedRetryStrategy {
   };
 }
 
-function isAgentSkill(adapter: AgentAdapter): adapter is AgentSkill {
-  return "type" in adapter && adapter.type === "skill";
-}
-
-function flattenCapabilityExpressions(
-  expressions: readonly import("./creator/types.js").CapabilityExpression[],
-): string[] {
-  return expressions.flatMap((expression) => {
-    if (typeof expression === "string") return [expression];
-    if ("oneOf" in expression) return expression.oneOf;
-    return expression.allOf;
-  });
-}
-
-function adapterRefName(ref: AdapterRef): string {
-  if (typeof ref !== "function") {
-    return "name" in ref
-      ? ref.name
-      : (ref.adapterName ?? ref.skillName ?? "unknown");
-  }
-  const candidate =
-    (ref as unknown as { adapterName?: string; skillName?: string })
-      .adapterName ?? (ref as unknown as { skillName?: string }).skillName;
-  if (candidate) return candidate;
-  return ref.name
-    .replace(/Adapter$/, "")
-    .replace(/Skill$/, "")
-    .replace(/MCP$/, "")
-    .replace(/([a-z])([A-Z])/g, "$1-$2")
-    .toLowerCase();
-}
-
-interface ToolExecutionBudget {
-  max?: number;
-  count: number;
-}
-
-interface RunAdapterScope {
-  adapters: readonly AgentAdapter[];
-  runOnlyAdapters: readonly AgentAdapter[];
-}
-
-interface ActiveSkillMatch
-  extends Omit<SkillActivationReason, "skill" | "matched"> {
-  readonly skill: AgentSkill;
-  readonly matched?: string;
-}
-
-function createToolExecutionBudget(
-  params: AgentRunParams,
-): ToolExecutionBudget {
-  return {
-    ...(params.budget?.maxToolCalls !== undefined && {
-      max: params.budget.maxToolCalls,
-    }),
-    count: 0,
-  };
-}
-
-function normalizeRunAttachments(
-  attachments: AgentRunParams["use"],
-): readonly (AgentAdapter | CreatorPack)[] {
-  if (!attachments) return [];
-  return Array.isArray(attachments)
-    ? ([...attachments] as Array<AgentAdapter | CreatorPack>)
-    : [attachments as AgentAdapter | CreatorPack];
-}
-
-function normalizeActivationText(value: string): string {
-  return ` ${value.toLowerCase().replace(/[^a-z0-9/]+/g, " ")} `;
-}
-
-interface ActivationTerm {
-  readonly term: string;
-  readonly reason: Exclude<SkillActivationReason["reason"], "always" | "directive" | "not-activated" | "semantic">;
-  readonly confidence: number;
-}
-
-const AUTO_SKILL_ACTIVATION_CAP = 4;
-
-function creatorActivationTerms(manifest: CreatorSkillManifest): ActivationTerm[] {
-  const terms: Array<
-    { readonly value?: string } & Omit<ActivationTerm, "term">
-  > = [
-    { value: manifest.name, reason: "exact-alias", confidence: 0.92 },
-    ...(manifest.directive !== undefined
-      ? [
-          {
-            value: manifest.directive,
-            reason: "exact-alias" as const,
-            confidence: 0.9,
-          },
-        ]
-      : []),
-    ...manifest.producesArtifacts.map((value) => ({
-      value,
-      reason: "creator-artifact" as const,
-      confidence: 0.82,
-    })),
-    ...flattenCapabilityExpressions(manifest.requiredCapabilities).map((value) => ({
-      value,
-      reason: "capability" as const,
-      confidence: 0.78,
-    })),
-    ...flattenCapabilityExpressions(manifest.optionalCapabilities).map((value) => ({
-      value,
-      reason: "capability" as const,
-      confidence: 0.72,
-    })),
-    ...creatorActivationAliases(manifest.name).map((value) => ({
-      value,
-      reason: "keyword" as const,
-      confidence: 0.84,
-    })),
-  ];
-  return uniqueActivationTerms(terms);
-}
-
-function creatorActivationAliases(skillName: string): string[] {
-  return CREATOR_SKILL_ACTIVATION_ALIASES[skillName] ?? [];
-}
-
-function genericSkillActivationTerms(skill: AgentSkill): ActivationTerm[] {
-  const terms: Array<
-    { readonly value?: string } & Omit<ActivationTerm, "term">
-  > = [
-    { value: skill.name, reason: "exact-alias", confidence: 0.9 },
-    ...(skill.directive !== undefined
-      ? [
-          {
-            value: skill.directive,
-            reason: "exact-alias" as const,
-            confidence: 0.88,
-          },
-        ]
-      : []),
-    ...skill.name.split("-").map((value) => ({ value, reason: "keyword" as const, confidence: 0.7 })),
-    ...skill.description.split(/\s+/).map((value) => ({
-      value,
-      reason: "keyword" as const,
-      confidence: 0.62,
-    })),
-  ];
-  return uniqueActivationTerms(terms);
-}
-
-function uniqueActivationTerms(
-  values: readonly ({ readonly value?: string } & Omit<ActivationTerm, "term">)[],
-): ActivationTerm[] {
-  const stopWords = new Set([
-    "and",
-    "for",
-    "the",
-    "with",
-    "skill",
-    "agent",
-    "content",
-    "creator",
-  ]);
-  const terms = new Map<string, ActivationTerm>();
-  for (const candidate of values) {
-    if (!candidate.value) continue;
-    const normalized = candidate.value
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, " ")
-      .trim();
-    if (
-      normalized.length > 3 &&
-      !stopWords.has(normalized) &&
-      !isAmbiguousArtifactTerm(candidate.reason, normalized)
-    ) {
-      terms.set(` ${normalized} `, {
-        term: ` ${normalized} `,
-        reason: candidate.reason,
-        confidence: candidate.confidence,
-      });
-    }
-    if (
-      candidate.reason === "creator-artifact" ||
-      candidate.reason === "capability" ||
-      candidate.reason === "exact-alias"
-    ) {
-      continue;
-    }
-    for (const part of normalized.split(/\s+/)) {
-      if (part.length > 3 && !stopWords.has(part)) {
-        const term = ` ${part} `;
-        if (!terms.has(term)) {
-          terms.set(term, {
-            term,
-            reason: candidate.reason,
-            confidence: Math.min(candidate.confidence, 0.72),
-          });
-        }
-      }
-    }
-  }
-  return [...terms.values()].sort((left, right) => right.confidence - left.confidence);
-}
-
-function isAmbiguousArtifactTerm(
-  reason: ActivationTerm["reason"],
-  normalized: string,
-): boolean {
-  return reason === "creator-artifact" && ["draft"].includes(normalized);
-}
-
-function trustedActivationText(value: string): string {
-  const withoutFences = value.replace(/```[\s\S]*?```/g, " ");
-  return withoutFences
-    .split("\n")
-    .filter((line) => !/^\s*(retrieved|external|tool output|page content|source)\b/i.test(line))
-    .join("\n");
-}
-
-function isNegatedActivation(prompt: string, term: string): boolean {
-  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`\\b(?:do not|don't|dont|avoid|without|no)\\b.{0,24}\\b${escaped}\\b`, "i").test(prompt);
-}
-
-function isAttachedTo(
-  adapters: readonly AgentAdapter[],
-  ref: AdapterRef,
-): boolean {
-  const expected = adapterRefName(ref);
-  return adapters.some((adapter) => adapter.name === expected);
-}
-
-function isAgentMemoryStore(value: unknown): value is AgentMemoryStore {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<AgentMemoryStore>;
-  return (
-    typeof candidate.add === "function" &&
-    typeof candidate.search === "function" &&
-    typeof candidate.delete === "function"
-  );
-}
-
-function assertNoDeclaredToolConflicts(
-  adapters: readonly AgentAdapter[],
-): void {
-  const ownerByTool = new Map<string, string>();
-  for (const adapter of adapters) {
-    for (const toolName of adapter.declaredToolNames ?? []) {
-      const owner = ownerByTool.get(toolName);
-      if (owner) {
-        throw new AdapterToolConflictError(
-          `Tool name conflict: '${adapter.name}' registers tool '${toolName}' which is already registered by '${owner}'`,
-        );
-      }
-      ownerByTool.set(toolName, adapter.name);
-    }
-  }
-}
-
-function assertUniqueToolDefinitions(tools: readonly ToolDefinition[]): void {
-  const seen = new Set<string>();
-  for (const tool of tools) {
-    if (seen.has(tool.name)) {
-      throw new AdapterToolConflictError(
-        `Tool name conflict: '${tool.name}' is exposed more than once`,
-      );
-    }
-    seen.add(tool.name);
-  }
-}
-
-const CREATOR_SKILL_ACTIVATION_ALIASES: Record<string, string[]> = {
-  "audience-research": ["audience", "reader", "persona", "segment", "customer"],
-  "content-positioning": [
-    "positioning",
-    "angle",
-    "thesis",
-    "promise",
-    "differentiator",
-  ],
-  "content-brief": ["brief", "outline", "plan", "structure"],
-  "research-synthesis": [
-    "research",
-    "source",
-    "sources",
-    "evidence",
-    "synthesis",
-  ],
-  "fact-check": ["fact", "verify", "claim", "claims", "citation"],
-  "seo-strategy": ["seo", "keyword", "keywords", "search intent"],
-  "serp-brief": ["serp", "ranking", "competitor", "search results"],
-  "blog-writer": ["blog", "article", "post", "medium", "longform"],
-  copywriter: ["copy", "copywriting", "landing page", "conversion"],
-  "video-scriptwriter": ["video", "script", "youtube", "voiceover"],
-  repurposing: ["repurpose", "repurposing", "thread", "carousel", "snippet"],
-  "editorial-review": ["editorial", "review", "edit", "clarity", "coherence"],
-  "competitor-analysis": ["competitor", "competitive", "comparison"],
-  "trend-discovery": ["trend", "trending", "market signal"],
-  "seo-audit": ["seo audit", "technical seo", "crawl issue"],
-  "seo-review": ["seo review", "metadata", "meta description", "slug"],
-  "book-writer": ["book", "chapter", "manuscript"],
-  "newsletter-writer": ["newsletter", "email issue", "subscriber"],
-  "social-writer": ["social", "linkedin", "x post", "tweet", "caption"],
-  "video-ideation": ["video idea", "youtube idea", "episode"],
-  "creative-direction": ["creative direction", "visual direction", "concept"],
-  "copy-review": ["copy review", "conversion review", "offer review"],
-  "claim-risk-review": ["claim risk", "legal risk", "compliance"],
-  "brand-voice": ["brand voice", "tone", "voice"],
-  "publish-qa": ["publish", "publishing", "preflight", "qa"],
-  "content-calendar": ["calendar", "schedule", "editorial calendar"],
-  "performance-analysis": ["performance", "analytics", "metrics"],
-  "experiment-planner": ["experiment", "a b test", "hypothesis"],
-};
-
-function shouldSkipAutoActivation(skillName: string, prompt: string): boolean {
-  if (!CREATION_SKILL_NAMES.has(skillName)) return false;
-  const normalized = prompt.toLowerCase();
-  const creationIntent = hasCreationIntent(normalized);
-  if (creationIntent) return false;
-  return /\b(research|source|fact[- ]?check|verify|audit|review|analy[sz]e|audience|persona|objection)\b/.test(
-    normalized,
-  );
-}
-
-function adjustedAutoSkillConfidence(
-  skillName: string,
-  prompt: string,
-  matched: ActivationTerm,
-): number {
-  if (!CREATION_SKILL_NAMES.has(skillName)) return matched.confidence;
-  if (!hasCreationIntent(prompt.toLowerCase())) return matched.confidence;
-  if (matched.reason === "exact-alias" || matched.reason === "keyword") {
-    return Math.max(matched.confidence, 0.93);
-  }
-  return matched.confidence;
-}
-
-function hasCreationIntent(normalizedPrompt: string): boolean {
-  return /\b(write|draft|compose|create|produce|generate|turn|make)\b/.test(
-    normalizedPrompt,
-  );
-}
-
-const CREATION_SKILL_NAMES = new Set([
-  "blog-writer",
-  "copywriter",
-  "video-scriptwriter",
-  "book-writer",
-  "newsletter-writer",
-  "social-writer",
-]);
-
 function optional<T extends string, V>(
   key: T,
   value: V | undefined,
 ): { [K in T]: V } | Record<string, never> {
   return value === undefined ? {} : ({ [key]: value } as { [K in T]: V });
-}
-
-const agentsPendingProcessCleanup = new Set<Agent>();
-let processCleanupRegistered = false;
-
-function registerAgentForProcessCleanup(agent: Agent): void {
-  agentsPendingProcessCleanup.add(agent);
-  if (processCleanupRegistered) return;
-  processCleanupRegistered = true;
-  process.once("beforeExit", cleanupRegisteredAgents);
-  process.once("SIGINT", cleanupRegisteredAgents);
-  process.once("SIGTERM", cleanupRegisteredAgents);
-}
-
-function unregisterAgentForProcessCleanup(agent: Agent): void {
-  agentsPendingProcessCleanup.delete(agent);
-}
-
-function cleanupRegisteredAgents(): void {
-  const agents = [...agentsPendingProcessCleanup];
-  agentsPendingProcessCleanup.clear();
-  for (const agent of agents) {
-    void agent.dispose();
-  }
 }

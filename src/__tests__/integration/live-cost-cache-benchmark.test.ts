@@ -9,11 +9,11 @@ import {
   writeAgentBenchmarkReport,
   type AgentBenchmarkResult,
 } from "../../agent/benchmark.js";
-import { AgentCache } from "../../agent/cache.js";
+import { AgentCache } from "../../agent/cache/index.js";
 import { FileSystemCreatorMemoryStore } from "../../agent/creator/memory.js";
 import { Provider } from "../../agent/provider-catalog.js";
 import { CreatorPacks } from "../../agent/packs/index.js";
-import { BlogWriterSkill } from "../../agent/skills/index.js";
+import { createSkillByName } from "../../agent/skills/index.js";
 import { FileArtifactStore } from "../../artifact-store/file.js";
 
 const integrationEnabled = process.env.INTEGRATION_TESTS === "true";
@@ -108,9 +108,9 @@ describe("live cost, cache, and skill benchmark", () => {
                     maxDelay: 100,
                   },
                 })
-                  .use(BlogWriterSkill.create())
+                  .use(createSkillByName("blog-writer"))
                   .run({
-                    prompt: `/blog ${prompt}`,
+                    prompt: `/write-blog ${prompt}`,
                     temperature: 0,
                     maxTokens: 180,
                   }),
@@ -375,7 +375,7 @@ describe("live cost, cache, and skill benchmark", () => {
                     maxDelay: 100,
                   },
                 })
-                  .use(BlogWriterSkill.create())
+                  .use(createSkillByName("blog-writer"))
                   .run({
                     prompt: [
                       "Resume from this stored ContentBrief artifact and produce a compact execution plan.",

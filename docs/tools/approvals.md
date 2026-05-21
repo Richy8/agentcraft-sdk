@@ -143,7 +143,7 @@ const agent = Agent.create({
 Use `ApprovalQueue` when the approval should be recorded and approved later.
 
 ```ts
-import { Agent, ApprovalQueue, Provider } from "agentcraft";
+import { Agent, ApprovalQueue, Provider } from "@deskcreate/agentcraft";
 
 const approvals = ApprovalQueue.memory({
   defaultReviewer: "editor@example.com",

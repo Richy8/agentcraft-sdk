@@ -50,7 +50,7 @@ console.log(response.content);
 Use the pack with a normal writing skill:
 
 ```ts
-agent.use(CreatorPacks.seo()).use(BlogWriterSkill.create());
+agent.use(CreatorPacks.seo()).use(createSkillByName("blog-writer"));
 ```
 
 For more SEO variants, see [SEO examples](../../examples-cookbook/creator.md) and [Built-In Adapters](../../reference/built-in-adapters.md).

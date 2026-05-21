@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { Agent } from '../../agent/agent.js';
 import { tool } from '../../agent/adapters/types.js';
-import { AgentCache } from '../../agent/cache.js';
+import { AgentCache } from '../../agent/cache/index.js';
 import { Provider } from '../../agent/provider-catalog.js';
 import { CreatorPacks } from '../../agent/packs/index.js';
 

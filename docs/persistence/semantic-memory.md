@@ -207,6 +207,87 @@ await agent.run({
 });
 ```
 
+## Memory With Creator Packs
+
+Use this when a creator workflow should remember brand and audience context while still using skill auto-activation.
+
+```ts
+import {
+  Agent,
+  AgentMemory,
+  AgentWorkspace,
+  Provider,
+} from "@deskcreate/agentcraft";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+
+const memory = AgentMemory.local({
+  root: ".agentcraft/memory",
+  namespace: "creator-workspace",
+  writes: { requireApproval: false },
+});
+
+await memory.add({
+  scope: "brand",
+  text: "Voice: practical, specific, no hype. Audience: technical founders.",
+  source: "brand-workshop",
+});
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  workspace: AgentWorkspace.create({ memory }),
+  skillActivation: "auto",
+  promptCompression: "balanced",
+}).use(CreatorPacks.social({ readOnlyByDefault: true }));
+
+const response = await agent.run({
+  prompt: "Draft five LinkedIn post ideas about reducing agent runtime cost.",
+  memory: { scopes: ["brand"], topK: 2, maxContextChars: 900 },
+});
+
+console.log(response.selection?.activeSkills);
+console.log(response.content);
+```
+
+## Memory With Approval Queue
+
+Use a queue when user memories should be reviewed before becoming durable cross-run context.
+The first write queues the request and returns `false`; after approval, rerun the same write or call your app's approved persistence path.
+
+```ts
+import { AgentMemory, ApprovalQueue } from "@deskcreate/agentcraft";
+
+const approvals = ApprovalQueue.memory({
+  defaultReviewer: "ops@example.com",
+  requireReason: true,
+});
+
+const memory = AgentMemory.local({
+  root: ".agentcraft/memory",
+  writes: {
+    requireApproval: true,
+    approveWrite: async (request) => {
+      const queued = await approvals.requestApproval({
+        tool: {
+          name: request.operation,
+          description: "Persist semantic memory after reviewer approval.",
+          parameters: { type: "object", properties: {}, required: [] },
+          security: { sideEffect: "write", requiresConfirmation: true },
+          execute: async () => ({ ok: true }),
+        },
+        args: {
+          scope: request.scope,
+          preview: request.preview,
+          source: request.source,
+        },
+        riskReason: "Durable memory affects future agent runs.",
+      });
+      return queued.approved;
+    },
+  },
+});
+```
+
 ## Safety Defaults
 
 Semantic memory is intentionally conservative.
@@ -235,10 +316,28 @@ Semantic memory is intentionally conservative.
 Attach a report event collector when you want memory activity in a run report.
 
 ```ts
-import { AgentReports, AgentWorkspace } from "@deskcreate/agentcraft";
+import {
+  Agent,
+  AgentMemory,
+  AgentReports,
+  AgentWorkspace,
+  Provider,
+} from "@deskcreate/agentcraft";
+
+const memory = AgentMemory.local({
+  root: ".agentcraft/memory",
+  namespace: "report-demo",
+  writes: { requireApproval: false },
+});
 
 const workspace = AgentWorkspace.create({ memory });
 const events = AgentReports.eventCollector(workspace.events);
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  workspace,
+});
 
 const response = await agent.run({
   prompt: "Use remembered audience objections.",

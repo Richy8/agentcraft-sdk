@@ -12,7 +12,7 @@ AgentCraft supports URL and non-URL setup:
 ## Redis URL
 
 ```ts
-import { Agent, AgentCache, Provider } from "agentcraft";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
 
 const cache = AgentCache.redis({
   url: process.env.REDIS_URL!,
@@ -45,7 +45,7 @@ Use client mode when your app already owns the Redis lifecycle.
 
 ```ts
 import { createClient } from "redis";
-import { AgentCache } from "agentcraft";
+import { AgentCache } from "@deskcreate/agentcraft";
 
 const client = createClient({ url: process.env.REDIS_URL });
 await client.connect();
@@ -63,7 +63,7 @@ AgentCraft does not close user-supplied clients.
 Supabase direct Postgres URLs work through the Postgres cache driver.
 
 ```ts
-import { AgentCache } from "agentcraft";
+import { AgentCache } from "@deskcreate/agentcraft";
 
 const cache = AgentCache.postgres({
   url: process.env.SUPABASE_DB_URL!,
@@ -85,7 +85,7 @@ Use pool mode when your application already manages database connections.
 
 ```ts
 import { Pool } from "pg";
-import { AgentCache } from "agentcraft";
+import { AgentCache } from "@deskcreate/agentcraft";
 
 const pool = new Pool({ connectionString: process.env.POSTGRES_URL });
 
@@ -103,7 +103,7 @@ AgentCraft does not close user-supplied pools.
 SQLite is useful for local development, desktop tools, and single-node server-side deployments.
 
 ```ts
-import { AgentCache } from "agentcraft";
+import { AgentCache } from "@deskcreate/agentcraft";
 
 const cache = AgentCache.sqlite({
   filePath: ".agentcraft/cache.sqlite",
@@ -125,7 +125,7 @@ SQLite locking is local to the SQLite database file. Use Redis or Postgres for m
 `fromUrl()` is convenient when your runtime supplies one cache URL.
 
 ```ts
-import { AgentCache } from "agentcraft";
+import { AgentCache } from "@deskcreate/agentcraft";
 
 const cache = AgentCache.fromUrl(process.env.AGENTCRAFT_CACHE_URL!, {
   namespace: "tenant-a",
@@ -143,10 +143,31 @@ Supported schemes:
 
 Connection URLs are redacted in cache config metadata, errors, and observability reports.
 
+## Environment-Based Factory
+
+Use this when deployment environments vary between Redis, Postgres, and a zero-dependency local file cache.
+
+```ts
+import { AgentCache } from "@deskcreate/agentcraft";
+
+const cache = process.env.AGENTCRAFT_CACHE_URL
+  ? AgentCache.fromUrl(process.env.AGENTCRAFT_CACHE_URL, {
+      namespace: process.env.AGENTCRAFT_CACHE_NAMESPACE ?? "prod",
+      tableName: "agentcraft_cache",
+      locking: { enabled: true, ttlMs: 30_000 },
+    })
+  : AgentCache.file(".agentcraft/cache", { namespace: "local-dev" });
+```
+
 ## Custom Controller
 
 ```ts
-import { AgentCache } from "agentcraft";
+import { AgentCache } from "@deskcreate/agentcraft";
+
+const myCache = {
+  getEntry: async (key: string) => ({ status: "miss" as const }),
+  set: async (key: string, value: unknown, options?: unknown) => {},
+};
 
 const cache = AgentCache.custom({
   config: {
@@ -168,7 +189,13 @@ const cache = AgentCache.custom({
 Warm cache before a campaign, scheduled workflow, demo, or high-traffic window.
 
 ```ts
-import { AgentCache } from "agentcraft";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  cache: AgentCache.memory({ namespace: "warming-demo" }),
+});
 
 const warm = await AgentCache.warm(
   agent,
@@ -190,14 +217,43 @@ console.log(warm.tokensUsed.total);
 Dry-run mode estimates prompt token pressure without calling the provider:
 
 ```ts
-const estimate = await AgentCache.warm(agent, prompts, { dryRun: true });
+const estimate = await AgentCache.warm(
+  agent,
+  ["Estimate a cache-warmed pricing research prompt."],
+  { dryRun: true },
+);
 console.log(estimate.tokensUsed.prompt);
+```
+
+## Scheduled Cache Warming
+
+Warm expensive research prompts before a campaign window, then require cached reads during the live run.
+
+```ts
+const warm = await AgentCache.warm(agent, [
+  "Research source-backed AI cost-control examples.",
+  "Prepare current provider pricing caveats.",
+]);
+
+if (warm.failed > 0) {
+  throw new Error("Cache warming failed; do not start the campaign run.");
+}
+
+const response = await agent.run({
+  prompt: "Write the campaign brief using warmed research.",
+  budget: {
+    mode: "prefer-cache",
+    cachePolicy: { requireCachedFor: ["web_search"] },
+  },
+});
+
+console.log(response.cache?.summary);
 ```
 
 ## Shared Workspace Cache
 
 ```ts
-import { AgentCache, AgentWorkspace } from "agentcraft";
+import { AgentCache, AgentWorkspace } from "@deskcreate/agentcraft";
 
 const workspace = AgentWorkspace.create({
   cache: AgentCache.redis({

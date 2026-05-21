@@ -1,6 +1,6 @@
 # AgentCraft
 
-[![npm version](https://img.shields.io/npm/v/agentcraft)](https://www.npmjs.com/package/agentcraft)
+[![npm version](https://img.shields.io/npm/v/@deskcreate/agentcraft)](https://www.npmjs.com/package/@deskcreate/agentcraft)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/Richy8/agentcraft-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/Richy8/agentcraft-sdk/actions/workflows/ci.yml)
 [![Node >= 20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
@@ -60,6 +60,17 @@ console.log(result.trace);
 - `ArtifactStore` for typed durable persistence with validation, history, link traversal, capabilities, and memory/file/SQLite backends.
 - `ArtifactRegistry` for 19 built-in creator artifact schemas with custom extension support.
 - Creator memory with freshness metadata, write approvals, secret blocking, corpus search, and compact memory summaries.
+- `AgentEval`, `AgentReports`, distributed cache, governance queues, and semantic memory for production readiness.
+
+## What You Can Build
+
+AgentCraft is not only a creator toolkit. The same primitives can power cross-industry agent systems:
+
+- **Content operations**: remember brand/audience context, draft calendar assets, queue publish approvals, and export reviewer reports.
+- **Customer support**: retrieve customer preferences from semantic memory, call read-only SaaS tools, enforce cost/tool budgets, and persist case artifacts.
+- **Engineering review**: run code-review skills with GitHub tools, gate risky write tools, and attach trace reports to pull requests.
+- **Research and analytics**: warm expensive search/cache paths before scheduled jobs, compare prompt variants with `AgentEval`, and keep token spend visible.
+- **Internal copilots**: share workspace cache, tool policies, memory, artifact stores, and adapters across teams and workflows without hiding the underlying APIs.
 
 ## Cost, Cache, and Skill Efficiency
 
@@ -115,7 +126,7 @@ Measured facts from that run: auto activation reduced the creator-pack prompt fr
 AgentCraft now includes `AgentEval` and `AgentReports` for production gates and support-ready run artifacts:
 
 ```ts
-import { AgentEval, AgentReports } from "agentcraft";
+import { AgentEval, AgentReports } from "@deskcreate/agentcraft";
 
 const suite = AgentEval.suite({
   name: "Cost-aware content gate",
@@ -143,7 +154,11 @@ Use evals to catch prompt bloat, skill activation regressions, excessive tool ca
 For production deployments, AgentCraft can share cache across workers and queue write approvals:
 
 ```ts
-import { AgentCache, ApprovalQueue, AgentWorkspace } from "agentcraft";
+import {
+  AgentCache,
+  ApprovalQueue,
+  AgentWorkspace,
+} from "@deskcreate/agentcraft";
 
 const workspace = AgentWorkspace.create({
   cache: AgentCache.redis({
@@ -161,6 +176,33 @@ const workspace = AgentWorkspace.create({
 ```
 
 Cache also supports Postgres/Supabase URLs, Postgres pools, SQLite files, custom controllers, `AgentCache.fromUrl(...)`, and `AgentCache.warm(...)`.
+
+```ts
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
+
+// One env var can switch between Redis, Postgres/Supabase, or local file cache.
+const cache = process.env.AGENTCRAFT_CACHE_URL
+  ? AgentCache.fromUrl(process.env.AGENTCRAFT_CACHE_URL, {
+      namespace: "prod",
+      tableName: "agentcraft_cache",
+      locking: { enabled: true },
+    })
+  : AgentCache.file(".agentcraft/cache", { namespace: "local-dev" });
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  cache,
+});
+
+const warm = await AgentCache.warm(agent, [
+  "Research provider pricing caveats.",
+  "Prepare a cache-warming launch brief.",
+]);
+
+console.log(warm.cache);
+console.log(cache.config.type);
+```
 
 ## Durable Living-System Primitives
 
@@ -209,6 +251,23 @@ console.log(workspace.store?.capabilities());
 console.log(memoryContext);
 ```
 
+Semantic memory can also be vector-backed when a product needs hosted retrieval:
+
+```ts
+import { AgentMemory } from "@deskcreate/agentcraft";
+
+const vectorMemory = AgentMemory.vector({
+  provider: "qdrant",
+  url: process.env.QDRANT_URL!,
+  apiKey: process.env.QDRANT_API_KEY,
+  collection: "agentcraft_memory",
+  embeddings: AgentMemory.embeddings.openAI({
+    apiKey: process.env.OPENAI_API_KEY!,
+    model: "text-embedding-3-small",
+  }),
+});
+```
+
 ## Guides
 
 - [Architecture](https://agentcraft-sdk.vercel.app/architecture)
@@ -241,7 +300,7 @@ npm run docs:dev
 
 ## Examples
 
-See the [examples guide](https://agentcraft-sdk.vercel.app/examples) for basic chat, structured output, streaming with tools, safe filesystem usage, GitHub review, MCP GitHub, research, AgentTeam, AgentWorkflow, ArtifactStore, creator memory, cost/cache compression, and custom adapter patterns.
+See the [examples guide](https://agentcraft-sdk.vercel.app/examples) for basic chat, structured output, streaming with tools, safe filesystem usage, GitHub review, MCP GitHub, research, AgentTeam, AgentWorkflow, ArtifactStore, semantic memory, governance queues, AgentEval, observability reports, cost/cache compression, and custom adapter patterns.
 
 ## Safety Defaults
 

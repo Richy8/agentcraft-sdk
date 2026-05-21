@@ -45,15 +45,23 @@ console.log(response.content);
 import { tool } from "@deskcreate/agentcraft/adapters";
 
 const myTool = tool({
-  name: string,              // stable snake_case identifier
-  description: string,       // helps the model decide when to call it
-  params: Record<string, ToolParam>, // parameter definitions
-  security?: {               // optional — omit for non-sensitive tools
-    sideEffect: "none" | "read" | "write" | "external",
-    requiresConfirmation?: boolean,
-    scopes?: string[],
+  name: "lookup_customer", // stable snake_case identifier
+  description: "Look up a customer profile by ID.",
+  params: {
+    customerId: {
+      type: "string",
+      description: "The customer ID to inspect.",
+    },
   },
-  run: async (args) => unknown, // typed by params
+  security: {
+    sideEffect: "read",
+    requiresConfirmation: false,
+    scopes: ["customers:read"],
+  },
+  run: async ({ customerId }) => ({
+    customerId,
+    plan: "growth",
+  }),
 });
 ```
 

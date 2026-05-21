@@ -2,9 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   Agent,
   AgentCache,
+  AgentEval,
   AgentPool,
+  AgentReports,
   AgentWorkflow,
+  AgentMemory,
   AgentWorkspace,
+  ApprovalQueue,
   ApprovalStep,
   ArtifactRegistry,
   BestFitResolver,
@@ -29,16 +33,24 @@ import {
   tool,
 } from "../adapters.js";
 import {
-  BlogWriterSkill,
+  DOMAIN_SKILL_ARCHITECTURE_CATALOG,
   GitHubSkillLoader,
   HumanizerSkill,
+  SkillRegistry,
+  createSkillByName,
+  createSkillPackByName,
+  inspectSkillByName,
+  listSkillPackInspections,
+  listPlannedDomainSkillCategories,
+  listSkillInspections,
+  scoreSkillSpecQuality,
 } from "../skills.js";
-import { CreatorPacks } from "../packs.js";
+import { CreatorPacks, FinancePacks, inspectSkillPackByName } from "../packs.js";
 import { LinearMCP } from "../mcp.js";
 import { AgentTeam } from "../team.js";
 
 describe("public entry points", () => {
-  it("exports the core API and subpath barrels", () => {
+  it("exports the core API and subpath barrels", async () => {
     expect(Agent).toBeDefined();
     expect(AgentPool).toBeDefined();
     expect(Provider.ollama["llama3.2"]).toBe("ollama:llama3.2");
@@ -50,7 +62,7 @@ describe("public entry points", () => {
     expect(LinkCheckerAdapter.connect().name).toBe("link-checker");
     expect(SeoAdapter.connect().name).toBe("seo");
     expect(tool).toBeDefined();
-    expect(HumanizerSkill.create().directive).toBe("humanizer");
+    expect(HumanizerSkill.create().directive).toBe("humanize");
     expect(LinearMCP.connect({ apiKey: "key" }).name).toBe("linear-mcp");
     expect(AgentTeam).toBeDefined();
     expect(DeterministicFakeProvider).toBeDefined();
@@ -59,6 +71,11 @@ describe("public entry points", () => {
     expect(estimateTokens).toBeDefined();
     expect(AgentCache.disabled().config.type).toBe("disabled");
     expect(AgentCache.memory().config.type).toBe("memory");
+    expect(AgentCache.fromUrl("redis://localhost:6379").config.type).toBe("redis");
+    expect(AgentMemory.local).toBeDefined();
+    expect(AgentEval).toBeDefined();
+    expect(AgentReports.eventCollector).toBeDefined();
+    await expect(ApprovalQueue.memory().list()).resolves.toEqual([]);
     expect(AgentWorkspace.create({}).events).toBeDefined();
     expect(AgentWorkflow.create({ steps: [] }).inspect().steps).toEqual([]);
     expect(CustomStep({ id: "x", run: async () => "ok" }).type).toBe("custom");
@@ -75,9 +92,32 @@ describe("public entry points", () => {
       new FileSystemAnalyticsHistoryStore("/tmp/agentcraft-analytics").root,
     ).toContain("agentcraft-analytics");
     expect(CreatorPacks.blog().type).toBe("creator-pack");
-    expect(BlogWriterSkill.create().skillMetadata?.creator?.name).toBe(
-      "blog-writer",
+    expect(FinancePacks.stockResearch().stockScreening.inspect().name).toBe(
+      "stock-screening",
     );
+    expect(inspectSkillByName("stock-screening")?.hasPrompt).toBe(true);
+    expect(inspectSkillByName("stock-screening")).not.toHaveProperty("prompt");
+    expect(inspectSkillByName("stock-screening")).not.toHaveProperty("systemPromptExtension");
+    expect(listSkillInspections({ domain: "finance" }).length).toBeGreaterThan(0);
+    expect(createSkillByName("brand-research").name).toBe("brand-research");
+    expect(
+      inspectSkillPackByName("finance-stock-research-skills")?.skillIds,
+    ).toContain("stock-screening");
+    expect(createSkillPackByName("finance-stock-research-skills").type).toBe(
+      "creator-pack",
+    );
+    expect(listSkillPackInspections({ domain: "finance" }).length).toBeGreaterThan(0);
+    expect(createSkillByName("blog-writer").name).toBe("blog-writer");
+    expect(new SkillRegistry().listInspections()).toEqual([]);
+    expect(listPlannedDomainSkillCategories("creator").length).toBeGreaterThan(0);
+    expect(DOMAIN_SKILL_ARCHITECTURE_CATALOG.length).toBeGreaterThan(0);
+    expect(
+      scoreSkillSpecQuality({
+        name: "example-skill",
+        description: "Example skill",
+        prompt: HumanizerSkill.create().prompt,
+      }).maxScore,
+    ).toBeGreaterThan(0);
     expect(GitHubSkillLoader).toBeDefined();
   });
 });

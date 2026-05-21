@@ -37,7 +37,7 @@ const cache = AgentCache.file("./.agentcraft/cache", {
 ## Distributed Cache
 
 ```ts
-import { AgentCache } from "agentcraft";
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
 
 const redisCache = AgentCache.redis({
   url: process.env.REDIS_URL!,
@@ -48,6 +48,12 @@ const redisCache = AgentCache.redis({
 const supabaseCache = AgentCache.postgres({
   url: process.env.SUPABASE_DB_URL!,
   tableName: "agentcraft_cache",
+});
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  cache: redisCache,
 });
 
 const warm = await AgentCache.warm(agent, [
@@ -104,8 +110,8 @@ console.log(response.cache?.summary);
 Use `AgentEval` when a prompt, skill pack, adapter set, or cache strategy needs a repeatable quality and cost gate.
 
 ```ts
-import { Agent, AgentEval, Provider } from "agentcraft";
-import { CreatorPacks } from "agentcraft/packs";
+import { Agent, AgentEval, Provider } from "@deskcreate/agentcraft";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -143,7 +149,7 @@ await AgentEval.writeMarkdown(report, "reports/evals/creator-gate.md");
 Use `AgentReports` when you need a redacted artifact for CI, support, reviewer handoff, or run debugging.
 
 ```ts
-import { Agent, AgentReports, Provider } from "agentcraft";
+import { Agent, AgentReports, Provider } from "@deskcreate/agentcraft";
 
 const collector = AgentReports.traceCollector();
 const agent = Agent.create({
@@ -171,7 +177,11 @@ await AgentReports.writeJson(
 ## Governance Queue
 
 ```ts
-import { ApprovalQueue, AgentReports, AgentWorkspace } from "agentcraft";
+import {
+  ApprovalQueue,
+  AgentReports,
+  AgentWorkspace,
+} from "@deskcreate/agentcraft";
 
 const approvals = ApprovalQueue.memory({
   defaultReviewer: "editor@example.com",

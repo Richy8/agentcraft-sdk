@@ -7,8 +7,8 @@ Use it when you want to answer: did this agent produce the right kind of answer,
 ## Quick Start
 
 ```ts
-import { Agent, AgentCache, AgentEval, Provider } from "agentcraft";
-import { CreatorPacks } from "agentcraft/packs";
+import { Agent, AgentCache, AgentEval, Provider } from "@deskcreate/agentcraft";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -100,6 +100,85 @@ const suite = AgentEval.suite({
       maxMisses: 2,
     },
   },
+});
+```
+
+## Common Production Suites
+
+### Flat Prompt vs Skill-Enhanced
+
+Use this when you are proving that a skill or creator pack earns its prompt overhead.
+
+```ts
+import { Agent, AgentEval, Provider } from "@deskcreate/agentcraft";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+
+const flatAgent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  skillActivation: "directive-only",
+});
+
+const skillAgent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  skillActivation: "auto",
+  promptCompression: "balanced",
+}).use(CreatorPacks.blog({ readOnlyByDefault: true }));
+
+const suite = AgentEval.suite({
+  name: "skill-value-check",
+  defaults: { maxTotalTokens: 6_000, maxCostUsd: 0.05 },
+}).case({
+  name: "medium-plan",
+  prompt: "Create a Medium article plan about reducing agent token waste.",
+  assertions: [
+    AgentEval.assert.matches(/cache|token|cost/i),
+    AgentEval.assert.notContains("game changer"),
+  ],
+});
+
+const baseline = await AgentEval.run({ agent: flatAgent, suite });
+const candidate = await AgentEval.run({ agent: skillAgent, suite });
+const comparison = AgentEval.compare({
+  name: "flat-vs-blog-pack",
+  baseline,
+  candidate,
+});
+
+console.log(comparison.deltas.totalTokens);
+console.log(comparison.deltas.averageQualityScore);
+```
+
+### CI Gate
+
+Use a failing status to block a pull request when quality, cost, or tool discipline regresses.
+
+```ts
+const report = await AgentEval.run({ agent, suite });
+await AgentEval.writeMarkdown(report, "reports/evals/pr-gate.md");
+
+if (report.status === "failed") {
+  throw new Error("AgentEval gate failed. See reports/evals/pr-gate.md");
+}
+```
+
+### Tool Discipline
+
+This pattern catches accidental tool-surface expansion or expensive tool loops.
+
+```ts
+const suite = AgentEval.suite({
+  name: "tool-discipline",
+  defaults: { maxToolCalls: 3 },
+}).case({
+  name: "research-with-bounded-tools",
+  prompt: "Research this topic and return a source-backed brief.",
+  expect: {
+    exposedTools: ["web_search"],
+    maxToolCalls: 2,
+  },
+  assertions: [AgentEval.assert.toolCalled("web_search")],
 });
 ```
 

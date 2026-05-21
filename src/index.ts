@@ -21,6 +21,10 @@ export type {
   CostReport,
   ModelInfo,
   PromptCompressionMode,
+  SkillPromptAssemblyMode,
+  SkillPromptAssemblyRecord,
+  SkillPromptAssemblyReport,
+  SkillPromptAssemblySection,
   RetryConfig,
   RunBudget,
   SkillActivationReason,
@@ -59,6 +63,7 @@ export type {
   ArtifactRef,
   ArtifactStore,
   ArtifactStoreCapabilities,
+  ArtifactValidationOptions,
   FileArtifactStoreOptions,
   SQLiteArtifactStoreOptions,
   TypedArtifactStoreHelper,
@@ -80,11 +85,13 @@ export type {
   ConditionStepConfig,
   CustomStepConfig,
   ParallelStepConfig,
+  RetryStepConfig,
   TeamStepConfig,
   ToolStepConfig,
   WorkflowContext,
   WorkflowInspection,
   WorkflowInstance,
+  WorkflowResumeState,
   WorkflowResult,
   WorkflowRunArtifact,
   WorkflowRunOptions,
@@ -174,11 +181,12 @@ export type {
 } from "./agent/reports/index.js";
 export type {
   AgentEventEmitter,
+  AgentEventEmitterOptions,
   AgentEventMap,
   AgentEventType,
 } from "./agent/events.js";
-export { AgentCache } from "./agent/cache.js";
-export { summarizeCacheStats } from "./agent/cache.js";
+export { AgentCache } from "./agent/cache/index.js";
+export { summarizeCacheStats } from "./agent/cache/index.js";
 export type {
   AgentCacheConfig,
   AgentCacheController,
@@ -197,7 +205,7 @@ export type {
   RedisCacheClientLike,
   RedisCacheOptions,
   SQLiteCacheOptions,
-} from "./agent/cache.js";
+} from "./agent/cache/index.js";
 export { ApprovalQueue } from "./agent/governance/index.js";
 export type {
   ApprovalDecision,
@@ -213,9 +221,18 @@ export type {
 export type {
   BrandVoiceProfile as CreatorBrandVoiceProfile,
   ContentPillars,
+  CreatorPack,
+  CreatorPackConfig,
   MediaBrief,
   PersonaProfile,
   PublishingStatus,
+} from "./agent/creator/types.js";
+export {
+  BrandVoiceProfileSchema,
+  ContentPillarsSchema,
+  MediaBriefSchema,
+  PersonaProfileSchema,
+  PublishingStatusSchema,
 } from "./agent/creator/types.js";
 export { FileSystemCreatorMemoryStore } from "./agent/creator/memory.js";
 export type {

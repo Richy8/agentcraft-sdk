@@ -16,7 +16,7 @@ import type { TraceSink, TraceSpan } from "./observability.js";
 import type { AgentMemoryStore, MemoryRetrievalOptions } from "./memory/index.js";
 import type { AgentSkill } from "./skills/types.js";
 import type { AgentWorkspaceInstance } from "./workspace.js";
-import type { CacheEfficiencySummary } from "./cache.js";
+import type { CacheEfficiencySummary } from "./cache/index.js";
 import type {
   StructuredOutputOptions,
   StructuredOutputSchema,
@@ -62,6 +62,36 @@ export interface AgentFile {
   data: string;
 }
 
+export type SkillPromptAssemblySection =
+  | "role"
+  | "goal"
+  | "constraints"
+  | "toolUsePolicy"
+  | "outputFormat"
+  | "qualityChecklist"
+  | "failureBehavior"
+  | "safetyNotes"
+  | "examples"
+  | "systemPromptExtension";
+
+export interface SkillPromptAssemblyRecord {
+  readonly skill: string;
+  readonly mode: SkillPromptAssemblyMode;
+  readonly activationMode: "always" | "auto" | "directive-only";
+  readonly directiveBoundary: boolean;
+  readonly activeSkillCount: number;
+  readonly includedSections: readonly SkillPromptAssemblySection[];
+  readonly omittedSections: readonly SkillPromptAssemblySection[];
+  readonly assemblyChars: number;
+  readonly fullPromptChars?: number;
+  readonly runtimeContextIncluded: boolean;
+}
+
+export interface SkillPromptAssemblyReport {
+  readonly mode: SkillPromptAssemblyMode;
+  readonly records: readonly SkillPromptAssemblyRecord[];
+}
+
 export interface AgentResponse {
   content: string;
   structuredResponse?: unknown;
@@ -88,6 +118,7 @@ export interface AgentResponse {
     exposedTools: string[];
     executedToolCalls?: number;
   };
+  promptAssembly?: SkillPromptAssemblyReport;
   measurement?: {
     promptChars: number;
     systemChars: number;
@@ -178,6 +209,7 @@ export interface CostReport {
 }
 
 export type PromptCompressionMode = "none" | "safe" | "balanced" | "aggressive";
+export type SkillPromptAssemblyMode = "full" | "adaptive-safe" | "compact" | "minimal";
 
 export interface AgentRunParams {
   prompt?: string;
@@ -198,6 +230,7 @@ export interface AgentRunParams {
     loader?: IPromptLoader;
   };
   promptCompression?: PromptCompressionMode;
+  skillPromptAssembly?: SkillPromptAssemblyMode;
   system?: string;
   temperature?: number;
   maxTokens?: number;

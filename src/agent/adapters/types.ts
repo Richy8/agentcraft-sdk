@@ -1,4 +1,5 @@
 import type { StreamChunk } from '../../types/provider.types.js';
+import { validateToolArguments } from '../../tools/validation.js';
 import type { AgentResponse, AgentRunParams } from '../types.js';
 export type {
   ToolPolicy,
@@ -103,16 +104,17 @@ export function tool<T extends Record<string, ToolParam>>(config: {
     ])
   );
 
-  return {
+  const definition: ToolDefinition = {
     name: config.name,
     description: config.description,
     parameters: { type: 'object', properties, required },
     ...(config.security !== undefined && { security: config.security }),
     execute: async (args: Record<string, unknown>) => {
-      validateToolArgs(config.name, config.params, args);
+      validateToolArguments(definition, args);
       return config.run(args as { [K in keyof T]: InferParamType<T[K]> });
     },
   };
+  return definition;
 }
 
 export function createAdapter(config: {
@@ -148,36 +150,4 @@ export function createAdapter(config: {
     ...(config.onAfterRun !== undefined && { onAfterRun: config.onAfterRun }),
     ...(config.onAfterStream !== undefined && { onAfterStream: config.onAfterStream }),
   };
-}
-
-function validateToolArgs<T extends Record<string, ToolParam>>(
-  toolName: string,
-  params: T,
-  args: Record<string, unknown>
-): void {
-  for (const [name, param] of Object.entries(params)) {
-    const value = args[name];
-    if (param.required !== false && value === undefined) {
-      throw new Error(`Tool '${toolName}' missing required argument '${name}'`);
-    }
-    if (value === undefined) continue;
-
-    const valid =
-      (param.type === 'array' && Array.isArray(value)) ||
-      (param.type === 'object' &&
-        value !== null &&
-        typeof value === 'object' &&
-        !Array.isArray(value)) ||
-      (param.type !== 'array' && param.type !== 'object' && typeof value === param.type);
-
-    if (!valid) {
-      throw new Error(`Tool '${toolName}' argument '${name}' must be ${param.type}`);
-    }
-
-    if (param.options && !param.options.includes(String(value))) {
-      throw new Error(
-        `Tool '${toolName}' argument '${name}' must be one of: ${param.options.join(', ')}`
-      );
-    }
-  }
 }

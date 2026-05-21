@@ -1,72 +1,152 @@
-export { ResearchSkill } from "./research.skill.js";
-export { DeepResearchSkill } from "./deep-research.skill.js";
-export { WritingSkill } from "./writing.skill.js";
-export { SummarizeSkill } from "./summarize.skill.js";
-export { TranslationSkill } from "./translation.skill.js";
-export { HumanizerSkill } from "./humanizer.skill.js";
-export { CodeReviewSkill } from "./code-review.skill.js";
-export { DataAnalysisSkill } from "./data-analysis.skill.js";
-export { DocumentAnalysisSkill } from "./document-analysis.skill.js";
-export { MemorySkill } from "./memory.skill.js";
-export { ConversationSkill } from "./conversation.skill.js";
-export type { ConversationSkillOptions } from "./conversation.skill.js";
-export { EmailDraftSkill } from "./email-draft.skill.js";
-export { SchedulerSkill } from "./scheduler.skill.js";
-export { MeetingSkill } from "./meeting.skill.js";
-export { VisionSkill } from "./vision.skill.js";
-export { TranscriptionSkill } from "./transcription.skill.js";
-export { GitHubSkillLoader } from "./loaders.js";
+export * from "./primitives/index.js";
+export { GitHubSkillLoader } from "./loaders/index.js";
 export {
   buildSkillPrompt,
   defineSkill,
   validateSkillPromptTemplate,
 } from "./types.js";
 export {
-  CREATOR_SKILL_MANIFESTS,
-  CREATOR_WAVE_1_SKILL_NAMES,
-  AudienceResearchSkill,
-  BlogWriterSkill,
-  BookWriterSkill,
-  BrandVoiceSkill,
-  ClaimRiskReviewSkill,
-  CompetitorAnalysisSkill,
-  ContentBriefSkill,
-  ContentCalendarSkill,
-  ContentPositioningSkill,
-  CopywriterSkill,
-  CopyReviewSkill,
-  CreativeDirectionSkill,
-  EditorialReviewSkill,
-  ExperimentPlannerSkill,
-  FactCheckSkill,
-  NewsletterWriterSkill,
-  PerformanceAnalysisSkill,
-  PublishQaSkill,
-  RepurposingSkill,
-  ResearchSynthesisSkill,
-  SeoStrategySkill,
-  SeoAuditSkill,
-  SeoReviewSkill,
-  SerpBriefSkill,
-  SocialWriterSkill,
-  TrendDiscoverySkill,
-  VideoIdeationSkill,
-  VideoScriptwriterSkill,
-  compareCreatorSkillsForComposition,
-  getCreatorSkillManifest,
-} from "./creator-skills.js";
+  DEFAULT_SKILL_SPEC_PROMPT_VERSION,
+  SkillRegistry,
+  compareSkillSpecs,
+  createSkillByName,
+  createSkillFromSpec,
+  defaultSkillRegistry,
+  defineSkillSpec,
+  getSkillSpec,
+  inspectSkillByName,
+  inspectSkillSpec,
+  listSkillInspections,
+  listSkillSpecs,
+  registerSkillSpecs,
+  requireSkillInspection,
+  skillSpecMetadata,
+  validateSkillSpec,
+} from "./registries/index.js";
+export {
+  BrandPack,
+  BrandPacks,
+  BusinessPack,
+  BusinessPacks,
+  CreatorPack,
+  CreatorPacks,
+  DataAnalyticsPack,
+  DataAnalyticsPacks,
+  EngineeringPack,
+  EngineeringPacks,
+  FinancePack,
+  FinancePacks,
+  HealthcarePack,
+  HealthcarePacks,
+  LegalPack,
+  LegalPacks,
+  MarketingPack,
+  MarketingPacks,
+  PersonalProductivityPack,
+  PersonalProductivityPacks,
+  ProductPack,
+  ProductPacks,
+  SalesPack,
+  SalesPacks,
+  SupportPack,
+  SupportPacks,
+  createPackByName,
+} from "../packs/index.js";
+export {
+  createSkillPackByName,
+  getSkillPackSpec,
+  inspectSkillPackByName,
+  inspectSkillPackSpec,
+  listSkillPackInspections,
+  listSkillPackSpecs,
+  requireSkillPackInspection,
+  skillPackRegistry,
+} from "./packs/index.js";
+export {
+  analyticsQualityStandards,
+  antiSlopWritingRules,
+  builtInBaseFailureBehavior,
+  builtInBaseSafetyNotes,
+  citationRules,
+  conciseSelfReviewChecklist,
+  creatorAnalyticalQualityStandards,
+  creatorBaseFailureBehavior,
+  creatorBaseSafetyNotes,
+  creatorDefaultQualityStandards,
+  creatorOperationalQualityStandards,
+  creatorReviewQualityStandards,
+  creatorWritingQualityStandards,
+  evidenceBoundaryRules,
+  genericSkillFailureModes,
+  humanQualitySafetyNotes,
+  publicFacingContentFailureModes,
+  readOnlyToolPolicy,
+  regulatedDomainSafetyNotes,
+  researchFailureModes,
+  researchQualityStandards,
+  researchToolPolicy,
+  reviewSeverityScale,
+  sourceIntegrityRules,
+  untrustedInputSafetyNotes,
+  writingQualityStandards,
+} from "./shared/index.js";
+export {
+  COMPETITOR_OSS_SKILL_REVIEW_NOTES,
+  DOMAIN_INTELLIGENCE_CHECKLIST,
+  LIVE_PROVIDER_CERTIFICATION_PLAN,
+  PROMPT_FAILURE_MODE_CHECKLIST,
+  PROMPT_RESEARCH_TEMPLATES,
+  PROVIDER_PROMPT_BEST_PRACTICE_CHECKLIST,
+  SKILL_QUALITY_RUBRICS,
+  formatSkillQualityCertificationReport,
+  scoreSkillSpecQuality,
+} from "./certification/index.js";
+export type {
+  PromptResearchTemplate,
+  SkillQualityRubric,
+  SkillQualityScore,
+} from "./certification/index.js";
+export {
+  DOMAIN_SKILL_ARCHITECTURE_CATALOG,
+  listPlannedDomainSkillCategories,
+} from "./domains/__catalog__/index.js";
+export type { DomainSkillCategoryPlan } from "./domains/__catalog__/index.js";
+export * from "./domains/brand/index.js";
+export * from "./domains/business/index.js";
+export * from "./domains/data-analytics/index.js";
+export * from "./domains/engineering/index.js";
+export * from "./domains/finance/index.js";
+export * from "./domains/healthcare/index.js";
+export * from "./domains/legal/index.js";
+export * from "./domains/marketing/index.js";
+export * from "./domains/personal-productivity/index.js";
+export * from "./domains/product/index.js";
+export * from "./domains/sales/index.js";
+export * from "./domains/support/index.js";
+export * from "./domains/creator/index.js";
 export type {
   AdapterRef,
   AgentSkill,
   DefineSkillConfig,
   SkillMetadata,
+  SkillPromptExample,
   SkillPromptTemplate,
 } from "./types.js";
+export type {
+  SkillCapabilityHints,
+  SkillDomainIntelligence,
+  SkillInspection,
+  SkillSpec,
+  SkillSpecExample,
+  SkillSpecFilter,
+  SkillSideEffectIntent,
+} from "./registries/index.js";
+export type { PackConfig, PackSpec, PackSpecFilter, SkillPackInspection } from "./packs/index.js";
 export type {
   ExternalSkillChecksums,
   GitHubSkillLoaderConfig,
   LocalSkillLoaderOptions,
-} from "./loaders.js";
+} from "./loaders/index.js";
 export {
   AdapterCapabilitySchema,
   CapabilityExpressionSchema,
@@ -90,7 +170,6 @@ export type {
   CreatorArtifact,
   CreatorCategory,
   CreatorOutputOwner,
-  CreatorPack,
   CreatorPackConfig,
   CreatorSideEffectRisk,
   CreatorSkillManifest,

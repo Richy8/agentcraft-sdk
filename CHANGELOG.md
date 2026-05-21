@@ -14,7 +14,14 @@
 - Added artifact-store schema validation through `ArtifactRegistry` for memory, file, and SQLite stores.
 - Added `ArtifactStore.updateByType()`, `listLinks()`, `capabilities()`, file-store history, and typed artifact helper APIs.
 - Added creator memory freshness metadata, stale-memory warnings, durable write approval policy, default secret/sensitive-data blocking, and compact `summarizeContext()`.
+- Added `AgentEval` suites, deterministic assertions, cache replay gates, baseline comparison, optional judge hooks, and markdown/JSON eval reports.
+- Added `AgentReports` for redacted markdown, JSON, and HTML reports from agent responses, teams, workflows, trace spans, workspace events, cache stats, approvals, artifacts, and memory events.
+- Added distributed cache drivers for Redis, Postgres/Supabase Postgres, SQLite, custom controllers, URL-based cache factories, distributed miss locks, and cache warming.
+- Added `ApprovalQueue` memory, artifact-store, and custom queue controllers for durable write approvals, reviewer assignment, denial, expiry, rollback metadata, and reportable governance events.
+- Added `AgentMemory` local, vector, and custom semantic memory providers with lexical/OpenAI/custom embeddings, Qdrant/Pinecone/Supabase pgvector options, bounded retrieval, approval-gated writes, and memory report events.
 - Added docs and examples for cost/cache compression, artifact validation/link traversal, memory freshness, and benchmark interpretation.
+- Expanded production docs and examples for AgentEval, observability reports, distributed cache, governance queues, semantic memory, and copy-ready production setups.
+- Hardened runtime maintainability with focused adapter attachment, lifecycle, structured output, cache, memory, and runtime service tests plus runtime hardening documentation.
 
 ## 0.2.0 - 2026-05-14
 

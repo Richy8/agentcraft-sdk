@@ -108,8 +108,12 @@ export interface AgentEventEmitter {
   emit<K extends AgentEventType>(event: K, data: AgentEventMap[K]): void;
 }
 
+export interface AgentEventEmitterOptions {
+  readonly onHandlerError?: (error: unknown, context: { event: AgentEventType }) => void;
+}
+
 /** Create a lightweight event emitter whose handler errors are isolated. */
-export function createAgentEventEmitter(): AgentEventEmitter {
+export function createAgentEventEmitter(options: AgentEventEmitterOptions = {}): AgentEventEmitter {
   const handlers = new Map<AgentEventType, Set<(data: unknown) => void>>();
 
   return {
@@ -134,7 +138,8 @@ export function createAgentEventEmitter(): AgentEventEmitter {
       for (const handler of handlers.get(event) ?? []) {
         try {
           handler(data);
-        } catch {
+        } catch (error) {
+          options.onHandlerError?.(error, { event });
           // Event subscribers are observers; they must not break an agent run.
         }
       }

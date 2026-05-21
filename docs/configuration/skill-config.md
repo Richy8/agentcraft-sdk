@@ -33,11 +33,13 @@ console.log(response.content);
 
 ## Configuration
 
-| Option            | Required                | Default       | Purpose                                   |
-| ----------------- | ----------------------- | ------------- | ----------------------------------------- |
-| Skill metadata    | Built in                | Skill default | Declares capabilities and risk.           |
-| Prompt template   | For custom skills       | None          | Adds reusable expert instructions.        |
-| Required adapters | Skill-specific          | None          | Enforced capability dependencies.         |
-| Activation        | Pack-level or directive | `auto`        | Determines when skill instructions apply. |
+| Option              | Required                | Default       | Purpose                                                              |
+| ------------------- | ----------------------- | ------------- | -------------------------------------------------------------------- |
+| Skill metadata      | Built in                | Skill default | Declares capabilities and risk.                                      |
+| Prompt template     | For custom skills       | None          | Adds reusable expert instructions.                                   |
+| Required adapters   | Skill-specific          | None          | Enforced capability dependencies.                                    |
+| Activation          | Pack-level or directive | `auto`        | Determines when skill instructions apply.                            |
+| Domain/category     | For spec-backed skills  | None          | Groups skills for registry lookup and pack composition.              |
+| Domain intelligence | For domain skills       | None          | Captures vocabulary, artifacts, metrics, tools, and risk boundaries. |
 
 More variants: [skill cookbook](../examples-cookbook/skills.md) and [external skills](../skills/external-skills.md).

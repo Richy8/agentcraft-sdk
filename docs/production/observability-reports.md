@@ -7,7 +7,7 @@ Reports are built on the existing tracing and response metadata. They do not req
 ## Quick Start
 
 ```ts
-import { Agent, AgentReports, Provider } from "agentcraft";
+import { Agent, AgentReports, Provider } from "@deskcreate/agentcraft";
 
 const traceCollector = AgentReports.traceCollector();
 
@@ -44,9 +44,14 @@ Secrets and URL credentials are redacted by default.
 Use `traceCollector()` when you want both live span capture and a report-friendly span array.
 
 ```ts
-import { AgentReports } from "agentcraft";
+import { Agent, AgentReports, Provider } from "@deskcreate/agentcraft";
 
 const collector = AgentReports.traceCollector();
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+});
 
 const response = await agent.run({
   prompt: "Run the production check.",
@@ -66,10 +71,21 @@ console.log(response.runId);
 Use `eventCollector()` when you also want cache, artifact, approval, tool, and workflow events in the same report.
 
 ```ts
-import { AgentReports, AgentWorkspace } from "agentcraft";
+import {
+  Agent,
+  AgentReports,
+  AgentWorkspace,
+  Provider,
+} from "@deskcreate/agentcraft";
 
 const workspace = AgentWorkspace.create();
 const events = AgentReports.eventCollector(workspace.events);
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  workspace,
+});
 
 const response = await agent.run({
   prompt: "Create a draft package.",
@@ -86,10 +102,90 @@ await AgentReports.writeMarkdown(response, "reports/runs/draft-package.md", {
 });
 ```
 
+## Cache, Memory, Artifact, and Approval Report
+
+Use one workspace event collector when a living system needs one report covering the full operational footprint.
+
+```ts
+import {
+  Agent,
+  AgentCache,
+  AgentMemory,
+  AgentReports,
+  AgentWorkspace,
+  ApprovalQueue,
+  FileArtifactStore,
+  Provider,
+} from "@deskcreate/agentcraft";
+
+const workspace = AgentWorkspace.create({
+  cache: AgentCache.redis({
+    url: process.env.REDIS_URL!,
+    namespace: "content-system",
+    locking: { enabled: true },
+  }),
+  memory: AgentMemory.local({
+    root: ".agentcraft/memory",
+    namespace: "content-system",
+    writes: { requireApproval: false },
+  }),
+  store: FileArtifactStore({ root: ".agentcraft/artifacts" }),
+  toolPolicy: {
+    approvalQueue: ApprovalQueue.memory({
+      defaultReviewer: "editor@example.com",
+    }),
+  },
+});
+
+const events = AgentReports.eventCollector(workspace.events);
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  workspace,
+});
+
+const response = await agent.run({
+  prompt: "Prepare a publish-ready LinkedIn post package.",
+  trace: true,
+});
+
+await AgentReports.writeMarkdown(response, "reports/runs/linkedin-package.md", {
+  events: events.events(),
+  include: {
+    approvals: true,
+    artifacts: true,
+    cache: true,
+    memory: true,
+    toolCalls: true,
+  },
+});
+```
+
+## Dashboard-Friendly JSON
+
+Use JSON output when another service will ingest run health, cost, trace, and policy signals.
+
+```ts
+const report = AgentReports.fromResponse(response, {
+  events: events.events(),
+  include: {
+    fullOutput: false,
+    outputPreview: true,
+    traces: true,
+    costs: true,
+    cache: true,
+    approvals: true,
+  },
+});
+
+await AgentReports.writeJson(report, "reports/dashboard/latest-run.json");
+```
+
 ## Workflow Report
 
 ```ts
-import { AgentReports, AgentWorkflow } from "agentcraft";
+import { AgentReports, AgentWorkflow } from "@deskcreate/agentcraft";
 
 const workflow = AgentWorkflow.create({
   steps: [
@@ -107,7 +203,24 @@ await AgentReports.writeMarkdown(result, "reports/workflows/cache-warming.md", {
 ## Team Report
 
 ```ts
-import { AgentReports } from "agentcraft";
+import { Agent, AgentReports, Provider } from "@deskcreate/agentcraft";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
+
+const orchestrator = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+const reviewer = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  system: "Review for unsupported claims and unclear reasoning.",
+});
+
+const team = AgentTeam.create({
+  orchestrator,
+  members: [{ role: "reviewer", agent: reviewer }],
+});
 
 const response = await team.run({
   prompt: "Research, draft, and review a product update.",

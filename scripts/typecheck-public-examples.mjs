@@ -1,6 +1,5 @@
 import { existsSync } from "node:fs";
 import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 
@@ -9,12 +8,12 @@ const examplesDir = path.join(packageRoot, "examples");
 const docsDir = path.join(packageRoot, "docs");
 const distIndex = path.join(packageRoot, "dist", "index.d.ts");
 const allowedPackageImports = new Set([
-  "agentcraft",
-  "agentcraft/adapters",
-  "agentcraft/skills",
-  "agentcraft/packs",
-  "agentcraft/mcp",
-  "agentcraft/team",
+  "@deskcreate/agentcraft",
+  "@deskcreate/agentcraft/adapters",
+  "@deskcreate/agentcraft/skills",
+  "@deskcreate/agentcraft/packs",
+  "@deskcreate/agentcraft/mcp",
+  "@deskcreate/agentcraft/team",
 ]);
 const stalePublicApiPatterns = [
   {
@@ -27,8 +26,8 @@ const stalePublicApiPatterns = [
     message: "Use run budget.maxToolCalls, not toolPolicy.maxCalls.",
   },
   {
-    pattern: /\bmaxCostUsd\s*:/,
-    message: "Use budget.maxCost, not maxCostUsd.",
+    pattern: /budget\s*:\s*\{[^}]*\bmaxCostUsd\s*:/s,
+    message: "Use run budget.maxCost, not budget.maxCostUsd.",
   },
   {
     pattern: /new\s+Agent\s*\(/,
@@ -49,7 +48,7 @@ if (!existsSync(distIndex)) {
 }
 
 const tempRoot = await mkdtemp(
-  path.join(tmpdir(), "agentcraft-public-examples-"),
+  path.join(packageRoot, ".agentcraft-public-examples-"),
 );
 try {
   const exampleFiles = await listFiles(examplesDir, (filePath) =>
@@ -114,8 +113,10 @@ async function extractCopyableTypeScriptSnippets(filePath, markdown) {
   for (const match of markdown.matchAll(fencePattern)) {
     index += 1;
     const source = match[1]?.trim();
-    if (!source || !source.includes("from 'agentcraft")) continue;
+    if (!source || !/from\s+['"]@deskcreate\/agentcraft/.test(source))
+      continue;
     await checkPublicImports(filePath, source);
+    if (!source.includes("@agentcraft-docs-typecheck")) continue;
     const snippetPath = path.join(
       tempRoot,
       `${relative(filePath).replace(/[^a-zA-Z0-9._-]/g, "_")}_${index}.ts`,
@@ -154,8 +155,14 @@ async function checkPublicImports(filePath, source) {
   const importPattern = /from\s+['"]([^'"]+)['"]/g;
   for (const match of source.matchAll(importPattern)) {
     const specifier = match[1];
+    if (specifier?.startsWith("agentcraft")) {
+      failures.push(
+        `${relative(filePath)}: use '@deskcreate/agentcraft' public imports instead of '${specifier}'`,
+      );
+      continue;
+    }
     if (
-      specifier?.startsWith("agentcraft") &&
+      specifier?.startsWith("@deskcreate/agentcraft") &&
       !allowedPackageImports.has(specifier)
     ) {
       failures.push(

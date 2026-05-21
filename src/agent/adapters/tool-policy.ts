@@ -1,4 +1,8 @@
 import { ToolExecutionError } from '../../errors/index.js';
+import {
+  defaultSecretRedactionPatterns,
+  isSecretLikeKey,
+} from '../../security/secret-patterns.js';
 import type { ApprovalQueueController } from '../governance/index.js';
 import type { ToolDefinition } from './types.js';
 
@@ -48,13 +52,7 @@ export interface ToolPolicy {
   outputGuardrails?: ToolGuardrail[];
 }
 
-const DEFAULT_SECRET_PATTERNS = [
-  /(sk-[a-zA-Z0-9_-]{8,})/g,
-  /(Bearer\s+)[a-zA-Z0-9._-]+/g,
-  /(api[_-]?key["']?\s*[:=]\s*["']?)[^"',\s}]+/gi,
-  /(token["']?\s*[:=]\s*["']?)[^"',\s}]+/gi,
-  /(secret["']?\s*[:=]\s*["']?)[^"',\s}]+/gi,
-];
+const DEFAULT_SECRET_PATTERNS = defaultSecretRedactionPatterns();
 
 export async function enforceToolPolicy(
   toolDef: ToolDefinition,
@@ -195,17 +193,13 @@ export function redactSecrets(value: unknown, patterns: RegExp[] = DEFAULT_SECRE
   return Object.fromEntries(
     Object.entries(value as Record<string, unknown>).map(([key, item]) => [
       key,
-      isSecretKey(key) ? '[REDACTED]' : redactSecrets(item, patterns),
+      isSecretLikeKey(key) ? '[REDACTED]' : redactSecrets(item, patterns),
     ])
   );
 }
 
 function redactString(value: string, patterns: RegExp[]): string {
   return patterns.reduce((current, pattern) => current.replace(pattern, (_match, prefix?: string) => `${prefix ?? ''}[REDACTED]`), value);
-}
-
-function isSecretKey(key: string): boolean {
-  return /api[_-]?key|token|secret|password|authorization/i.test(key);
 }
 
 async function runGuardrails(

@@ -47,7 +47,7 @@ console.log(response.content);
 Use this pack when you want a minimal creator setup:
 
 ```ts
-agent.use(CreatorPacks.default()).use(BrandVoiceSkill.create());
+agent.use(CreatorPacks.default()).use(createSkillByName("brand-voice"));
 ```
 
 For more variants, see the [creator cookbook](../../examples-cookbook/creator.md) and [skill activation](../../skills/activation.md).

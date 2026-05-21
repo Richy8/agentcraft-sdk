@@ -45,6 +45,21 @@ console.log(`Tool calls avoided: ${response.cache?.toolCallsAvoided}`);
 
 For Redis, Postgres, and SQLite setup details, see [Distributed Cache](./distributed-cache.md). Optional infrastructure dependencies are lazy-loaded so local memory/file cache users do not pay for distributed drivers.
 
+## Runtime Boundary
+
+`AgentCache` is a stable facade. The implementation is split by responsibility:
+
+| Module                | Purpose                                                 |
+| --------------------- | ------------------------------------------------------- |
+| `cache/facade.ts`     | Public `AgentCache.*` factories and URL routing.        |
+| `cache/key.ts`        | Stable cache keys, scoped keys, redaction, identifiers. |
+| `cache/validation.ts` | JSON-serializability checks before writes.              |
+| `cache/stats.ts`      | Hit-rate and estimated savings summaries.               |
+| `cache/warm.ts`       | Cache warming orchestration for repeated prompts.       |
+| `cache/backends/*`    | Memory, file, Redis, Postgres, SQLite controllers.      |
+
+Applications should continue importing from `@deskcreate/agentcraft`; backend modules are internal organization details.
+
 ## Configuration
 
 ### `AgentCache.file(root, options)`

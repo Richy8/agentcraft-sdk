@@ -71,7 +71,7 @@ console.log(Boolean(workspace.events));
 Use `AgentReports.traceCollector()` when teams or workflows should share one trace sink and produce a report after the run.
 
 ```ts
-import { AgentReports, AgentWorkspace } from "agentcraft";
+import { AgentReports, AgentWorkspace } from "@deskcreate/agentcraft";
 
 const collector = AgentReports.traceCollector();
 const workspace = AgentWorkspace.create({ traceSink: collector });

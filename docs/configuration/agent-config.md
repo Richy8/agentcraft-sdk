@@ -28,13 +28,14 @@
 
 ### Tools and Skills
 
-| Field               | Default    | Purpose                                                                                             |
-| ------------------- | ---------- | --------------------------------------------------------------------------------------------------- |
-| `tools`             | `[]`       | Static tool definitions available on every run.                                                     |
-| `toolPolicy`        | Permissive | Controls approval, read-only mode, guardrails, result truncation, and secret redaction.             |
-| `skillActivation`   | `"always"` | `"always"` — all skills active. `"auto"` — keyword-activated. `"directive-only"` — `/name` trigger. |
-| `toolSelection`     | `"all"`    | `"all"` — all adapters expose tools. `"auto"` — only adapters relevant to active skills.            |
-| `promptCompression` | `"none"`   | `"none"`, `"safe"`, `"balanced"`, or `"aggressive"` skill prompt compression.                       |
+| Field                 | Default           | Purpose                                                                                             |
+| --------------------- | ----------------- | --------------------------------------------------------------------------------------------------- |
+| `tools`               | `[]`              | Static tool definitions available on every run.                                                     |
+| `toolPolicy`          | Permissive        | Controls approval, read-only mode, guardrails, result truncation, and secret redaction.             |
+| `skillActivation`     | `"always"`        | `"always"` — all skills active. `"auto"` — keyword-activated. `"directive-only"` — `/name` trigger. |
+| `toolSelection`       | `"all"`           | `"all"` — all adapters expose tools. `"auto"` — only adapters relevant to active skills.            |
+| `promptCompression`   | `"none"`          | `"none"`, `"safe"`, `"balanced"`, or `"aggressive"` skill prompt compression.                       |
+| `skillPromptAssembly` | `"adaptive-safe"` | `"full"`, `"adaptive-safe"`, `"compact"`, or `"minimal"` skill prompt section selection.            |
 
 ### Retry
 

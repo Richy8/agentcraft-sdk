@@ -10,7 +10,7 @@ import {
   ToolStep,
 } from '../agent/workflow/index.js';
 import { AgentWorkspace } from '../agent/workspace.js';
-import { AgentCache } from '../agent/cache.js';
+import { AgentCache } from '../agent/cache/index.js';
 import { createAdapter } from '../agent/adapters/types.js';
 import { MemoryArtifactStore } from '../artifact-store/memory.js';
 import { Agent } from '../agent/agent.js';

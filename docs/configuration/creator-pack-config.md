@@ -19,6 +19,7 @@ Creator pack config applies shared behavior to a group of creator skills. The av
 | `toolSelection`     | No       | `auto`            | `auto` or `all`.                              |
 | `readOnlyByDefault` | No       | `false`           | Treats write-like activity as approval-bound. |
 | `budget`            | No       | Agent/run default | Caps pack-heavy workflows.                    |
+| `skillOverrides`    | No       | `{}`              | Safely disables selected skills by id.        |
 
 ## Usage
 
@@ -39,6 +40,9 @@ const agent = Agent.create({
     skillActivation: "auto",
     toolSelection: "auto",
     readOnlyByDefault: true,
+    skillOverrides: {
+      "research-synthesis": { enabled: false },
+    },
   }),
 );
 

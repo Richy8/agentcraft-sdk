@@ -48,7 +48,7 @@ console.log(response.content);
 Add direct copy risk review for regulated industries:
 
 ```ts
-agent.use(CreatorPacks.social()).use(ClaimRiskReviewSkill.create());
+agent.use(CreatorPacks.social()).use(createSkillByName("claim-risk-review"));
 ```
 
 More variants live in the [skills cookbook](../../examples-cookbook/skills.md).

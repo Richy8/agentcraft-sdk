@@ -25,7 +25,7 @@ const response = await agent.run({
 });
 
 // response.trace is a TraceSpan[]
-const spans = response.trace as import("agentcraft").TraceSpan[];
+const spans = response.trace as import("@deskcreate/agentcraft").TraceSpan[];
 console.log(`Spans captured: ${spans.length}`);
 for (const span of spans) {
   console.log(`${span.kind}: ${span.name} — ${span.status}`);
@@ -63,7 +63,7 @@ export interface TraceSink {
 ### Generate a Report from a Run
 
 ```ts
-import { Agent, AgentReports, Provider } from "agentcraft";
+import { Agent, AgentReports, Provider } from "@deskcreate/agentcraft";
 
 const collector = AgentReports.traceCollector();
 

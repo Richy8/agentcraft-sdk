@@ -8,7 +8,7 @@ import {
   validateCreatorPack,
   validateCreatorSkillManifest,
 } from '../types.js';
-import { AgentCache } from '../../cache.js';
+import { AgentCache } from '../../cache/index.js';
 import { CreatorPacks } from '../../packs/index.js';
 
 describe('creator contracts', () => {

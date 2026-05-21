@@ -4,7 +4,10 @@ Skills are normal `.use(...)` attachments. They add reusable behavior, directive
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { BlogWriterSkill, ResearchSkill } from "@deskcreate/agentcraft/skills";
+import {
+  ResearchSkill,
+  createSkillByName,
+} from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -12,7 +15,7 @@ const agent = Agent.create({
   skillActivation: "auto",
 })
   .use(ResearchSkill.create())
-  .use(BlogWriterSkill.create());
+  .use(createSkillByName("blog-writer"));
 
 const response = await agent.run({
   prompt: "Research and write a post about agent caching.",
@@ -51,40 +54,16 @@ console.log(response.content);
 | Vision            | `VisionSkill`           | `/vision`            | Image-aware review or description.          | Vision-capable model, image inputs.        |
 | Transcription     | `TranscriptionSkill`    | `/transcription`     | Audio/video transcript handling.            | Audio-capable model or transcript tools.   |
 
-## Creator Skills
+## Domain And Creator Skills
 
-All creator skills are exported from `agentcraft/skills`. They are also grouped into [Creator Packs](../creator/packs.md).
+Domain skills are created through the registry: `createSkillByName("blog-writer")`. They are also grouped into [Creator Packs](../creator/packs.md) and industry packs.
 
-| Skill                      | Directive               | Stage      | Produces            | Best paired with                            |
-| -------------------------- | ----------------------- | ---------- | ------------------- | ------------------------------------------- |
-| `AudienceResearchSkill`    | `/audience-research`    | Context    | `AudienceProfile`   | Search, crawl, creator memory.              |
-| `ContentPositioningSkill`  | `/content-positioning`  | Strategy   | `PositioningBrief`  | Competitor research, brand voice.           |
-| `ContentBriefSkill`        | `/content-brief`        | Strategy   | `ContentBrief`      | Audience, positioning, SEO.                 |
-| `ResearchSynthesisSkill`   | `/research-synthesis`   | Context    | `SourceNote`        | Fetch, Firecrawl, Tavily, citation manager. |
-| `FactCheckSkill`           | `/fact-check`           | Review     | `ClaimMap`          | Search, citation manager, source notes.     |
-| `CompetitorAnalysisSkill`  | `/competitor-analysis`  | Strategy   | `SerpBrief`         | SERP, crawl, link checker.                  |
-| `TrendDiscoverySkill`      | `/trend-discovery`      | Strategy   | `ContentBrief`      | Search, social/listening, analytics.        |
-| `SeoStrategySkill`         | `/seo-strategy`         | Strategy   | `SeoPlan`           | SEO adapter, analytics, content corpus.     |
-| `SeoAuditSkill`            | `/seo-audit`            | Review     | `EditorialReview`   | Fetch, link checker, SERP.                  |
-| `SerpBriefSkill`           | `/serp-brief`           | Strategy   | `SerpBrief`         | SEO adapter, crawl/fetch.                   |
-| `SeoReviewSkill`           | `/seo-review`           | Review     | `EditorialReview`   | SEO adapter, link checker.                  |
-| `BlogWriterSkill`          | `/blog-writer`          | Creation   | `Draft`             | Briefs, research, brand voice.              |
-| `BookWriterSkill`          | `/book-writer`          | Creation   | `Draft`             | Content corpus, memory, outlines.           |
-| `NewsletterWriterSkill`    | `/newsletter-writer`    | Creation   | `Draft`             | Brand voice, prior issues.                  |
-| `CopywriterSkill`          | `/copywriter`           | Creation   | `Draft`             | Audience research, proof library.           |
-| `SocialWriterSkill`        | `/social-writer`        | Creation   | `Draft`             | Repurposing, brand voice.                   |
-| `VideoIdeationSkill`       | `/video-ideation`       | Strategy   | `ContentBrief`      | Trends, YouTube/transcript tools.           |
-| `VideoScriptwriterSkill`   | `/video-scriptwriter`   | Creation   | `Draft`             | Brief, research, creative direction.        |
-| `CreativeDirectionSkill`   | `/creative-direction`   | Creation   | `Draft`             | Asset library, image generation.            |
-| `RepurposingSkill`         | `/repurposing`          | Operations | `RepurposingPack`   | Source draft, platform constraints.         |
-| `EditorialReviewSkill`     | `/editorial-review`     | Review     | `EditorialReview`   | Draft, brand voice, rubric.                 |
-| `CopyReviewSkill`          | `/copy-review`          | Review     | `EditorialReview`   | Draft, audience, offer.                     |
-| `ClaimRiskReviewSkill`     | `/claim-risk-review`    | Review     | `EditorialReview`   | Claim map, legal/compliance context.        |
-| `BrandVoiceSkill`          | `/brand-voice`          | Context    | `SourceNote`        | Creator memory, corpus examples.            |
-| `PublishQaSkill`           | `/publish-qa`           | Operations | `PublishPackage`    | Link checker, SEO review.                   |
-| `ContentCalendarSkill`     | `/content-calendar`     | Operations | `ContentCalendar`   | Analytics, publishing, calendar tools.      |
-| `PerformanceAnalysisSkill` | `/performance-analysis` | Operations | `PerformanceReport` | Analytics adapter/history.                  |
-| `ExperimentPlannerSkill`   | `/experiment-planner`   | Operations | `ExperimentPlan`    | Performance reports, calendar.              |
+| Pattern         | Example                                   | Use when                                                                                  |
+| --------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Registry lookup | `createSkillByName("blog-writer")`        | You know the exact skill id and want a single skill.                                      |
+| Pack accessor   | `CreatorPacks.blog().blogWriter.create()` | You want a direct skill from a pack without memorizing registry calls.                    |
+| Pack attachment | `CreatorPacks.blog()`                     | You want category-level auto activation across related skills.                            |
+| Inspection      | `inspectSkillByName("blog-writer")`       | You want capabilities, adapters, artifacts, and safety hints without exposing the prompt. |
 
 ## Activation Modes
 

@@ -4,7 +4,10 @@ import type { AgentSkill } from '../skills/types.js';
 
 export function preprocessDirectives(
   prompt: string,
-  attachedAdapters: AgentAdapter[]
+  attachedAdapters: AgentAdapter[],
+  options: {
+    promptForSkill?: (skill: AgentSkill) => string | undefined;
+  } = {},
 ): { processedPrompt: string; additionalSystemContent: string } {
   const directiveMap = new Map<string, AgentSkill>();
   for (const adapter of attachedAdapters) {
@@ -19,6 +22,7 @@ export function preprocessDirectives(
   const closingTags: string[] = [];
 
   for (const match of [...prompt.matchAll(directivePattern)]) {
+    if (isUntrustedDirectiveLine(prompt, match.index ?? 0)) continue;
     const directive = match[1]!.toLowerCase();
     const skill = directiveMap.get(directive);
 
@@ -33,9 +37,10 @@ export function preprocessDirectives(
     closingTags.unshift(`[APPLY_${tag}_END]`);
 
     const extension =
-      typeof skill.systemPromptExtension === 'function'
+      options.promptForSkill?.(skill) ??
+      (typeof skill.systemPromptExtension === 'function'
         ? skill.systemPromptExtension()
-        : (skill.systemPromptExtension ?? '');
+        : (skill.systemPromptExtension ?? ''));
     additionalSystem +=
       `\nWhen you see [APPLY_${tag}_START]...[APPLY_${tag}_END] sections, ` +
       `apply the following rules strictly within those boundaries:\n${extension}\n`;
@@ -50,4 +55,11 @@ export function preprocessDirectives(
 
 function isAgentSkill(adapter: AgentAdapter): adapter is AgentSkill {
   return 'type' in adapter && adapter.type === 'skill';
+}
+
+function isUntrustedDirectiveLine(prompt: string, matchIndex: number): boolean {
+  const lineStart = prompt.lastIndexOf('\n', matchIndex) + 1;
+  const lineEnd = prompt.indexOf('\n', matchIndex);
+  const line = prompt.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
+  return /^\s*(retrieved|external|tool output|page content|source)\b/i.test(line);
 }

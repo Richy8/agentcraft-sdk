@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { afterAll, describe, expect, it } from "vitest";
 import { Agent } from "../../agent/agent.js";
 import { tool, createAdapter } from "../../agent/adapters/types.js";
-import { AgentCache } from "../../agent/cache.js";
+import { AgentCache } from "../../agent/cache/index.js";
 import { Provider } from "../../agent/provider-catalog.js";
 import { AgentWorkspace } from "../../agent/workspace.js";
 import {

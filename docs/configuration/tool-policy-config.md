@@ -90,7 +90,7 @@ const agent = Agent.create({
 Queue approval requests instead of resolving them inline.
 
 ```ts
-import { Agent, ApprovalQueue, Provider } from "agentcraft";
+import { Agent, ApprovalQueue, Provider } from "@deskcreate/agentcraft";
 
 const approvals = ApprovalQueue.memory({
   defaultReviewer: "ops@example.com",

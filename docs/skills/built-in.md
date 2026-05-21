@@ -166,52 +166,40 @@ Useful tools: vision-capable model inputs, [`text_to_speech`](../adapters/built-
 agent.use(VisionSkill.create()).use(TranscriptionSkill.create());
 ```
 
-## Creator Skills
+## Domain And Creator Skills
 
-Creator skills are also imported from `agentcraft/skills`. They can be used directly or through [Creator Packs](../creator/packs.md).
+Domain skills are created through the skill registry or extracted from packs. This keeps the public API stable as the catalog grows, without requiring one exported class per skill.
 
-### Research And Strategy Skills
+### Direct Skill Lookup
 
-Use `AudienceResearchSkill`, `ContentPositioningSkill`, `ContentBriefSkill`, `ResearchSynthesisSkill`, `CompetitorAnalysisSkill`, and `TrendDiscoverySkill` to understand the reader, choose an angle, produce a brief, and synthesize sources.
-
-Useful tools: [`web_search`](../adapters/built-in.md#tavilysearchadapter), [`scrape_url`](../adapters/built-in.md#firecrawladapter), [`read_brand_voice`](../adapters/built-in.md#creatorresourcesadapter), [`save_citation`](../adapters/built-in.md#citationmanageradapter).
+Use `createSkillByName(...)` when you know the exact skill id.
 
 ```ts
+import { createSkillByName } from "@deskcreate/agentcraft/skills";
+
 agent
-  .use(AudienceResearchSkill.create())
-  .use(ContentPositioningSkill.create())
-  .use(ContentBriefSkill.create());
+  .use(createSkillByName("audience-research"))
+  .use(createSkillByName("content-brief"))
+  .use(createSkillByName("blog-writer"));
 ```
 
-### SEO Skills
+### Pack Accessors
 
-Use `SeoStrategySkill`, `SerpBriefSkill`, `SeoAuditSkill`, and `SeoReviewSkill` for keyword strategy, SERP briefs, page audits, and pre-publish review.
-
-Useful tools: [`get_serp_results`](../adapters/built-in.md#seoadapter), [`get_keyword_metrics`](../adapters/built-in.md#seoadapter), [`check_link`](../adapters/built-in.md#linkcheckeradapter), [`browse_url`](../adapters/built-in.md#playwrightadapter).
+Use packs when you want a curated platform or workflow set, then pull one skill out when you only need a specific capability.
 
 ```ts
-agent
-  .use(SeoAdapter.connect())
-  .use(SeoStrategySkill.create())
-  .use(SerpBriefSkill.create());
+import { CreatorPacks, MarketingPacks } from "@deskcreate/agentcraft/packs";
+
+const blog = CreatorPacks.blog();
+
+agent.use(blog.blogWriter.create()).use(MarketingPacks.seo());
 ```
 
-### Writing And Media Skills
-
-Use `BlogWriterSkill`, `BookWriterSkill`, `NewsletterWriterSkill`, `CopywriterSkill`, `SocialWriterSkill`, `VideoIdeationSkill`, `VideoScriptwriterSkill`, and `CreativeDirectionSkill` to create channel-specific assets.
-
-Useful tools: [`write_file`](../adapters/built-in.md#filesystemadapter), [`list_creator_assets`](../adapters/built-in.md#creatorresourcesadapter), [`generate_image`](../adapters/built-in.md#imagegenerationadapter), [`text_to_speech`](../adapters/built-in.md#elevenlabsadapter).
-
-```ts
-agent
-  .use(BlogWriterSkill.create())
-  .use(BrandVoiceSkill.create())
-  .use(EditorialReviewSkill.create());
-```
+Useful creator tools: [`web_search`](../adapters/built-in.md#tavilysearchadapter), [`scrape_url`](../adapters/built-in.md#firecrawladapter), [`write_file`](../adapters/built-in.md#filesystemadapter), [`check_link`](../adapters/built-in.md#linkcheckeradapter), and [`browse_url`](../adapters/built-in.md#playwrightadapter).
 
 ### Review And Risk Skills
 
-Use `FactCheckSkill`, `EditorialReviewSkill`, `CopyReviewSkill`, `ClaimRiskReviewSkill`, and `PublishQaSkill` before publishing or sending externally.
+Use registry-created review skills such as `fact-check`, `editorial-review`, `copy-review`, `claim-risk-review`, and `publish-qa` before publishing or sending externally.
 
 Useful tools: [`read_citation`](../adapters/built-in.md#citationmanageradapter), [`check_link`](../adapters/built-in.md#linkcheckeradapter), [`fetch_url`](../adapters/built-in.md#fetchadapter), [`extract_text`](../adapters/built-in.md#playwrightadapter).
 
@@ -224,14 +212,14 @@ await agent.run({
 
 ### Operations And Analytics Skills
 
-Use `RepurposingSkill`, `ContentCalendarSkill`, `PerformanceAnalysisSkill`, and `ExperimentPlannerSkill` to turn finished work into assets, calendars, reports, and experiments.
+Use packs or registry-created skills such as `repurposing`, `content-calendar`, `performance-analysis`, and `experiment-planner` to turn finished work into assets, calendars, reports, and experiments.
 
 Useful tools: [`create_publish_draft`](../adapters/built-in.md#publishingadapter), [`read_content_metrics`](../adapters/built-in.md#analyticsadapter), [`append_row`](../adapters/built-in.md#googlesheetsadapter), [`create_page`](../adapters/built-in.md#notionadapter).
 
 ```ts
 agent
   .use(CreatorPacks.analytics({ memory: true }))
-  .use(ExperimentPlannerSkill.create());
+  .use(createSkillByName("experiment-planner"));
 ```
 
 ## Activation

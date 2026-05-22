@@ -1,15 +1,15 @@
 # Blog Pack
 
-The blog pack is the full Medium-style writing lane. It adds research synthesis and fact checking on top of the default pack so drafts are built from evidence instead of a flat prompt.
+The blog pack is the longform owned-media lane. Use it for blog posts, article plans, refresh reviews, citations, and evidence-aware drafts. Use [Medium](../skills.md) or `CreatorPacks.medium()` when the platform surface is specifically Medium and publication/read-depth mechanics matter.
 
 ## Coverage
 
-| Stage    | Included skills                           | Tools to attach                                           | Purpose                                                      |
-| -------- | ----------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------ |
-| Research | `audience-research`, `research-synthesis` | `TavilySearchAdapter`, `FirecrawlAdapter`, `FetchAdapter` | Collect and compress source material.                        |
-| Strategy | `content-positioning`, `content-brief`    | `CreatorResourcesAdapter`, `MemoryMCP`                    | Shape angle, reader, outline, and claims.                    |
-| Writing  | `blog-writer`                             | `FileSystemAdapter`                                       | Produce the article body and optional draft artifact.        |
-| QA       | `editorial-review`, `fact-check`          | `CitationManagerAdapter`, `LinkCheckerAdapter`            | Catch weak logic, missing citations, and unsupported claims. |
+| Stage    | Included skills                                                              | Tools to attach                                                         | Purpose                                                                |
+| -------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Research | `blog-topic-research`, `blog-research`, `blog-serp-research`                 | `TavilySearchAdapter`, `FirecrawlAdapter`, `FetchAdapter`, SEO adapters | Find topics, source evidence, and inspect SERP shape.                  |
+| Strategy | `blog-brief`                                                                 | Memory, artifact, filesystem, and storage adapters                      | Turn evidence into an execution-ready article brief.                   |
+| Writing  | `blog-writer`                                                                | Filesystem, storage, memory, fetch/search tools when needed             | Produce the article draft with thesis, examples, and claim boundaries. |
+| Review   | `blog-seo-review`, `blog-fact-check`, `blog-citation`, `blog-refresh-review` | Citation, link-check, fetch, crawl, analytics, and storage adapters     | Check search fit, claim support, citations, and freshness.             |
 
 ## Usage
 
@@ -56,7 +56,8 @@ Force one skill inside the pack when the user knows the next step:
 
 ```ts
 await agent.run({
-  prompt: "/fact-check Check every claim in this draft before I publish it.",
+  prompt:
+    "/fact-check-blog Check every claim in this draft before I publish it.",
 });
 ```
 

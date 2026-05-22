@@ -1,15 +1,16 @@
-# SEO Pack
+# SEO Workflows
 
-The SEO pack turns keyword intent, competitor pages, and SERP patterns into an actionable brief. It is designed for strategy and review, not blind keyword stuffing.
+SEO is now modeled as a marketing domain pack instead of a creator-only pack. Use `MarketingPacks.seo()` when the work is keyword research, SERP analysis, technical SEO, internal links, or content refresh planning.
 
 ## Coverage
 
-| Stage             | Included skills       | Tools to attach                     | Purpose                                        |
-| ----------------- | --------------------- | ----------------------------------- | ---------------------------------------------- |
-| Strategy          | `seo-strategy`        | `SeoAdapter`, `TavilySearchAdapter` | Choose intent, clusters, and page targets.     |
-| SERP brief        | `serp-brief`          | `FirecrawlAdapter`, `FetchAdapter`  | Compare ranking pages and content gaps.        |
-| Verification      | `fact-check`          | `CitationManagerAdapter`            | Keep claims grounded and traceable.            |
-| Publishing review | Optional `seo-review` | `LinkCheckerAdapter`                | Inspect metadata, links, and publish blockers. |
+| Stage          | Current skills                              | Tools to attach                           | Purpose                                                 |
+| -------------- | ------------------------------------------- | ----------------------------------------- | ------------------------------------------------------- |
+| Research       | `seo-keyword-research`, `seo-serp-analysis` | `TavilySearchAdapter`, `FirecrawlAdapter` | Understand intent, SERP shape, competitors, and gaps.   |
+| Briefing       | `seo-content-brief`                         | `SeoAdapter`, `FetchAdapter`              | Produce an execution-ready SEO content brief.           |
+| Technical      | `seo-technical-audit`                       | `PlaywrightAdapter`, `FetchAdapter`       | Inspect indexability, metadata, links, and page health. |
+| Internal links | `seo-internal-link-planner`                 | `FileSystemAdapter`, `FetchAdapter`       | Plan useful internal links without anchor stuffing.     |
+| Refresh        | `seo-content-refresh-review`                | `SeoAdapter`, `AnalyticsAdapter`          | Decide what to update, consolidate, or leave alone.     |
 
 ## Usage
 
@@ -19,38 +20,23 @@ import {
   SeoAdapter,
   TavilySearchAdapter,
 } from "@deskcreate/agentcraft/adapters";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { CreatorPacks, MarketingPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
+  skillActivation: "auto",
 })
   .use(SeoAdapter.connect())
   .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }))
-  .use(CreatorPacks.seo({ skillActivation: "auto" }));
+  .use(MarketingPacks.seo({ readOnlyByDefault: true }))
+  .use(CreatorPacks.blog());
 
 const response = await agent.run({
   prompt:
-    'Build an SEO brief for "agent workflow caching" targeting SaaS engineers.',
+    "/brief-seo-content Build an SEO brief for agent workflow caching, then outline the blog article.",
 });
 console.log(response.content);
 ```
 
-## Configuration
-
-| Option              | Required | Default       | Purpose                                                   |
-| ------------------- | -------- | ------------- | --------------------------------------------------------- |
-| `toolSelection`     | No       | `auto`        | Prevents unnecessary searches when enough context exists. |
-| `cache`             | No       | `false`       | Reuses SERP and keyword research where safe.              |
-| `readOnlyByDefault` | No       | `false`       | Keeps audit writes explicit.                              |
-| `budget`            | No       | Agent default | Prevents expensive competitor sweeps.                     |
-
-## Examples
-
-Use the pack with a normal writing skill:
-
-```ts
-agent.use(CreatorPacks.seo()).use(createSkillByName("blog-writer"));
-```
-
-For more SEO variants, see [SEO examples](../../examples-cookbook/creator.md) and [Built-In Adapters](../../reference/built-in-adapters.md).
+For direct skill access, use `createSkillByName("seo-content-brief")` or extract a skill accessor from `MarketingPacks.seo()`.

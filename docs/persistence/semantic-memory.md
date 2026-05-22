@@ -238,7 +238,7 @@ const agent = Agent.create({
   workspace: AgentWorkspace.create({ memory }),
   skillActivation: "auto",
   promptCompression: "balanced",
-}).use(CreatorPacks.social({ readOnlyByDefault: true }));
+}).use(CreatorPacks.linkedin({ readOnlyByDefault: true }));
 
 const response = await agent.run({
   prompt: "Draft five LinkedIn post ideas about reducing agent runtime cost.",

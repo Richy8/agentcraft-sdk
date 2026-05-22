@@ -287,7 +287,7 @@ describe('creator E2E-style mocked workflows', () => {
       residualRisk: 'Live write succeeded but cleanup failed; manual cleanup required.',
     });
 
-    const videoPack = CreatorPacks.video({ readOnlyByDefault: true });
+    const videoPack = CreatorPacks.youtube({ readOnlyByDefault: true });
     expect(videoPack.manifest.skills.length).toBeGreaterThan(0);
     expect(videoPack.config?.readOnlyByDefault).toBe(true);
 

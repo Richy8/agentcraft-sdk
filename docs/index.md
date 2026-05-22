@@ -1,57 +1,136 @@
-# AgentCraft Documentation
 
-AgentCraft is a production-grade TypeScript runtime for building provider-portable agents with tools, adapters, MCP, skills, structured output, streaming, budgets, tracing, and multi-agent orchestration.
+# AgentCraft
 
-The docs are structured like a product manual. Start with the mental model, then move feature by feature: purpose, setup, config, tools, examples, and deeper cookbook variants.
+AgentCraft is a production-grade TypeScript agent runtime. It gives you a single, portable API for building agents that work across every major LLM provider, with built-in tools, adapters, MCP servers, skills, multi-agent orchestration, caching, structured output, streaming, budgets, observability, and eval — all wired together in a type-safe, composable package.
 
-## Start Here
+```sh
+npm install @deskcreate/agentcraft
+```
 
-| Chapter                                          | What it answers                                       | Best next step                                       |
-| ------------------------------------------------ | ----------------------------------------------------- | ---------------------------------------------------- |
-| [Quickstart](./start/quickstart.md)              | How to run a first useful agent quickly.              | [Mental Model](./start/mental-model.md)              |
-| [Feature Map](./start/feature-map.md)            | Every major feature and where it lives.               | [Configuration](./configuration/overview.md)         |
-| [Choose Your Path](./guides/choose-your-path.md) | Goal-based routes through the docs.                   | [Examples Cookbook](./examples-cookbook/overview.md) |
-| [Creator System](./creator/overview.md)          | Packs, skills, memory, analytics, and workflows.      | [Creator Packs](./creator/packs.md)                  |
-| [Production](./production/security-model.md)     | How to ship safely with tools, MCP, tests, and cache. | [Live Testing](./examples-cookbook/production.md)    |
+## First Agent
 
-## Core Workflows
+```ts
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
-| Workflow                   | Main page                                          | Examples                                                       |
-| -------------------------- | -------------------------------------------------- | -------------------------------------------------------------- |
-| Build and run agents       | [Agents](./core/agents.md)                         | [Beginner cookbook](./examples-cookbook/beginner.md)           |
-| Add tools safely           | [Tools](./tools/tools.md)                          | [Tools cookbook](./examples-cookbook/tools-adapters.md)        |
-| Connect external systems   | [Adapters](./adapters/overview.md)                 | [Built-In Adapters](./reference/built-in-adapters.md)          |
-| Add MCP servers            | [MCP](./mcp/overview.md)                           | [MCP cookbook](./examples-cookbook/mcp.md)                     |
-| Add prompt capabilities    | [Skills](./skills/overview.md)                     | [Skills cookbook](./examples-cookbook/skills.md)               |
-| Use creator packs          | [Creator Packs](./creator/packs.md)                | [Creator cookbook](./examples-cookbook/creator.md)             |
-| Reduce token spend         | [AgentCache](./persistence/agent-cache.md)         | [Cache config](./configuration/cache-config.md)                |
-| Coordinate multiple agents | [Orchestration](./orchestration/agent-team.md)     | [Orchestration cookbook](./examples-cookbook/orchestration.md) |
-| Build repeatable pipelines | [AgentWorkflow](./orchestration/agent-workflow.md) | [Orchestration cookbook](./examples-cookbook/orchestration.md) |
-| Persist agent outputs      | [ArtifactStore](./persistence/artifact-store.md)   | [Production cookbook](./examples-cookbook/production.md)       |
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+});
 
-## Production Reading Path
+const response = await agent.run({
+  prompt: "Summarize the benefits of caching in agent systems.",
+});
 
-- [Configuration Overview](./configuration/overview.md) for all required, optional, and default values.
-- [Security Model](./production/security-model.md) before exposing tools, adapters, or MCP to users.
-- [Certification Matrix](./creator/certification.md) before declaring a feature production-ready.
-- [API Stability](./production/api-stability.md) for public import paths and generated TypeDoc.
+console.log(response.content);
+// → "Caching in agent systems reduces latency and token spend by..."
+console.log(`Cost: $${response.cost.toFixed(6)}`);
+console.log(`Tokens: ${response.tokensUsed.total}`);
+```
+
+## What You Can Build
+
+| Goal | Surface | Start |
+| --- | --- | --- |
+| Run a prompt against any LLM | `Agent.create()` + `agent.run()` | [Quickstart](./start/quickstart.md) |
+| Switch between OpenAI, Anthropic, Gemini, and 15+ more | `Provider` catalog | [Models & Providers](./core/models-and-providers.md) |
+| Give the agent external tools to call | `ToolDefinition`, `FetchAdapter`, `FileSystemAdapter` | [Tools](./tools/tools.md) |
+| Connect to MCP servers | Built-in MCP wrappers | [MCP](./mcp/overview.md) |
+| Shape how the agent thinks | Primitive skills, Domain skill packs | [Skills](./skills/overview.md) |
+| Stream tokens as they arrive | `agent.stream()` | [Streaming](./core/streaming.md) |
+| Return typed structured data | `responseSchema` with Zod | [Structured Output](./core/structured-output.md) |
+| Coordinate multiple agents | `AgentTeam`, `AgentPool`, `AgentWorkflow` | [Orchestration](./orchestration/agent-workflow.md) |
+| Cache tool results to reduce spend | `AgentCache` | [Persistence & Memory](./persistence/agent-cache.md) |
+| Enforce token and cost budgets | `RunBudget`, `BudgetMode` | [Budgets & Cost](./core/budgets-cost.md) |
+| Capture traces and replay runs | `RunTracer`, `traceCollector` | [Observability](./core/observability-replay.md) |
+| Assert quality in CI | `AgentEval` | [AgentEval](./production/agent-eval.md) |
+
+## Entry Points
+
+AgentCraft ships six focused import paths. Use only what you need.
+
+```ts
+import { Agent, AgentPool, AgentCache } from "@deskcreate/agentcraft";
+import { FetchAdapter, FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
+import { WritingSkill, SummarizeSkill } from "@deskcreate/agentcraft/skills";
+import { createSkillPackByName } from "@deskcreate/agentcraft/skills";
+import { AgentTeam, AgentWorkflow, AgentWorkspace } from "@deskcreate/agentcraft/team";
+import { BraveSearchMcp, GitHubMcp } from "@deskcreate/agentcraft/mcp";
+```
+
+## A More Complete Example
+
+```ts
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
+import { FetchAdapter, FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
+import { WritingSkill, SummarizeSkill } from "@deskcreate/agentcraft/skills";
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  // Deterministic behavior for writes
+  temperature: 0.2,
+  // Retry transient failures automatically
+  retry: { maxAttempts: 3, backoff: "exponential", initialDelay: 500, maxDelay: 15_000 },
+  // Cache safe read-tool results to disk
+  cache: AgentCache.file(".agentcraft/cache", { strategy: "auto" }),
+  // Skills activate when the prompt signals intent
+  skillActivation: "auto",
+})
+  // Give the agent web fetch capability
+  .use(FetchAdapter.connect({ allowedDomains: ["api.github.com"] }))
+  // Give it filesystem read access
+  .use(FileSystemAdapter.connect({ root: "./docs", readOnly: true }))
+  // Attach writing and summarization skills
+  .use(WritingSkill.create())
+  .use(SummarizeSkill.create());
+
+const response = await agent.run({
+  prompt: "Fetch the latest TypeScript release from GitHub and write a 3-bullet summary.",
+  budget: { maxCostUsd: 0.05 },
+});
+
+console.log(response.content);
+console.log(`Cache hits: ${response.cache?.hits ?? 0}`);
+console.log(`Cost: $${response.cost.toFixed(6)}`);
+```
+
+## Reading Path
+
+| If you are... | Start here |
+| --- | --- |
+| New to AgentCraft | [Quickstart](./start/quickstart.md) |
+| Looking for all features at a glance | [Feature Map](./start/feature-map.md) |
+| Trying to understand how it all fits | [Architecture](./architecture.md) |
+| Ready to add tools and adapters | [Tools](./tools/tools.md) · [Adapters](./adapters/overview.md) |
+| Building with domain-specific skills | [Skills](./skills/overview.md) · [Industry Domain Skills](./skills/domains/overview.md) |
+| Orchestrating multiple agents | [Orchestration](./orchestration/agent-workflow.md) |
+| Going to production | [Production](./production/security-model.md) |
+| Looking for runnable examples | [Examples & Cookbook](./examples-cookbook/overview.md) |
+| Looking up config options | [Configuration Reference](./configuration/overview.md) |
+
+## Production Checklist
+
+- [ ] Read [Security Model](./production/security-model.md) before exposing tools or MCP to users.
+- [ ] Set `budget` limits to prevent runaway costs — see [Budgets & Cost](./core/budgets-cost.md).
+- [ ] Enable [AgentCache](./persistence/agent-cache.md) to avoid paying twice for identical tool calls.
+- [ ] Write an [AgentEval](./production/agent-eval.md) suite before your first deployment.
+- [ ] Review [API Stability](./production/api-stability.md) for safe import paths.
 
 ## Local Development
 
-Run the docs site from the package root:
-
 ```sh
+# Run the docs site locally
 npm run docs:dev
-```
 
-Build the static docs site:
-
-```sh
+# Build static docs
 npm run docs:build
-```
 
-Regenerate the API reference:
-
-```sh
+# Regenerate TypeDoc API reference
 npm run docs:api
+
+# Run all unit tests (no API keys needed)
+npm test
+
+# Run live integration tests (requires API keys)
+INTEGRATION_TESTS=true npm run test:int:light
 ```

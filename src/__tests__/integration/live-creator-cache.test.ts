@@ -117,7 +117,7 @@ describe('live creator skills and cache smoke tests', () => {
     'creator blog pack improves structured quality signals over a plain prompt',
     async () => {
       const prompt =
-        'Create a compact Medium article plan about reducing token waste in AI agent workflows. Keep it under 180 words.';
+        'Create a compact blog article plan about reducing token waste in AI agent workflows. Keep it under 180 words.';
 
       const plain = Agent.create({
         model: `openai:${liveModel}`,

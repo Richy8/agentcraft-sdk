@@ -1,6 +1,6 @@
 # Creator Packs
 
-Creator packs are `.use(...)` bundles over creator skills. They are imported from `@deskcreate/agentcraft/packs`. Every skill inside a pack can also be used directly through `createSkillByName(...)` or through the pack's generated skill accessors.
+Creator packs are `.use(...)` bundles over platform-specific creator skills. They are imported from `@deskcreate/agentcraft/packs`. Every skill inside a pack can also be used directly through `createSkillByName(...)` or through the pack's generated skill accessors.
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
@@ -14,55 +14,48 @@ const agent = Agent.create({
   toolSelection: "auto",
 })
   .use(CreatorPacks.blog({ contentRoot: "content", readOnlyByDefault: true }))
-  .use(createSkillByName("brand-voice"));
+  .use(createSkillByName("blog-writer"));
 
 const response = await agent.run({
-  prompt: "Draft a blog post about agent caching strategies.",
+  prompt: "/write-blog Draft a blog post about agent caching strategies.",
 });
 console.log(response.content);
 ```
 
-## Available Packs
+## Available Creator Packs
 
-### Default Pack
+| Pack | Best For | Representative Skills |
+| --- | --- | --- |
+| `CreatorPacks.blog()` | Owned-media articles, evergreen posts, source-backed longform | `blog-topic-research`, `blog-brief`, `blog-writer`, `blog-fact-check` |
+| `CreatorPacks.medium()` | Medium-native essays and publication-fit articles | `medium-story-angle`, `medium-article-writer`, `medium-publication-fit-review` |
+| `CreatorPacks.linkedin()` | LinkedIn posts, carousels, calendars, and performance review | `linkedin-ideation`, `linkedin-post-writer`, `linkedin-hook-review` |
+| `CreatorPacks.youtube()` | YouTube topics, scripts, thumbnails, retention, chapters, descriptions | `youtube-topic-research`, `youtube-scriptwriter`, `youtube-retention-review` |
+| `CreatorPacks.tiktok()` | TikTok hooks, scripts, trends, shot lists, safety review | `tiktok-trend-research`, `tiktok-scriptwriter`, `tiktok-retention-review` |
+| `CreatorPacks.xTwitter()` | X posts, threads, community replies, trend risk | `x-post-writer`, `x-thread-writer`, `x-trend-risk-review` |
+| `CreatorPacks.instagram()` | Captions, reels, carousels, hashtags, visual direction | `instagram-caption-writer`, `instagram-reel-scriptwriter`, `instagram-visual-direction` |
+| `CreatorPacks.facebook()` | Facebook posts, group content, event copy, audience targeting | `facebook-post-writer`, `facebook-group-content`, `facebook-event-brief` |
+| `CreatorPacks.pinterest()` | Pins, board strategy, seasonal planning, product descriptions | `pinterest-pin-writer`, `pinterest-board-strategy`, `pinterest-seasonal-planner` |
+| `CreatorPacks.snapchat()` | Snap stories, AR filter briefs, spotlight scripts | `snapchat-story-writer`, `snapchat-spotlight-brief`, `snapchat-ar-filter-brief` |
+| `CreatorPacks.shortVideo()` | Platform-agnostic short-form video: hooks, scripts, shot lists | `short-video-hook-writer`, `short-video-scriptwriter`, `short-video-shot-list` |
+| `CreatorPacks.podcast()` | Episode planning, show notes, guest briefs, transcript summaries | `podcast-episode-planner`, `podcast-show-notes-writer`, `podcast-guest-brief` |
+| `CreatorPacks.newsletter()` | Issue planning, recurring voice, subject lines, sponsorship review | `newsletter-issue-planner`, `newsletter-writer`, `newsletter-subject-line-review` |
+| `CreatorPacks.substack()` | Substack-native posts, paid vs free splits, community threads | `substack-post-writer`, `substack-paid-free-brief`, `substack-community-thread` |
+| `CreatorPacks.book()` | Book positioning, outlines, chapters, continuity, development edits | `book-outline-writer`, `book-chapter-writer`, `book-continuity-review` |
+| `CreatorPacks.course()` | Course outlines, lesson plans, curriculum structure, quiz briefs | `course-curriculum-planner`, `course-lesson-writer`, `course-quiz-brief` |
+| `CreatorPacks.webinar()` | Webinar scripts, slide briefs, live Q&A prep, follow-up sequences | `webinar-script-writer`, `webinar-slide-brief`, `webinar-followup-sequence` |
+| `CreatorPacks.resume()` | Role research, resume writing, ATS review, cover letters, profiles | `resume-role-research`, `resume-writer`, `resume-ats-review` |
 
-Use [Default Pack](./packs/default.md) for a safe starter writing flow. It includes audience research, positioning, briefing, blog drafting, and editorial review skills.
+For SEO, ads, email, landing pages, campaigns, analytics, and competitor intelligence, use the marketing packs instead:
 
-### Blog Pack
+```ts
+import { MarketingPacks } from "@deskcreate/agentcraft/packs";
 
-Use [Blog Pack](./packs/blog.md) for Medium-style and blog article workflows. It includes research, positioning, briefing, synthesis, drafting, editing, and fact checking.
-
-### SEO Pack
-
-Use [SEO Pack](./packs/seo.md) for keyword strategy, SERP planning, and evidence-aware SEO briefs. It pairs naturally with [`SeoAdapter`](../adapters/built-in.md#seoadapter), [`TavilySearchAdapter`](../adapters/built-in.md#tavilysearchadapter), and [`FirecrawlAdapter`](../adapters/built-in.md#firecrawladapter).
-
-### Social Pack
-
-Use [Social Pack](./packs/social.md) for social posts, repurposing, voice consistency, and copy review.
-
-### Video Pack
-
-Use [Video Pack](./packs/video.md) for video ideation, scriptwriting, creative direction, and repurposed short assets.
-
-### Book Pack
-
-Use [Book Pack](./packs/book.md) for chapters, longform continuity, research synthesis, editorial review, and brand voice.
-
-### Copy Pack
-
-Use [Copy Pack](./packs/copy.md) for landing pages, ads, launch copy, email copy, conversion review, and claim risk review.
-
-### Publishing Pack
-
-Use [Publishing Pack](./packs/publishing.md) for publish QA, content calendars, SEO review, and final claim risk checks.
-
-### Analytics Pack
-
-Use [Analytics Pack](./packs/analytics.md) for performance analysis, experiment planning, SEO learning, and future content calendars.
+agent.use(MarketingPacks.seo()).use(MarketingPacks.digitalMarketing());
+```
 
 ## Full Category Skill Packs
 
-The `CreatorPacks.*()` helpers are curated workflows. If you want every skill in a creator category, use the category-level skill packs instead. They are named `<domain>-<category>-skills`.
+The `CreatorPacks.*()` helpers are category-level packs. The same packs are also available through the generic registry using `<domain>-<category>-skills`.
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
@@ -81,7 +74,7 @@ const response = await agent.run({
 });
 ```
 
-Use this pattern for full platform coverage such as `creator-linkedin-skills`, `creator-tiktok-skills`, `creator-medium-skills`, `creator-newsletter-skills`, and `creator-resume-skills`.
+Use this registry pattern for full platform coverage such as `creator-linkedin-skills`, `creator-tiktok-skills`, `creator-medium-skills`, `creator-newsletter-skills`, `creator-substack-skills`, `creator-podcast-skills`, `creator-short-video-skills`, `creator-course-skills`, `creator-webinar-skills`, and `creator-resume-skills`.
 
 ## Shared Config
 
@@ -103,19 +96,23 @@ Use this pattern for full platform coverage such as `creator-linkedin-skills`, `
 
 ## Copy-Ready Patterns
 
-Use several packs together:
+Use creator and marketing packs together:
 
 ```ts
+import { CreatorPacks, MarketingPacks } from "@deskcreate/agentcraft/packs";
+
 agent
-  .use(CreatorPacks.seo())
+  .use(MarketingPacks.seo())
   .use(CreatorPacks.blog())
-  .use(CreatorPacks.publishing({ readOnlyByDefault: true }));
+  .use(MarketingPacks.landingPage({ readOnlyByDefault: true }));
 ```
 
 Use a pack plus one direct skill:
 
 ```ts
-agent.use(CreatorPacks.social()).use(createSkillByName("claim-risk-review"));
+agent
+  .use(CreatorPacks.linkedin())
+  .use(createSkillByName("landing-page-claim-risk-review"));
 ```
 
 Extract one skill from a pack:
@@ -145,95 +142,58 @@ More variants live in [Creator Examples](../examples-cookbook/creator.md).
 
 Use this matrix when deciding whether a pack should be attached globally, per run, or directive-only.
 
-### Default Pack
-
-Best trigger terms: `audience`, `positioning`, `brief`, `blog`, `article`, `editorial review`.
-
-Primary skills: `audience-research`, `content-positioning`, `content-brief`, `blog-writer`, and `editorial-review`.
-
-Recommended config:
-
-```ts
-const response = await agent.run({
-  prompt: "Turn this idea into a useful article direction.",
-  use: CreatorPacks.default({ readOnlyByDefault: true }),
-  skillActivation: "auto",
-});
-```
-
 ### Blog Pack
 
-Best trigger terms: `blog`, `article`, `medium`, `draft`, `longform`, `brief`, `research`, `fact-check`.
+Best trigger terms: `blog`, `article`, `longform`, `brief`, `research`, `source-backed`, `fact-check`.
 
-Primary skills: `blog-topic-research`, `blog-serp-research`, `blog-brief`, `blog-writer`, `blog-seo-review`, `blog-fact-check`, `blog-citation`, and `blog-refresh-review`.
+Primary skills: `blog-topic-research`, `blog-research`, `blog-serp-research`, `blog-brief`, `blog-writer`, `blog-seo-review`, `blog-fact-check`, `blog-citation`, and `blog-refresh-review`.
 
 Recommended config:
 
 ```ts
 const response = await agent.run({
-  prompt: "Create a Medium article plan about durable agent caching.",
+  prompt:
+    "/write-blog Create a source-backed article about durable agent caching.",
   use: CreatorPacks.blog({ cache: "auto", readOnlyByDefault: true }),
   promptCompression: "balanced",
   budget: { mode: "prefer-cache", maxToolCalls: 4 },
 });
 ```
 
-### Publishing Pack
+### Medium Pack
 
-Best trigger terms: `publish`, `publishing`, `preflight`, `qa`, `calendar`, `schedule`, `claim risk`.
+Best trigger terms: `medium`, `publication`, `essay`, `story angle`, `subtitle`, `member read`.
 
-Use `directive-only` or run-level `use` when write-capable publishing tools are attached. Publishing skills can prepare packages and check readiness, but publishing or scheduling should remain approval-bound through [Tool Policy](../tools/tool-policy.md).
-
-### Analytics Pack
-
-Best trigger terms: `performance`, `analytics`, `metrics`, `experiment`, `hypothesis`, `calendar`.
-
-Analytics works best with a bounded budget and read-only adapters:
+Use this pack when the surface is explicitly Medium rather than a generic blog:
 
 ```ts
 const response = await agent.run({
-  prompt: "Review last month performance and propose one experiment.",
-  use: CreatorPacks.analytics({ readOnlyByDefault: true }),
-  budget: { mode: "fail-closed", maxToolCalls: 3, maxCost: 0.05 },
+  prompt:
+    "/write-medium-article Draft a Medium-native essay on AI agent reliability.",
+  use: CreatorPacks.medium({ readOnlyByDefault: true }),
 });
 ```
 
-### SEO Pack
+### LinkedIn Pack
 
-Best trigger terms: `seo`, `keyword`, `search intent`, `serp`, `ranking`, `metadata`, `slug`.
+Best trigger terms: `linkedin`, `post`, `carousel`, `hook`, `founder voice`, `calendar`, `performance review`.
 
-Primary skills: `seo-keyword-research`, `seo-serp-analysis`, `seo-content-brief`, `seo-technical-audit`, `seo-internal-link-planner`, and `seo-content-refresh-review`.
+Primary skills: `linkedin-audience-research`, `linkedin-ideation`, `linkedin-post-writer`, `linkedin-carousel-brief`, `linkedin-hook-review`, `linkedin-calendar`, and `linkedin-performance-review`.
 
-Use with [`SeoAdapter`](../adapters/built-in.md#seoadapter), [`TavilySearchAdapter`](../adapters/built-in.md#tavilysearchadapter), or [`FirecrawlAdapter`](../adapters/built-in.md#firecrawladapter) when live SERP or page inspection is needed.
+### YouTube And Short Video Packs
 
-### Social Pack
+Best trigger terms: `youtube`, `title`, `thumbnail`, `retention`, `chapters`, `shorts`, `shot list`, `hook`, `reel`, `tiktok`.
 
-Best trigger terms: `social`, `linkedin`, `x post`, `tweet`, `caption`, `repurpose`, `brand voice`, `copy review`.
+Use `CreatorPacks.youtube()` for YouTube-native videos, `CreatorPacks.shortVideo()` for platform-agnostic shorts, and platform packs such as `CreatorPacks.tiktok()` or `CreatorPacks.instagram()` when the platform mechanics matter.
 
-Primary skills: platform-native post, thread, caption, hook review, engagement, and brand-safety skills from the social creator categories.
+### Newsletter And Book Packs
 
-```ts
-const response = await agent.run({
-  prompt: "Turn this draft into three LinkedIn variants.",
-  use: CreatorPacks.social({ readOnlyByDefault: true }),
-  promptCompression: "safe",
-});
-```
+Best trigger terms: `newsletter`, `issue`, `subject line`, `sponsor`, `book`, `chapter`, `manuscript`, `continuity`.
 
-### Video Pack
+Use `CreatorPacks.newsletter()` for recurring issues and `CreatorPacks.book()` for longform manuscript work.
 
-Best trigger terms: `video`, `script`, `youtube`, `voiceover`, `video idea`, `creative direction`, `shorts`.
+### Resume Pack
 
-Primary skills: YouTube, TikTok, short-video, Snapchat, and repurposing skills for topic research, scripting, shot planning, retention review, and platform adaptation.
+Best trigger terms: `resume`, `ATS`, `cover letter`, `role research`, `LinkedIn profile`, `tailor`.
 
-### Book Pack
-
-Best trigger terms: `book`, `chapter`, `manuscript`, `continuity`, `brand voice`, `research synthesis`.
-
-Primary skills: `book-positioning`, `book-outline-writer`, `book-chapter-writer`, `book-continuity-review`, `book-developmental-edit`, and `book-citation-review`.
-
-### Copy Pack
-
-Best trigger terms: `copy`, `copywriting`, `landing page`, `conversion`, `offer review`, `claim risk`.
-
-Primary skills: landing-page, ads, campaign, email, positioning, and claim-risk skills from creator and marketing packs.
+Use `CreatorPacks.resume()` when the output needs hiring-market positioning rather than general writing.

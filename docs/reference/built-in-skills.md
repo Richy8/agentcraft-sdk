@@ -1,76 +1,196 @@
 # Built-In Skills Reference
 
-Skills are normal `.use(...)` attachments. They add reusable behavior, directives, metadata, and sometimes tool dependencies. They do not replace adapters or MCPs: use adapters/MCPs for capability, and skills for behavior.
+Skills add reusable prompt behavior, directives, and metadata. They are attached with `.use(...)` and do not replace adapters or MCPs — adapters provide capability (tools), skills provide behavior (how the model uses them). Skills activate based on the agent's `skillActivation` mode.
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import {
-  ResearchSkill,
-  createSkillByName,
-} from "@deskcreate/agentcraft/skills";
+import { ResearchSkill, WritingSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "auto",
+  model: Provider.anthropic["claude-sonnet-4-6"],
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+  skillActivation: "directive-only",
 })
   .use(ResearchSkill.create())
-  .use(createSkillByName("blog-writer"));
+  .use(WritingSkill.create());
 
 const response = await agent.run({
-  prompt: "Research and write a post about agent caching.",
+  prompt: `/investigate Research TypeScript agent frameworks.
+  
+/write Write an executive summary.`,
 });
 console.log(response.content);
+console.log(response.selection?.activeSkills);
+// → ["research", "writing"]
 ```
-
-## Configuration Model
-
-| Config                      | Required              | Default                | Notes                                                                                   |
-| --------------------------- | --------------------- | ---------------------- | --------------------------------------------------------------------------------------- |
-| `.create()` options         | No for most built-ins | Skill-defined defaults | `ConversationSkill` has options. Creator skills currently use metadata/prompt defaults. |
-| `directive`                 | Built in              | Skill-specific         | Enables slash-scoped usage such as `/write` or `/blog-writer`.                          |
-| `requires`                  | Built in              | Skill-specific         | Runtime/model capability requirements such as tools, files, vision, audio, or video.    |
-| `metadata.requiredAdapters` | Built in              | `[]` unless needed     | Use this to understand what adapters/MCPs make the skill more capable.                  |
-| `metadata.sideEffectRisk`   | Built in              | Skill-specific         | Skills do not bypass `ToolPolicy`; side-effecting tools still require policy approval.  |
-
-## General Skills
-
-| Skill             | Import                  | Directive            | Purpose                                     | Typical tools/adapters                     |
-| ----------------- | ----------------------- | -------------------- | ------------------------------------------- | ------------------------------------------ |
-| Research          | `ResearchSkill`         | `/research`          | Gather and synthesize information.          | Fetch/search adapters, MCP search servers. |
-| Deep research     | `DeepResearchSkill`     | `/deep-research`     | Deeper multi-source research.               | Web/search/crawl tools, citation storage.  |
-| Writing           | `WritingSkill`          | `/write`             | General writing and drafting.               | Optional filesystem/artifact tools.        |
-| Summarize         | `SummarizeSkill`        | `/summarize`         | Summarize long input or retrieved material. | Files, fetch, MCP resources.               |
-| Translation       | `TranslationSkill`      | `/translate`         | Translate while preserving meaning/tone.    | Optional memory/glossary tools.            |
-| Humanizer         | `HumanizerSkill`        | `/humanizer`         | Improve clarity and naturalness.            | Optional brand voice/context tools.        |
-| Code review       | `CodeReviewSkill`       | `/code-review`       | Review code for bugs, risk, and tests.      | Filesystem, GitHub, database read tools.   |
-| Data analysis     | `DataAnalysisSkill`     | `/data-analysis`     | Analyze tabular or structured data.         | Database, files, sheets.                   |
-| Document analysis | `DocumentAnalysisSkill` | `/document-analysis` | Inspect documents and extracted text.       | Files, storage, fetch.                     |
-| Memory            | `MemorySkill`           | `/memory`            | Use or update persistent memory.            | Memory MCP, Redis, creator memory.         |
-| Conversation      | `ConversationSkill`     | `/conversation`      | Conversational continuity and tone.         | Optional memory tools.                     |
-| Email draft       | `EmailDraftSkill`       | `/email-draft`       | Draft emails without sending by default.    | Email adapter, approval-gated send tools.  |
-| Scheduler         | `SchedulerSkill`        | `/scheduler`         | Scheduling and calendar planning.           | Google Calendar, calendar MCP.             |
-| Meeting           | `MeetingSkill`          | `/meeting`           | Meeting notes, agendas, follow-ups.         | Calendar, transcription, email.            |
-| Vision            | `VisionSkill`           | `/vision`            | Image-aware review or description.          | Vision-capable model, image inputs.        |
-| Transcription     | `TranscriptionSkill`    | `/transcription`     | Audio/video transcript handling.            | Audio-capable model or transcript tools.   |
-
-## Domain And Creator Skills
-
-Domain skills are created through the registry: `createSkillByName("blog-writer")`. They are also grouped into [Creator Packs](../creator/packs.md) and industry packs.
-
-| Pattern         | Example                                   | Use when                                                                                  |
-| --------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Registry lookup | `createSkillByName("blog-writer")`        | You know the exact skill id and want a single skill.                                      |
-| Pack accessor   | `CreatorPacks.blog().blogWriter.create()` | You want a direct skill from a pack without memorizing registry calls.                    |
-| Pack attachment | `CreatorPacks.blog()`                     | You want category-level auto activation across related skills.                            |
-| Inspection      | `inspectSkillByName("blog-writer")`       | You want capabilities, adapters, artifacts, and safety hints without exposing the prompt. |
 
 ## Activation Modes
 
-| Mode           | Config                              | Behavior                                                                |
-| -------------- | ----------------------------------- | ----------------------------------------------------------------------- |
-| Always         | `skillActivation: 'always'`         | Default-compatible: attached skills contribute prompt behavior.         |
-| Auto           | `skillActivation: 'auto'`           | Agent selects relevant attached skills from prompt/directives/metadata. |
-| Directive only | `skillActivation: 'directive-only'` | Skills activate only when slash directives target them.                 |
+| Mode           | Config                              | Behavior                                                                   |
+| -------------- | ----------------------------------- | -------------------------------------------------------------------------- |
+| Always         | `skillActivation: 'always'`         | All attached skills always contribute their prompt fragment.               |
+| Auto           | `skillActivation: 'auto'`           | Runtime selects relevant skills from prompt content and metadata.          |
+| Directive-only | `skillActivation: 'directive-only'` | Skills activate only when a matching `/directive` appears in the prompt.   |
 
-Use directives when you want to force a skill. Use `auto` when packs provide many skills and you want the runtime to select a smaller active set.
+## General Skills
+
+| Skill              | Import name             | Directive            | Purpose                                           | Key adapters                                   |
+| ------------------ | ----------------------- | -------------------- | ------------------------------------------------- | ---------------------------------------------- |
+| Research           | `ResearchSkill`         | `/investigate`       | Gather and synthesize evidence from sources.      | TavilySearch, Fetch, FirecrawlAdapter          |
+| Deep Research      | `DeepResearchSkill`     | `/investigate-deep`  | Multi-source, multi-pass research with citations. | TavilySearch, Fetch, CitationManagerAdapter    |
+| Writing            | `WritingSkill`          | `/write`             | General writing, drafting, and editing.           | Optional FileSystem/ArtifactStore              |
+| Summarize          | `SummarizeSkill`        | `/distill`           | Summarize long input or retrieved content.        | Files, Fetch, MCP resources                    |
+| Translation        | `TranslationSkill`      | `/translate`         | Translate while preserving meaning and register.  | Optional glossary/memory tools                 |
+| Humanizer          | `HumanizerSkill`        | `/humanize`          | Improve clarity, warmth, and naturalness.         | Optional brand voice/creator memory tools      |
+| Code Review        | `CodeReviewSkill`       | `/audit`             | Review code for bugs, risk, and test coverage.    | FileSystem, GitHub, GitHubMcp                  |
+| Data Analysis      | `DataAnalysisSkill`     | `/analyze`           | Analyze tabular or structured data.               | DatabaseAdapter, FileSystem, GoogleSheets      |
+| Document Analysis  | `DocumentAnalysisSkill` | `/extract`           | Inspect documents and extract structured content. | FileSystem, StorageAdapter, Fetch              |
+| Memory             | `MemorySkill`           | `/remember`          | Store and retrieve from persistent memory.        | MemoryMcp, Redis, CreatorResourcesAdapter      |
+| Conversation       | `ConversationSkill`     | `/continue`          | Conversational continuity and persona.            | Optional memory tools                          |
+| Email Draft        | `EmailDraftSkill`       | `/draft-email`       | Draft emails without sending by default.          | EmailAdapter (approval-gated send)             |
+| Scheduler          | `SchedulerSkill`        | `/schedule`          | Scheduling, calendar planning, and event prep.    | GoogleCalendarAdapter, calendar MCP            |
+| Meeting            | `MeetingSkill`          | `/extract-actions`   | Meeting notes, agendas, and follow-up tasks.      | Calendar, transcription, EmailAdapter          |
+| Vision             | `VisionSkill`           | `/observe`           | Image-aware review, description, and analysis.    | Vision-capable model, image input attachments  |
+| Transcription      | `TranscriptionSkill`    | `/transcribe`        | Audio/video transcript handling and formatting.   | Audio-capable model or transcript tools        |
+
+## Configuration Model
+
+| Field                       | Required             | Default                | Notes                                                                          |
+| --------------------------- | -------------------- | ---------------------- | ------------------------------------------------------------------------------ |
+| `.create()` options         | No for most          | Skill defaults         | `ConversationSkill` accepts `{ maxTurns?, systemAppend?, rememberUser? }`.     |
+| `directive`                 | Built in             | Skill-specific         | Slash directive without the leading `/`.                                       |
+| `requires`                  | Built in             | Skill-specific         | Model capability requirements: `'vision'`, `'files'`, `'audio'`, `'tools'`.   |
+| `metadata.requiredAdapters` | Built in             | `[]` unless needed     | Indicates which adapters make the skill more capable.                          |
+| `metadata.sideEffectRisk`   | Built in             | Skill-specific         | Skills do not bypass `ToolPolicy` — write tools still need policy approval.    |
+
+## Using Individual Skills
+
+```ts
+import {
+  ResearchSkill,
+  WritingSkill,
+  HumanizerSkill,
+  CodeReviewSkill,
+  DataAnalysisSkill,
+} from "@deskcreate/agentcraft/skills";
+
+// Attach individual skills
+agent
+  .use(ResearchSkill.create())
+  .use(WritingSkill.create())
+  .use(HumanizerSkill.create());
+```
+
+## ConversationSkill Options
+
+`ConversationSkill` is the only general skill with configurable options:
+
+| Option          | Required | Default | Purpose                                                          |
+| --------------- | -------- | ------- | ---------------------------------------------------------------- |
+| `maxTurns`      | No       | `20`    | Maximum conversation turns before the skill stops contributing.  |
+| `systemAppend`  | No       | None    | Additional system instructions appended to the skill's prompt.   |
+| `rememberUser`  | No       | `false` | When `true`, prompts the model to recall user preferences.       |
+
+```ts
+import { ConversationSkill } from "@deskcreate/agentcraft/skills";
+
+agent.use(ConversationSkill.create({
+  maxTurns: 10,
+  rememberUser: true,
+}));
+```
+
+## Domain And Creator Skills
+
+Domain skills are backed by `SkillSpec` definitions and accessed through the registry. Use `createSkillByName` for a single skill or `createSkillPackByName` for all skills in a domain.
+
+```ts
+import { createSkillByName, createSkillPackByName } from "@deskcreate/agentcraft/skills";
+
+// Single domain skill
+agent.use(createSkillByName("blog-writer"));
+
+// All skills in a domain pack
+agent.use(createSkillPackByName("marketing"));
+agent.use(createSkillPackByName("engineering"));
+agent.use(createSkillPackByName("legal"));
+```
+
+### Available Domain Pack Names
+
+| Domain name           | Skills | Categories                                                           |
+| --------------------- | ------ | -------------------------------------------------------------------- |
+| `brand`               | ~10    | Brand voice, brand research, brand content                           |
+| `business`            | 30     | Strategy, planning, operations, investments, partnerships, expansion |
+| `creator`             | 102    | Blog, YouTube, LinkedIn, TikTok, newsletter, resume, book, and more  |
+| `data-analytics`      | 12     | Experiments, metrics, data quality, dashboards                       |
+| `engineering`         | 23     | Code review, security, architecture, testing, incident response      |
+| `finance`             | 24     | Equity research, portfolio management, financial analysis, reporting |
+| `healthcare`          | 11     | Clinical documentation, literature review, health content compliance |
+| `legal`               | 12     | Contract review, compliance, policy audits, claims screening         |
+| `marketing`           | 20     | SEO, content briefs, campaign copy, email marketing, social ads      |
+| `personal-productivity` | 16   | Planning, task management, communication, decision journaling        |
+| `product`             | 23     | Discovery, PRD writing, roadmaps, competitive analysis, launch       |
+| `sales`               | 23     | Account research, outreach, deal management, proposals, coaching     |
+| `support`             | 14     | Ticket handling, KB management, customer success, renewals           |
+
+## Pack Accessor Pattern
+
+Access individual skills from a pack without loading all skills:
+
+| Pattern         | Example                                   | When to use                                             |
+| --------------- | ----------------------------------------- | ------------------------------------------------------- |
+| Registry lookup | `createSkillByName("blog-writer")`        | Single skill by known ID.                               |
+| Pack attachment | `createSkillPackByName("marketing")`      | Load all skills in a domain at once.                    |
+| Creator pack    | `CreatorPacks.blog()`                     | Creator skills with cache, memory, and adapter wiring.  |
+| Inspection      | `inspectSkillByName("blog-writer")`       | Read capabilities without exposing the prompt.          |
+
+## Custom Skills
+
+Define project-specific skills with `defineSkill`:
+
+```ts
+import { defineSkill } from "@deskcreate/agentcraft/skills";
+
+const brandVoiceSkill = defineSkill({
+  name: "brand-voice-enforcer",
+  directive: "enforce-brand",           // action verb — not the name
+  description: "Rewrite content to match the brand voice guidelines.",
+  prompt: {
+    sections: [
+      {
+        title: "Brand Voice Mode",
+        body: `Rewrite the provided content using these brand voice rules:
+- Tone: confident but approachable
+- Vocabulary: technical-lite (avoid jargon unless required)
+- Sentence length: short to medium
+- Never use passive voice for product claims`,
+      },
+    ],
+  },
+});
+
+agent.use(brandVoiceSkill);
+
+const response = await agent.run({
+  prompt: "/enforce-brand Rewrite this landing page copy for our brand.",
+});
+```
+
+## Inspecting Activation Results
+
+```ts
+const response = await agent.run({
+  prompt: "/write-blog Write a post about semantic caching.",
+});
+
+const reasons = response.selection?.activationReasons ?? [];
+for (const { skill, reason, confidence, matched } of reasons) {
+  console.log(
+    `${skill}: ${reason} (${confidence}${matched ? ` | matched: "${matched}"` : ""})`
+  );
+}
+// → blog-writer: directive (1.0 | matched: "/write-blog")
+```
+
+More detail: [Skills Overview](../skills/overview.md), [Skill Activation](../skills/activation.md), [Domain Skills](../skills/built-in.md), [skill cookbook](../examples-cookbook/skills.md).

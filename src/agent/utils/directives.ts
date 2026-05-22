@@ -18,7 +18,9 @@ export function preprocessDirectives(
 
   let processedPrompt = prompt;
   let additionalSystem = '';
-  const directivePattern = /\/([a-z][a-z0-9-_]*)/gi;
+  // Directives are explicit skill commands (`/write-blog`), not incidental
+  // one-letter slash text such as "A/B test" or URL/path fragments.
+  const directivePattern = /\/([a-z][a-z0-9-_]+)\b/gi;
   const closingTags: string[] = [];
 
   for (const match of [...prompt.matchAll(directivePattern)]) {

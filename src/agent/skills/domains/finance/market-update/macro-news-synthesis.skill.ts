@@ -6,7 +6,7 @@ export const FINANCE_MARKET_RESEARCH_MACRO_NEWS_SYNTHESIS_SKILL_SPEC = defineFin
   title: 'Macro News Synthesis',
   description:
     'Synthesizes a set of macro economic news items and data releases into a coherent narrative about the current macro regime — translating central bank communications, economic data, and market signals into portfolio-relevant implications rather than a news recap.',
-  category: 'market-research',
+  category: 'market-update',
   stage: 'context',
   optionalAdapters: ['filesystem', 'fetch', 'tavily', 'firecrawl'],
   consumesArtifacts: ['MarketBrief', 'EconomicDataReport'],

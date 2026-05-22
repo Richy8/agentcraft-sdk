@@ -7,7 +7,8 @@ Orchestration examples show pools, teams, and specialist roles.
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { AgentTeam } from "@deskcreate/agentcraft/team";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { CreatorPacks, MarketingPacks } from "@deskcreate/agentcraft/packs";
+import { createSkillByName } from "@deskcreate/agentcraft/skills";
 
 const openaiKey = process.env.OPENAI_API_KEY ?? "";
 const anthropicKey = process.env.ANTHROPIC_API_KEY ?? "";
@@ -32,9 +33,12 @@ const reviewAgent = Agent.create({
 const team = AgentTeam.create({
   orchestrator,
   members: [
-    { role: "researcher", agent: researchAgent.use(CreatorPacks.seo()) },
+    { role: "researcher", agent: researchAgent.use(MarketingPacks.seo()) },
     { role: "writer", agent: writerAgent.use(CreatorPacks.blog()) },
-    { role: "reviewer", agent: reviewAgent.use(CreatorPacks.publishing()) },
+    {
+      role: "reviewer",
+      agent: reviewAgent.use(createSkillByName("blog-fact-check")),
+    },
   ],
 });
 

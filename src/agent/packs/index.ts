@@ -105,12 +105,6 @@ export const CreatorPack = {
   course: domainPack('creator-course-skills'),
   webinar: domainPack('creator-webinar-skills'),
   resume: domainPack('creator-resume-skills'),
-  seo: domainPack('marketing-seo-skills'),
-  social: domainPack('creator-x-twitter-skills'),
-  video: domainPack('creator-youtube-skills'),
-  copy: domainPack('marketing-landing-page-skills'),
-  publishing: domainPack('creator-newsletter-skills'),
-  analytics: domainPack('marketing-digital-marketing-skills'),
 } as const;
 
 export const BrandPack = {
@@ -153,7 +147,7 @@ export const FinancePack = {
   portfolioReview: domainPack('finance-portfolio-review-skills'),
   investmentOpportunity: domainPack('finance-investment-opportunity-skills'),
   financialReporting: domainPack('finance-financial-reporting-skills'),
-  marketUpdate: domainPack('finance-market-research-skills'),
+  marketUpdate: domainPack('finance-market-update-skills'),
 } as const;
 
 export const PersonalProductivityPack = {
@@ -161,7 +155,7 @@ export const PersonalProductivityPack = {
   calendar: domainPack('personal-productivity-calendar-skills'),
   lifeAdmin: domainPack('personal-productivity-life-admin-skills'),
   communication: domainPack('personal-productivity-communication-skills'),
-  weeklyPlanning: domainPack('personal-productivity-tasks-skills'),
+  weeklyPlanning: domainPack('personal-productivity-weekly-planning-skills'),
 } as const;
 
 export const ProductPack = {

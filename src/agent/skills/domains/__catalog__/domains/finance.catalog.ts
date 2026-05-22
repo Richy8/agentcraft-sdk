@@ -9,9 +9,15 @@ export const FINANCE_DOMAIN_SKILL_CATEGORY_PLANS = [
   },
   {
     domain: 'finance',
+    category: 'market-update',
+    title: 'Finance',
+    plannedSkills: ['macro-news-synthesis', 'market-update'],
+  },
+  {
+    domain: 'finance',
     category: 'market-research',
     title: 'Finance',
-    plannedSkills: ['market-update', 'macro-news-synthesis', 'sector-rotation-analysis', 'country-market-scan', 'currency-risk-brief'],
+    plannedSkills: ['sector-rotation-analysis', 'country-market-scan', 'currency-risk-brief'],
   },
   {
     domain: 'finance',

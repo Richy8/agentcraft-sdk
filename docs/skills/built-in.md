@@ -178,8 +178,8 @@ Use `createSkillByName(...)` when you know the exact skill id.
 import { createSkillByName } from "@deskcreate/agentcraft/skills";
 
 agent
-  .use(createSkillByName("audience-research"))
-  .use(createSkillByName("content-brief"))
+  .use(createSkillByName("blog-brief"))
+  .use(createSkillByName("blog-fact-check"))
   .use(createSkillByName("blog-writer"));
 ```
 
@@ -199,32 +199,32 @@ Useful creator tools: [`web_search`](../adapters/built-in.md#tavilysearchadapter
 
 ### Review And Risk Skills
 
-Use registry-created review skills such as `fact-check`, `editorial-review`, `copy-review`, `claim-risk-review`, and `publish-qa` before publishing or sending externally.
+Use registry-created review skills such as `blog-fact-check`, `blog-citation`, `blog-seo-review`, `landing-page-claim-risk-review`, and `regulated-claim-review` before publishing or sending externally.
 
 Useful tools: [`read_citation`](../adapters/built-in.md#citationmanageradapter), [`check_link`](../adapters/built-in.md#linkcheckeradapter), [`fetch_url`](../adapters/built-in.md#fetchadapter), [`extract_text`](../adapters/built-in.md#playwrightadapter).
 
 ```ts
 await agent.run({
   prompt:
-    "/publish-qa Review this draft for unsupported claims, broken links, and metadata gaps.",
+    "/fact-check-blog Review this draft for unsupported claims, weak citations, and stale evidence.",
 });
 ```
 
 ### Operations And Analytics Skills
 
-Use packs or registry-created skills such as `repurposing`, `content-calendar`, `performance-analysis`, and `experiment-planner` to turn finished work into assets, calendars, reports, and experiments.
+Use domain packs or registry-created skills such as `linkedin-calendar`, `campaign-performance-review`, `digital-growth-experiment-planner`, and `experiment-readout-writer` to turn finished work into calendars, reports, and experiments.
 
 Useful tools: [`create_publish_draft`](../adapters/built-in.md#publishingadapter), [`read_content_metrics`](../adapters/built-in.md#analyticsadapter), [`append_row`](../adapters/built-in.md#googlesheetsadapter), [`create_page`](../adapters/built-in.md#notionadapter).
 
 ```ts
 agent
-  .use(CreatorPacks.analytics({ memory: true }))
-  .use(createSkillByName("experiment-planner"));
+  .use(MarketingPacks.digitalMarketing({ readOnlyByDefault: true }))
+  .use(createSkillByName("digital-growth-experiment-planner"));
 ```
 
 ## Activation
 
-Use `skillActivation: 'auto'` when attaching several skills or packs. Use a directive like `/fact-check` when a specific skill must run. Use `directive-only` when you want skills to stay silent unless explicitly requested.
+Use `skillActivation: 'auto'` when attaching several skills or packs. Use a directive like `/fact-check-blog` or `/brief-seo-content` when a specific skill must run. Use `directive-only` when you want skills to stay silent unless explicitly requested.
 
 ```ts
 const agent = Agent.create({

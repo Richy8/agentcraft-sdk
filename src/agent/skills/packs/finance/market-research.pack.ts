@@ -2,12 +2,10 @@ import { definePackSpec } from '../../../packs/registry.js';
 
 export const FINANCE_MARKET_RESEARCH_PACK_SPEC = definePackSpec({
   name: 'finance-market-research-skills',
-  description: 'Finance Market Research skill pack.',
+  description: 'Finance macro and market research: sector rotation, country market scans, and currency risk briefs.',
   domain: 'finance',
   category: 'market-research',
   skillIds: [
-    'market-update',
-    'macro-news-synthesis',
     'sector-rotation-analysis',
     'country-market-scan',
     'currency-risk-brief',

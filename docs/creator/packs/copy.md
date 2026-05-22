@@ -1,50 +1,35 @@
-# Copy Pack
+# Copy Workflows
 
-The copy pack is for landing pages, ads, lifecycle emails, product launches, and conversion copy. It combines audience insight, positioning, writing, review, and risk checks.
+Conversion copy now lives in marketing domain packs. Use the pack that matches the asset instead of a generic creator copy pack.
 
 ## Coverage
 
-| Stage       | Included skills                    | Tools to attach                    | Purpose                                     |
-| ----------- | ---------------------------------- | ---------------------------------- | ------------------------------------------- |
-| Insight     | `audience-research`                | `tavily`, `firecrawl`              | Understand pain, intent, and objections.    |
-| Positioning | `content-positioning`              | `creator-resources`                | Clarify promise and differentiation.        |
-| Drafting    | `copywriter`                       | `filesystem`                       | Write conversion assets.                    |
-| Review      | `copy-review`, `claim-risk-review` | `citation-manager`, `link-checker` | Improve persuasion and reduce risky claims. |
+| Need          | Pack                              | Representative Skills                                                                                                     |
+| ------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Landing pages | `MarketingPacks.landingPage()`    | `landing-page-positioning`, `landing-page-copywriter`, `landing-page-conversion-review`, `landing-page-claim-risk-review` |
+| Ads           | `MarketingPacks.ads()`            | `ad-audience-research`, `ad-angle-generator`, `ad-copywriter`, `ad-creative-brief`, `ad-compliance-review`                |
+| Email         | `MarketingPacks.emailMarketing()` | `email-sequence-planner`, `email-copywriter`, `email-subject-line-review`, `email-performance-review`                     |
+| Campaigns     | `MarketingPacks.campaign()`       | `campaign-strategy`, `campaign-calendar`, `campaign-brief`, `campaign-asset-planner`                                      |
 
 ## Usage
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { MarketingPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o"],
   apiKey: process.env.OPENAI_API_KEY!,
-}).use(CreatorPacks.copy({ readOnlyByDefault: true }));
+  skillActivation: "auto",
+})
+  .use(MarketingPacks.landingPage({ readOnlyByDefault: true }))
+  .use(MarketingPacks.ads({ readOnlyByDefault: true }));
 
 const response = await agent.run({
-  prompt: "Write a landing page section for an agent testing toolkit.",
+  prompt:
+    "Write a landing-page hero section and two paid ad angles for an agent testing toolkit. Flag any claim-risk issues.",
 });
 console.log(response.content);
 ```
 
-## Configuration
-
-| Option              | Required | Default       | Purpose                                         |
-| ------------------- | -------- | ------------- | ----------------------------------------------- |
-| `readOnlyByDefault` | No       | `false`       | Keeps publishing or CRM writes gated.           |
-| `memory`            | No       | `false`       | Applies brand voice and offer history.          |
-| `toolSelection`     | No       | `auto`        | Avoids calling research tools for known offers. |
-| `budget`            | No       | Agent default | Bounds ideation and review loops.               |
-
-## Examples
-
-Add a publishing adapter only when the workflow should prepare deployable copy:
-
-```ts
-agent
-  .use(CreatorPacks.copy())
-  .use(PublishingAdapter.connect({ channels: ["web"] }));
-```
-
-More copy examples are in the [creator cookbook](../../examples-cookbook/creator.md).
+For direct skill access, use names like `landing-page-copywriter`, `ad-copywriter`, or `email-copywriter`.

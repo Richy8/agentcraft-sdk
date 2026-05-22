@@ -5,7 +5,7 @@ export const PERSONAL_PRODUCTIVITY_TASKS_WEEKLY_PLAN_WRITER_SKILL_SPEC =
     name: "weekly-plan-writer",
     directive: "write-weekly-plan",
     title: "Weekly Plan Writer",
-    category: "tasks",
+    category: "weekly-planning",
     stage: "creation",
     description:
       "Write a realistic weekly plan that maps focus work, admin, recovery, deadlines, and follow-ups into a humane sequence rather than an overfilled productivity fantasy.",

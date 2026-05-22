@@ -1,15 +1,16 @@
-# Social Pack
+# Social Creator Packs
 
-The social pack turns one idea into platform-native posts without losing brand voice. It is strongest when paired with a content source, brand memory, and review tools.
+Social creator work is now split by platform so activation can use the correct mechanics instead of a generic social prompt. Pick the platform pack that matches the target surface.
 
 ## Coverage
 
-| Stage   | Included skills | Tools to attach                   | Purpose                                   |
-| ------- | --------------- | --------------------------------- | ----------------------------------------- |
-| Writing | `social-writer` | `creator-resources`, `filesystem` | Draft posts per platform.                 |
-| Reuse   | `repurposing`   | `filesystem`, `memory-mcp`        | Convert longform into short assets.       |
-| Voice   | `brand-voice`   | `CreatorMemoryStore`              | Preserve tone and recurring preferences.  |
-| Review  | `copy-review`   | `citation-manager`                | Improve clarity, hooks, and risk posture. |
+| Platform  | Pack                       | Representative Skills                                                                                                  |
+| --------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| LinkedIn  | `CreatorPacks.linkedin()`  | `linkedin-audience-research`, `linkedin-ideation`, `linkedin-post-writer`, `linkedin-hook-review`, `linkedin-calendar` |
+| X/Twitter | `CreatorPacks.xTwitter()`  | `x-topic-research`, `x-post-writer`, `x-thread-writer`, `x-community-reply-writer`                                     |
+| Instagram | `CreatorPacks.instagram()` | `instagram-caption-writer`, `instagram-carousel-brief`, `instagram-reel-scriptwriter`, `instagram-visual-direction`    |
+| TikTok    | `CreatorPacks.tiktok()`    | `tiktok-trend-research`, `tiktok-hook-writer`, `tiktok-scriptwriter`, `tiktok-safety-review`                           |
+| Pinterest | `CreatorPacks.pinterest()` | `pinterest-keyword-research`, `pinterest-board-planner`, `pinterest-visual-brief`                                      |
 
 ## Usage
 
@@ -20,35 +21,14 @@ import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
-}).use(
-  CreatorPacks.social({
-    memory: true,
-    skillActivation: "auto",
-  }),
-);
+  skillActivation: "auto",
+}).use(CreatorPacks.linkedin({ memory: true, readOnlyByDefault: true }));
 
 const response = await agent.run({
   prompt:
-    "Turn this article outline into LinkedIn, X, and YouTube Community posts.",
+    "/write-linkedin-post Turn this product insight into three LinkedIn post variants with different hooks.",
 });
 console.log(response.content);
 ```
 
-## Configuration
-
-| Option              | Required | Default   | Purpose                                          |
-| ------------------- | -------- | --------- | ------------------------------------------------ |
-| `memory`            | No       | `false`   | Applies brand voice and prior audience learning. |
-| `contentRoot`       | No       | Undefined | Finds reusable drafts and outlines.              |
-| `toolSelection`     | No       | `auto`    | Uses only needed resource or memory tools.       |
-| `readOnlyByDefault` | No       | `false`   | Avoids publishing side effects unless approved.  |
-
-## Examples
-
-Add direct copy risk review for regulated industries:
-
-```ts
-agent.use(CreatorPacks.social()).use(createSkillByName("claim-risk-review"));
-```
-
-More variants live in the [skills cookbook](../../examples-cookbook/skills.md).
+For cross-platform adaptation, combine a source pack with `CreatorPacks.shortVideo()` or the exact destination platform pack rather than relying on a generic social pack.

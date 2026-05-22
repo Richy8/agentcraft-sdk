@@ -5,7 +5,7 @@ export const PERSONAL_PRODUCTIVITY_CALENDAR_TIME_BLOCKING_PLAN_SKILL_SPEC =
     name: "time-blocking-plan",
     directive: "plan-time-blocks",
     title: "Time Blocking Plan",
-    category: "calendar",
+    category: "weekly-planning",
     stage: "creation",
     description:
       "Create a time-blocked schedule that protects focus, admin, recovery, transition, and follow-up time against the user’s real constraints.",

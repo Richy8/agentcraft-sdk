@@ -44,6 +44,16 @@ describe("skills", () => {
     ).toThrow("no attached skill handles it");
   });
 
+  it("does not treat A/B test notation as a slash directive", () => {
+    const result = preprocessDirectives(
+      "Analyze an A/B test readout and explain the sample caveat.",
+      [HumanizerSkill.create()],
+    );
+
+    expect(result.processedPrompt).toContain("A/B test");
+    expect(result.additionalSystemContent).toBe("");
+  });
+
   it("validates OR dependencies for research and memory skills", () => {
     const agent = Agent.create({ model: Provider.ollama["llama3.2"] });
     expect(() => agent.use(ResearchSkill.create())).toThrow(

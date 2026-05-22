@@ -36,7 +36,7 @@ describe('creator packs', () => {
   it('supports multiple packs and exposes pack manifests with relevant config fields', () => {
     const agent = Agent.create({ model: Provider.ollama['llama3.2'] });
     const blog = CreatorPacks.blog({ contentRoot: 'content', readOnlyByDefault: true });
-    const seo = CreatorPacks.seo();
+    const seo = MarketingPacks.seo();
 
     agent.use(blog).use(seo);
 
@@ -49,12 +49,12 @@ describe('creator packs', () => {
   });
 
   it('exports multi-format, publishing, and analytics packs', () => {
-    expect(CreatorPacks.social().manifest.skills).toContain('x-post-writer');
-    expect(CreatorPacks.video().manifest.skills).toContain('youtube-scriptwriter');
+    expect(CreatorPacks.xTwitter().manifest.skills).toContain('x-post-writer');
+    expect(CreatorPacks.youtube().manifest.skills).toContain('youtube-scriptwriter');
     expect(CreatorPacks.book().manifest.skills).toContain('book-chapter-writer');
-    expect(CreatorPacks.copy().manifest.skills).toContain('landing-page-copywriter');
-    expect(CreatorPacks.publishing().manifest.skills).toContain('newsletter-writer');
-    expect(CreatorPacks.analytics().manifest.skills).toContain('digital-marketing-performance-brief');
+    expect(MarketingPacks.landingPage().manifest.skills).toContain('landing-page-copywriter');
+    expect(CreatorPacks.newsletter().manifest.skills).toContain('newsletter-writer');
+    expect(MarketingPacks.digitalMarketing().manifest.skills).toContain('digital-marketing-performance-brief');
   });
 
   it('keeps direct skill-only usage available', () => {

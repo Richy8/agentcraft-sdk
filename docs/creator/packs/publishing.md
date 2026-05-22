@@ -1,50 +1,38 @@
-# Publishing Pack
+# Publishing Readiness Workflows
 
-The publishing pack is the operations layer for final checks, content calendars, SEO review, and risky claim detection. It should usually run after drafting packs, not before them.
+Publishing is no longer a single generic creator pack. Compose the review skills and operational packs that match the surface you are preparing.
 
 ## Coverage
 
-| Stage      | Included skills     | Tools to attach                      | Purpose                                           |
-| ---------- | ------------------- | ------------------------------------ | ------------------------------------------------- |
-| QA         | `publish-qa`        | `link-checker`, `citation-manager`   | Verify links, citations, metadata, and readiness. |
-| Calendar   | `content-calendar`  | `google-sheets`, `notion`, `storage` | Plan publishing cadence.                          |
-| SEO review | `seo-review`        | `seo`, `fetch`, `playwright`         | Inspect page readiness.                           |
-| Risk       | `claim-risk-review` | `citation-manager`                   | Flag claims needing evidence or legal review.     |
+| Need                       | Current Skill Or Pack                                 | Purpose                                                            |
+| -------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------ |
+| Blog readiness             | `blog-fact-check`, `blog-citation`, `blog-seo-review` | Verify claims, source use, citations, and SEO readiness.           |
+| Landing page risk          | `landing-page-claim-risk-review`                      | Flag unsupported, regulated, or overclaimed conversion copy.       |
+| Campaign calendar          | `MarketingPacks.campaign()`                           | Plan assets, dates, owners, and dependencies.                      |
+| LinkedIn schedule          | `CreatorPacks.linkedin()`                             | Use `linkedin-calendar` for platform-native post scheduling plans. |
+| Newsletter issue readiness | `CreatorPacks.newsletter()`                           | Review subject line, issue structure, and sponsorship fit.         |
 
 ## Usage
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { CreatorPacks, MarketingPacks } from "@deskcreate/agentcraft/packs";
+import { createSkillByName } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
-}).use(CreatorPacks.publishing({ readOnlyByDefault: true }));
+  skillActivation: "auto",
+})
+  .use(CreatorPacks.blog({ readOnlyByDefault: true }))
+  .use(MarketingPacks.campaign({ readOnlyByDefault: true }))
+  .use(createSkillByName("blog-fact-check"));
 
 const response = await agent.run({
-  prompt: "Run pre-publish QA on this article and produce a blocker list.",
+  prompt:
+    "/fact-check-blog Run a pre-publish blocker review on this article and return claim, citation, SEO, and launch-calendar gaps.",
 });
 console.log(response.content);
 ```
 
-## Configuration
-
-| Option              | Required | Default       | Purpose                                                |
-| ------------------- | -------- | ------------- | ------------------------------------------------------ |
-| `readOnlyByDefault` | No       | `false`       | Recommended `true` for publishing workflows.           |
-| `contentRoot`       | No       | Undefined     | Local drafts to inspect.                               |
-| `toolSelection`     | No       | `auto`        | Chooses link, SEO, or calendar tools only when needed. |
-| `budget`            | No       | Agent default | Caps large crawl or QA passes.                         |
-
-## Examples
-
-Combine with a draft pack:
-
-```ts
-agent
-  .use(CreatorPacks.blog())
-  .use(CreatorPacks.publishing({ readOnlyByDefault: true }));
-```
-
-See [Approvals](../../tools/approvals.md) before attaching write-capable publishing tools.
+Keep actual publishing or scheduling behind [Approvals](../../tools/approvals.md) and tool policy gates.

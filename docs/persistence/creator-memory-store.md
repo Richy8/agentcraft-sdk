@@ -1,18 +1,22 @@
 # Creator Memory Store
 
-Creator memory stores brand voice, audience notes, prior performance learnings, and recurring preferences. It is what keeps a creator workflow from starting cold every time.
+`FileSystemCreatorMemoryStore` persists brand voice, corpus documents, and audience context so creator workflows resume with the same voice, persona, and knowledge without re-loading it every run. It powers the `memory: true` option on creator packs and is used by voice-aware skills like `brand-consistency-review`, `linkedin-post-writer`, and `blog-writer`.
 
-## Purpose
+## How It Works
 
-| Memory type          | Good example                      | Tool                           | Related page                                    |
-| -------------------- | --------------------------------- | ------------------------------ | ----------------------------------------------- |
-| Brand voice          | Preferred tone and banned phrases | `FileSystemCreatorMemoryStore` | [Brand Voice](../creator/skills.md)             |
-| Audience notes       | ICP, objections, reader maturity  | `CreatorMemoryStore`           | [Creator Memory](../creator/memory.md)          |
-| Performance learning | Topics that worked                | `AnalyticsHistoryStore`        | [Analytics Store](./analytics-history-store.md) |
-| Semantic memory      | Cross-run project facts           | `AgentMemory`                  | [Semantic Memory](./semantic-memory.md)         |
-| External memory      | MCP memory graph                  | `MemoryMCP`                    | [Built-In MCP](../mcp/built-in.md)              |
+```txt
+Agent run with creator pack (memory: true)
+  → CreatorResourcesAdapter exposes tools:
+      read_brand_voice       (read)   — load tone, phrases, examples
+      upsert_brand_voice     (write)  — update stored voice profile
+      add_corpus_document    (write)  — add reference text to corpus
+      search_corpus          (read)   — find relevant corpus sections
+      summarize_memory       (read)   — compact memory context string
+  → FileSystemCreatorMemoryStore reads/writes JSON files at root/
+  → Brand voice injected into skill prompt as system context
+```
 
-## Usage
+## Quick Start
 
 ```ts
 import {
@@ -22,83 +26,229 @@ import {
 } from "@deskcreate/agentcraft";
 import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
-// Constructor takes either a root path or an options object.
-const memory = new FileSystemCreatorMemoryStore({
-  root: "./.agentcraft/creator-memory",
-  staleAfterMs: 1000 * 60 * 60 * 24 * 30,
-  requireWriteApproval: true,
-  approveWrite: async (request) => {
-    console.log(`Approve memory write: ${request.operation}`, request.preview);
-    return true;
-  },
-});
+const memory = new FileSystemCreatorMemoryStore("./.agentcraft/creator-memory");
 
 const agent = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-}).use(CreatorPacks.social({ memory: true }));
+  model: Provider.anthropic["claude-sonnet-4-6"],
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+}).use(CreatorPacks.blog({ memory: true }));
 
-const response = await agent.run({
-  prompt: "Draft a social post using our brand voice.",
+// First run: establish brand voice
+await agent.run({
+  prompt: `Store our brand voice:
+  Tone: Direct, technical, no buzzwords
+  Preferred phrases: "in practice", "the trade-off is"
+  Banned: "leverage", "synergy", "game-changer"
+  Examples: "Claude agents compose well because they share a single event loop."`,
 });
-console.log(response.content);
+
+// Future runs: voice is loaded automatically
+const post = await agent.run({
+  prompt: "/write-blog Write a post about TypeScript generics for experienced developers.",
+});
+console.log(post.content);
 ```
 
 ## Configuration
 
-| Option                 | Required | Default          | Purpose                                        |
-| ---------------------- | -------- | ---------------- | ---------------------------------------------- |
-| `root`                 | No       | `content/memory` | Filesystem storage root.                       |
-| `staleAfterMs`         | No       | None             | Marks returned memories as stale after age.    |
-| `requireWriteApproval` | No       | `false`          | Requires `approveWrite` before durable writes. |
-| `approveWrite`         | No       | None             | App callback for memory write approvals.       |
-| `redactSensitive`      | No       | `true`           | Blocks likely secrets and sensitive details.   |
-| `memory`               | No       | `false`          | Pack-level memory enablement.                  |
-| `readOnlyByDefault`    | No       | `false`          | Prevents accidental tool writes.               |
-| `cache`                | No       | `false`          | Reuses stable memory context.                  |
+### `FileSystemCreatorMemoryStore` Options
 
-## Local Examples
+| Option | Required | Default | Purpose |
+| --- | --- | --- | --- |
+| `root` | No | `"content/memory"` | Directory where voice and corpus JSON files are written |
+| `staleAfterMs` | No | None | Mark memories as stale after this many milliseconds |
+| `requireWriteApproval` | No | `false` | Require callback approval before writing to disk |
+| `approveWrite` | No | None | Async callback `(request) => boolean` for write gate |
+| `redactSensitive` | No | `true` | Block likely secrets and sensitive content from being stored |
 
-Use memory for a brand voice pass:
+The constructor accepts either a root path string or an options object:
 
 ```ts
+// Short form — root path only
+const memory = new FileSystemCreatorMemoryStore("./.agentcraft/creator-memory");
+
+// Full options
+const memory = new FileSystemCreatorMemoryStore({
+  root: "./.agentcraft/creator-memory",
+  staleAfterMs: 30 * 24 * 60 * 60 * 1000, // 30 days
+  requireWriteApproval: true,
+  approveWrite: async ({ operation, id, preview }) => {
+    console.log(`[memory write] ${operation}: ${preview}`);
+    return true; // auto-approve; replace with interactive prompt for production
+  },
+  redactSensitive: true,
+});
+```
+
+### Pack-Level Memory Options
+
+Creator packs that support `memory: true` wire the store automatically:
+
+```ts
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+
+CreatorPacks.linkedin({ memory: true })   // LinkedIn posts with brand voice
+CreatorPacks.blog({ memory: true })        // Blog writing with corpus recall
+CreatorPacks.seo({ memory: true })         // SEO briefs with audience context
+```
+
+## API
+
+### Store Methods
+
+| Method | Returns | Purpose |
+| --- | --- | --- |
+| `upsertBrandVoice(profile)` | `Promise<BrandVoiceProfile>` | Create or overwrite the stored brand voice profile |
+| `readBrandVoice(id?)` | `Promise<BrandVoiceProfile \| undefined>` | Read the brand voice (default ID if not specified) |
+| `addCorpusDocument(doc)` | `Promise<CorpusDocument>` | Add a reference text to the corpus for recall |
+| `searchCorpus(query, options?)` | `Promise<CorpusSearchResult[]>` | Find corpus documents relevant to a query |
+| `summarizeContext(options?)` | `Promise<string>` | Compact memory context string for system prompt injection |
+
+### `BrandVoiceProfile` Fields
+
+| Field | Type | Purpose |
+| --- | --- | --- |
+| `id` | `string` | Profile identifier (use `"default"` for single-brand setups) |
+| `tone` | `string?` | Overall tone description |
+| `preferredPhrases` | `string[]?` | Phrases to encourage in output |
+| `bannedPhrases` | `string[]?` | Phrases to avoid |
+| `examples` | `string[]?` | Sample sentences demonstrating the voice |
+| `updatedAt` | `string` | ISO timestamp (auto-set) |
+| `freshness` | `MemoryFreshness?` | Staleness metadata if `staleAfterMs` is configured |
+
+### `MemorySummaryOptions`
+
+| Option | Type | Purpose |
+| --- | --- | --- |
+| `brandVoiceId` | `string?` | Voice profile to include (defaults to `"default"`) |
+| `query` | `string?` | Semantic query for corpus search |
+| `tags` | `string[]?` | Filter corpus documents by tag |
+| `corpusLimit` | `number?` | Max corpus documents to include |
+| `maxChars` | `number?` | Truncate the summary at this character count |
+| `includeStaleWarnings` | `boolean?` | Add staleness warnings to the context string |
+
+## Patterns
+
+### Brand Voice Setup and Recall
+
+```ts
+import {
+  Agent,
+  FileSystemCreatorMemoryStore,
+  Provider,
+} from "@deskcreate/agentcraft";
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+
+const memory = new FileSystemCreatorMemoryStore({
+  root: "./.agentcraft/creator-memory",
+  staleAfterMs: 7 * 24 * 60 * 60 * 1000, // 7 days
+});
+
+const agent = Agent.create({
+  model: Provider.anthropic["claude-sonnet-4-6"],
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+}).use(CreatorPacks.linkedin({ memory: true }));
+
+// Establish voice from existing content
 await agent.run({
-  prompt:
-    "/brand-voice Rewrite this post to match our concise technical voice.",
+  prompt: `/extract-voice Extract and store the brand voice from these sample LinkedIn posts.
+  
+  Sample 1: "We shipped native streaming support. Here's what changed and why..."
+  Sample 2: "Tool caching saved us $40/day in OpenAI costs. The setup took 15 minutes."`,
+});
+
+// All future runs use the stored voice
+const post = await agent.run({
+  prompt: "/write-linkedin-post Write a post announcing our new MCP adapter support.",
 });
 ```
 
-Create compact memory context for a run:
+### Corpus for Audience Context
 
 ```ts
-const memoryContext = await memory.summarizeContext({
-  brandVoiceId: "default",
-  query: "cache budget article",
-  tags: ["brand", "cache"],
-  corpusLimit: 3,
-  maxChars: 1200,
+// Add audience research to corpus
+await memory.addCorpusDocument({
+  id: "audience-dev-2025",
+  text: "Target reader: senior TypeScript developers, 5+ years exp, works at 50-200 person startups. Pain: fragile LLM integrations, unpredictable costs.",
+  tags: ["audience", "icp"],
 });
 
-const response = await agent.run({
-  system: memoryContext,
-  prompt: "Draft the article intro using the stored voice.",
+await memory.addCorpusDocument({
+  id: "objections-2025",
+  text: "Top objections: 1) Why not LangChain? 2) How does this handle rate limits? 3) Does it support streaming?",
+  tags: ["objections", "positioning"],
+});
+
+// Compact to system prompt
+const context = await memory.summarizeContext({
+  query: "blog post about TypeScript agent SDK",
+  tags: ["audience"],
+  corpusLimit: 2,
+  maxChars: 800,
+});
+
+const agent = Agent.create({
+  model: Provider.anthropic["claude-sonnet-4-6"],
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+  system: context,
+}).use(CreatorPacks.blog());
+
+const post = await agent.run({
+  prompt: "/write-blog Write a comparison post: AgentCraft vs. LangChain.",
 });
 ```
 
-Check freshness before trusting durable memory:
+### Freshness Checking
 
 ```ts
 const voice = await memory.readBrandVoice("default");
 
-if (voice?.freshness?.stale) {
-  console.warn("Brand voice memory is stale; ask the user to confirm.");
+if (!voice) {
+  console.warn("No brand voice found — run voice extraction first.");
+} else if (voice.freshness?.stale) {
+  console.warn(
+    `Brand voice is stale (${Math.round(voice.freshness.ageMs / 86_400_000)} days old). Consider refreshing.`
+  );
+} else {
+  console.log("Brand voice is current.");
 }
 ```
 
-## Mental Model
+### Write Approval Gate
 
-`CreatorMemoryStore` is for reusable creator context such as voice, corpus, audience notes, and preferences. [Semantic Memory](./semantic-memory.md) is the general `AgentMemory` primitive for bounded cross-run project facts outside creator workflows. `AnalyticsHistoryStore` is for performance and experiment history. `ArtifactStore` is for structured workflow outputs such as drafts, briefs, claim maps, calendars, and publish packages. `MemoryMCP` is an optional external memory server when you want model-visible graph memory through MCP tools.
+When you don't want the agent to silently mutate your brand voice:
 
-The built-in creator file memory uses deterministic lexical recall so creator workflows stay dependency-free. Use `AgentMemory.vector()` when a project needs Qdrant, Pinecone, Supabase pgvector, or a custom semantic store.
+```ts
+const memory = new FileSystemCreatorMemoryStore({
+  root: "./.agentcraft/creator-memory",
+  requireWriteApproval: true,
+  approveWrite: async ({ operation, id, preview }) => {
+    // In production: prompt the user in a UI, send Slack notification, etc.
+    const readline = await import("readline");
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    return new Promise((resolve) => {
+      rl.question(`Approve ${operation} for "${id}"?\n${preview}\n[y/N] `, (answer) => {
+        rl.close();
+        resolve(answer.toLowerCase() === "y");
+      });
+    });
+  },
+});
+```
 
-More variants: [Creator Memory and Analytics](../creator/analytics.md) and [Semantic Memory](./semantic-memory.md).
+## Memory Types Compared
+
+| Store | What it remembers | Scope | Backend |
+| --- | --- | --- | --- |
+| `FileSystemCreatorMemoryStore` | Brand voice, corpus, audience | Creator workflows | JSON files |
+| `AgentMemory` (Qdrant/Pinecone) | General semantic facts | Any agent | Vector DB |
+| `FileSystemAnalyticsHistoryStore` | Performance reports, experiments | Creator analytics | JSON files |
+| `ArtifactStore` | Structured workflow outputs | Workflows | JSON / SQLite |
+| `MemoryMCP` | Graph-structured project facts | MCP-enabled agents | External server |
+
+## Related
+
+- [Creator Analytics](../creator/analytics.md) — performance-driven content memory
+- [Analytics History Store](./analytics-history-store.md) — experiment and metrics tracking
+- [Semantic Memory](./semantic-memory.md) — general cross-run agent memory
+- [Creator Packs](../creator/packs.md) — pack-level `memory: true` option

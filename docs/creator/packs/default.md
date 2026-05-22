@@ -1,15 +1,16 @@
-# Creator Default Pack
+# Creator Category Packs
 
-The default creator pack is the safest starting point for longform content. It gives the agent enough structure to research the audience, position the idea, build a brief, draft the article, and review the result without assuming publishing access.
+The old flat creator default pack has been replaced by category packs. Pick the platform or content routine you actually need, then let `skillActivation: "auto"` select the relevant skills inside that category.
 
 ## Coverage
 
-| Area     | Included skills                        | Useful tools                                 | Deeper page                          |
-| -------- | -------------------------------------- | -------------------------------------------- | ------------------------------------ |
-| Audience | `audience-research`                    | `tavily`, `firecrawl`, `fetch`, `memory-mcp` | [Creator Skills](../skills.md)       |
-| Strategy | `content-positioning`, `content-brief` | `creator-resources`, `filesystem`            | [Creator Workflows](../workflows.md) |
-| Drafting | `blog-writer`                          | `filesystem`, `memory-mcp`                   | [Blog Pack](./blog.md)               |
-| Review   | `editorial-review`                     | `citation-manager`, `link-checker`           | [Publishing Pack](./publishing.md)   |
+| Need                        | Pack                      | Example skills                                                               |
+| --------------------------- | ------------------------- | ---------------------------------------------------------------------------- |
+| Blog or owned-media article | `CreatorPacks.blog()`     | `blog-brief`, `blog-writer`, `blog-fact-check`                               |
+| Medium-native essay/article | `CreatorPacks.medium()`   | `medium-story-angle`, `medium-article-writer`                                |
+| LinkedIn content system     | `CreatorPacks.linkedin()` | `linkedin-ideation`, `linkedin-post-writer`, `linkedin-calendar`             |
+| YouTube workflow            | `CreatorPacks.youtube()`  | `youtube-topic-research`, `youtube-scriptwriter`, `youtube-retention-review` |
+| Resume/career material      | `CreatorPacks.resume()`   | `resume-role-research`, `resume-writer`, `resume-ats-review`                 |
 
 ## Usage
 
@@ -21,10 +22,7 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
 }).use(
-  CreatorPacks.default({
-    contentRoot: "./content",
-    skillActivation: "auto",
-  }),
+  CreatorPacks.blog({ contentRoot: "./content", skillActivation: "auto" }),
 );
 
 const response = await agent.run({
@@ -47,7 +45,7 @@ console.log(response.content);
 Use this pack when you want a minimal creator setup:
 
 ```ts
-agent.use(CreatorPacks.default()).use(createSkillByName("brand-voice"));
+agent.use(CreatorPacks.blog()).use(createSkillByName("blog-writer"));
 ```
 
 For more variants, see the [creator cookbook](../../examples-cookbook/creator.md) and [skill activation](../../skills/activation.md).

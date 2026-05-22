@@ -49,7 +49,7 @@ These paths are for real application workflows where agents inspect files, call 
 | Safe file-review assistant  | [filesystem-safe-agent.ts](../examples.md#filesystem-safe-agent)       | [Tools And Guardrails](./config/tools-and-guardrails.md)  | A local file reader or reviewer with path, extension, and read-only limits.   |
 | Database analysis assistant | [database-readonly.ts](../examples.md#database-readonly)               | [Production Guardrails](./paths/production-guardrails.md) | Read-only database questions with row limits and host-owned query execution.  |
 | Research assistant          | [research-agent.ts](../examples.md#research-agent)                     | [MCP Tools](./paths/mcp-tools.md)                         | Search/fetch-backed research with retrieval policy and source handling.       |
-| Creator content engine      | [creator-pack-workflow.ts](../examples.md#creator-pack-workflow)       | [Creator Packs](../creator/packs.md)                      | Blog, SEO, writing, review, and repurposing skills with pack defaults.        |
+| Creator content engine      | [creator-pack-workflow.ts](../examples.md#creator-pack-workflow)       | [Creator Packs](../creator/packs.md)                      | Platform-native creator packs with marketing/domain packs for SEO and review. |
 | Creator memory/history      | [creator-memory-analytics.ts](../examples.md#creator-memory-analytics) | [Creator Memory And Analytics](../creator/analytics.md)   | Brand voice, corpus retrieval, and analytics history as local durable state.  |
 | Skill-powered workflow      | [skill-composition.ts](../examples.md#skill-composition)               | [Skill Directives](../examples.md#skill-directives)       | Reusable writing, review, research, translation, or analysis behavior.        |
 | Custom domain skill         | [custom-skills.ts](../examples.md#custom-skills)                       | [Custom Skills](./paths/custom-skills.md)                 | App-owned behavior packaged with metadata, prompt sections, hooks, and tools. |
@@ -137,7 +137,7 @@ Best when: research work needs retrieval, synthesis, repeatable output structure
 4. Add [Caching](../persistence/agent-cache.md) before broad usage so repeated read tools do not burn unnecessary tokens or API calls.
 5. Use [Built-In Skills](../reference/built-in-skills.md), [Built-In Adapters](../reference/built-in-adapters.md), and [Built-In MCP Wrappers](../reference/built-in-mcps.md) when you need to configure the full surface directly.
 
-Best when: creators or content teams need research, planning, writing, SEO, repurposing, publishing preparation, performance feedback, and configurable power-user controls.
+Best when: creators or content teams need research, planning, writing, platform-specific drafting, marketing SEO, publishing readiness, performance feedback, and configurable power-user controls.
 
 ### Production Agent Platform
 

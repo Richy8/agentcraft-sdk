@@ -8,7 +8,7 @@ Run config (`AgentRunParams`) is the request-specific layer passed to `agent.run
 | --------------------- | -------- | ------------- | -------------------------------------------------------------------------------- |
 | `prompt`              | Usually  | None          | User task string.                                                                |
 | `promptFile`          | No       | None          | Path to a `.md` or `.txt` file used as the prompt.                               |
-| `vars`                | No       | `{}`          | Variables injected into `{{varName}}` placeholders in the prompt.                |
+| `vars`                | No       | `{}`          | Variables injected into `&#123;&#123;varName&#125;&#125;` placeholders in the prompt.                |
 | `system`              | No       | Agent default | Per-run system prompt override.                                                  |
 | `files`               | No       | `[]`          | Array of `AgentFile` (base64 or URL file inputs).                                |
 | `images`              | No       | `[]`          | Array of `AgentImage` for vision inputs.                                         |

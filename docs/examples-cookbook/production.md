@@ -247,7 +247,7 @@ const agent = Agent.create({
   apiKey: process.env.OPENAI_API_KEY!,
   workspace,
   skillActivation: "auto",
-}).use(CreatorPacks.social());
+}).use(CreatorPacks.linkedin());
 
 const response = await agent.run({
   prompt: "Draft three LinkedIn post ideas about reducing agent token waste.",

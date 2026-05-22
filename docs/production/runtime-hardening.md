@@ -1,74 +1,176 @@
 # Runtime Hardening
 
-AgentCraft's runtime hardening work focuses on keeping the public API stable while moving high-risk behavior into smaller, testable modules. The goal is not to change how users call `Agent.create()` or `agent.run()`; it is to make skill routing, prompt assembly, cache replay, memory injection, and adapter lifecycle behavior easier to inspect and safer to maintain.
+Runtime hardening is the ongoing work of splitting AgentCraft's core into smaller, independently testable modules — without changing the public API. The goal is to keep `Agent.create()` and `agent.run()` stable while making skill routing, prompt assembly, cache replay, memory injection, and adapter lifecycle behavior inspectable and safe.
 
-## Current Status
+## Architecture After Hardening
 
-| Area                  | Hardening status                                                                                                                           |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Runtime orchestration | `Agent` delegates run and stream execution to `agent/runtime/agent-runtime.ts`.                                                            |
-| Structured output     | Native JSON-mode and tool-fallback behavior lives in `agent/runtime/structured-output-flow.ts`.                                            |
-| Adapter attachment    | `.use(...)` validation, dependency checks, pack expansion, and tool conflict checks live in `agent/adapters/attachment-manager.ts`.        |
-| Adapter lifecycle     | Attached and run-scoped adapter init/cleanup order is isolated in `agent/adapters/lifecycle-manager.ts` and `agent/adapters/run-scope.ts`. |
-| Skill activation      | `always`, `auto`, and `directive-only` selection logic lives in `agent/skills/activation-engine.ts`.                                       |
-| Prompt assembly       | Adaptive section scoring, prompt compression, and sanitized prompt inspection live in `agent/skills/prompt-assembler.ts`.                  |
-| Tool routing          | Tool selection, policy wrapping, tracing, cache-aware execution, and budgets are split across `agent/tools/*`.                             |
-| Cache                 | `AgentCache` remains the public facade while memory, file, Redis, Postgres, and SQLite backends live in `agent/cache/backends/*`.          |
-| Memory                | `AgentMemory` remains the public facade while local, custom, embedding, and vector-client behavior lives in `agent/memory/*`.              |
-
-## Validation Gates
-
-Use the offline gates before publishing a change:
-
-```sh
-npm run typecheck
-npm test
-npm run packs:check
-npm run build
-npm run docs:api:check
-npm run examples:typecheck
-npm run examples:check
-npm run exports:smoke
-npm run format:check
+```txt
+Agent (public facade)
+  ├── agent/runtime/agent-runtime.ts       — run and stream execution
+  ├── agent/runtime/structured-output-flow.ts — JSON-mode + tool fallback
+  ├── agent/adapters/attachment-manager.ts — .use() validation, conflict checks
+  ├── agent/adapters/lifecycle-manager.ts  — adapter init/cleanup ordering
+  ├── agent/adapters/run-scope.ts          — run-scoped adapter isolation
+  ├── agent/skills/activation-engine.ts   — always/auto/directive activation
+  ├── agent/skills/prompt-assembler.ts    — section scoring and compression
+  ├── agent/tools/                         — routing, policy, caching, budgets
+  ├── agent/cache/backends/*               — memory, file, Redis, Postgres, SQLite
+  └── agent/memory/*                       — local, embedding, vector-client
 ```
 
-Use live gates only when credentials are configured and the run intentionally allows network calls:
+Each module has a focused responsibility and its own test file. The public `Agent` facade delegates to these modules but does not expose their internals.
 
-```sh
-npm run benchmark:live:light
-npm run test:int:light
-npm run test:int:skills
+## Hardened Module Status
+
+| Module | What it does | Where to test |
+| --- | --- | --- |
+| `agent-runtime.ts` | Delegates run and stream execution paths | `src/agent/__tests__/agent.test.ts` |
+| `structured-output-flow.ts` | JSON-mode vs. tool-fallback structured output | `src/agent/__tests__/structured-output.test.ts` |
+| `attachment-manager.ts` | `.use()` validation, dependency checks, conflict detection | `src/agent/adapters/__tests__/attachment.test.ts` |
+| `lifecycle-manager.ts` | Adapter init/cleanup in correct order | `src/agent/adapters/__tests__/lifecycle.test.ts` |
+| `run-scope.ts` | Run-scoped adapter isolation per `.run()` call | `src/agent/adapters/__tests__/run-scope.test.ts` |
+| `activation-engine.ts` | Skill activation mode and reason codes | `src/agent/skills/__tests__/activation-engine.test.ts` |
+| `prompt-assembler.ts` | Section scoring, compression, directive injection | `src/agent/skills/__tests__/skills.test.ts` |
+| `agent/tools/*` | Tool selection, caching, policy enforcement, tracing | `src/agent/tools/__tests__/` |
+| `agent/cache/backends/*` | Backend-specific cache behavior | `src/agent/cache/__tests__/` |
+| `agent/memory/*` | Memory store integration and vector recall | `src/agent/memory/__tests__/` |
+
+## Inspecting Runtime Behavior
+
+Use response fields to verify the runtime is doing real work rather than silently adding overhead:
+
+### Skill Activation
+
+```ts
+const response = await agent.run({
+  prompt: "/review-code Review this TypeScript function for type safety.",
+});
+
+const reasons = response.selection?.activationReasons ?? [];
+for (const { skill, reason, confidence } of reasons) {
+  console.log(`${skill}: ${reason} (confidence: ${confidence})`);
+}
+// → code-review: directive (confidence: 1.0)
+
+// What wasn't activated
+const activeSkills = response.selection?.activeSkills ?? [];
+console.log("Active skills:", activeSkills);
 ```
 
-Live tests are opt-in through environment gates. Keep `INTEGRATION_TESTS=false` and `AGENTCRAFT_LIVE_ALLOW_WRITES=false` by default.
+### Prompt and Token Footprint
 
-## What To Inspect
+```ts
+const response = await agent.run({
+  prompt: "Write a summary of this document.",
+});
 
-Use these runtime outputs to verify that a feature is doing real work rather than silently adding prompt or tool overhead:
+const { promptTokens, completionTokens, total } = response.tokensUsed ?? {};
+console.log(`Prompt: ${promptTokens}, Completion: ${completionTokens}, Total: ${total}`);
 
-| Output                                 | What it proves                                                                                         |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `response.selection.activationReasons` | Which skills activated, why they activated, and the confidence behind the decision.                    |
-| `response.measurement`                 | Estimated prompt/completion token footprint after skill assembly and compression.                      |
-| `response.cache`                       | Cache hits, misses, skipped unsafe tools, avoided calls, estimated saved tokens, and hit-rate summary. |
-| `response.costReport`                  | Provider/model cost estimate for the run.                                                              |
-| `response.trace`                       | Span-level runtime behavior when tracing is enabled.                                                   |
-| `AgentReports.*`                       | Redacted markdown, JSON, and HTML artifacts for review and support handoff.                            |
+const measurement = response.measurement;
+console.log("Estimated prompt tokens:", measurement?.estimatedPromptTokens);
+console.log("Skill sections injected:", measurement?.skillSectionsCount);
+```
 
-## Security Posture
+### Cache Effectiveness
 
-- Public skill inspection is sanitized by default and does not expose raw prompt bodies.
-- Raw skill specs remain internal implementation details.
-- Cache eligibility is centralized and refuses write tools, confirmation-gated tools, and sensitive cache metadata.
-- Memory and cache events redact URLs, connection strings, and secret-like payloads.
-- Tool side effects still flow through tool policy, approvals, read-only mode, and dry-run controls.
+```ts
+const response = await agent.run({
+  prompt: "Search for TypeScript documentation.",
+});
 
-## Remaining Risk
+const cache = response.cache;
+if (cache) {
+  console.log(`Cache hits: ${cache.hits}, misses: ${cache.misses}`);
+  console.log(`Tool calls avoided: ${cache.toolCallsAvoided}`);
+  console.log(`Estimated saved tokens: ${cache.estimatedSavedTokens ?? 0}`);
+  console.log(`Unsafe skips: ${cache.skippedUnsafe}`);
+}
+```
 
-The runtime is now split into smaller services, but future work should keep pressure on these areas:
+### Cost Reporting
 
-- Add more service-level tests around multi-turn tool loops, streaming tool calls, and mixed skill-pack activation.
-- Keep prompt assembly thresholds documented when tuning section scoring.
-- Run live benchmark gates before claiming real token or cost savings.
-- Keep docs examples aligned with public package paths and sanitized inspection APIs.
-- Avoid reintroducing large files when adding cache, memory, pack, or skill features.
+```ts
+const response = await agent.run({
+  prompt: "Research and summarize 5 sources.",
+});
+
+const report = response.costReport;
+if (report) {
+  console.log(`Total: $${report.totalCost.toFixed(4)}`);
+  console.log(`Input tokens: ${report.inputTokens} @ $${report.inputCostPerMToken}/M`);
+  console.log(`Output tokens: ${report.outputTokens} @ $${report.outputCostPerMToken}/M`);
+}
+```
+
+### Adapter Trace
+
+```ts
+import { RunTracer } from "@deskcreate/agentcraft";
+
+const tracer = RunTracer.create();
+const agent = Agent.create({
+  model: Provider.anthropic["claude-sonnet-4-6"],
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+  traceSink: tracer,
+});
+
+const response = await agent.run({ prompt: "Search for TypeScript best practices." });
+
+const spans = tracer.spans();
+for (const span of spans) {
+  console.log(`${span.name}: ${span.durationMs}ms`);
+}
+```
+
+## Offline Validation Gates
+
+Run these before shipping any change to the runtime:
+
+```sh
+npm run typecheck          # TypeScript strict mode — no type errors
+npm test                   # All unit tests with fake providers
+npm run packs:check        # Creator pack exports and schema validation
+npm run build              # TypeScript → dist/ compilation
+npm run docs:api:check     # Generated API docs match public exports
+npm run examples:typecheck # All runnable examples type-check
+npm run examples:check     # Examples compile and pass assertions
+npm run exports:smoke      # Public entry points export expected symbols
+npm run format:check       # Prettier formatting
+```
+
+## Live Integration Gates
+
+Live gates require API credentials and are opt-in. Keep `INTEGRATION_TESTS=false` and `AGENTCRAFT_LIVE_ALLOW_WRITES=false` in default CI:
+
+```sh
+INTEGRATION_TESTS=true npm run test:int:light   # OpenAI only
+INTEGRATION_TESTS=true npm run test:int         # All providers
+INTEGRATION_TESTS=true npm run benchmark:live:light  # Cost and cache benchmarks
+```
+
+## Security Posture in the Runtime
+
+The hardened runtime enforces several implicit security properties:
+
+- **Skill inspection is sanitized**: `response.selection.activationReasons` and `listInspections()` do not expose raw skill prompt bodies
+- **Cache eligibility is centralized**: Write tools, confirmation-gated tools, and tools with `sensitive: true` metadata are unconditionally excluded from cache — this logic lives in `cache-eligibility.ts` and cannot be bypassed per-call
+- **Adapter scoping is non-negotiable**: `FileSystemAdapter` enforces `rootPath` at the tool execution layer, not in the prompt
+- **Memory and cache events redact secrets**: The event emitter strips URL credentials, connection strings, and patterns matching `AGENTCRAFT_SECRET_PATTERN` before emitting
+
+## Adding a New Runtime Module
+
+When splitting a new concern out of `agent.ts`:
+
+1. Create `src/agent/<subsystem>/<module>.ts` with a single focused export
+2. Create `src/agent/<subsystem>/__tests__/<module>.test.ts` with unit tests using `DeterministicFakeProvider`
+3. Re-export the new module through `src/agent/index.ts` if it's a public type
+4. Do not export internal implementation types — only the public contract
+5. Add a gate to `npm run typecheck` and `npm test`
+
+## Related
+
+- [Security Model](./security-model.md) — security layers and threat model
+- [Observability Reports](./observability-reports.md) — trace replay and run reports
+- [Agent Eval](./agent-eval.md) — regression testing for agent behavior
+- [API Stability](./api-stability.md) — stability guarantees for public APIs

@@ -340,7 +340,7 @@ describe("live cost, cache, and skill benchmark", () => {
                 const briefId = await store.put("ContentBrief", {
                   type: "ContentBrief",
                   title: "Cache-first agent workflows",
-                  sourceSkill: "content-brief",
+                  sourceSkill: "blog-brief",
                   provenance: [{ kind: "user", ref: "live-benchmark" }],
                   inputs: ["phase-8-live-benchmark"],
                   status: "draft",
@@ -378,7 +378,7 @@ describe("live cost, cache, and skill benchmark", () => {
                   .use(createSkillByName("blog-writer"))
                   .run({
                     prompt: [
-                      "Resume from this stored ContentBrief artifact and produce a compact execution plan.",
+                      "Resume from this stored ContentBrief artifact and produce a compact execution plan with audience, angle, outline, evidence, and takeaway/CTA.",
                       `Artifact history revisions: ${history.length}`,
                       JSON.stringify(resumed),
                     ].join("\n\n"),

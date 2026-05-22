@@ -27,6 +27,7 @@ interface SkillActivationMatch {
 
 const AUTO_SKILL_ACTIVATION_CAP = 4;
 const AUTO_SKILL_ACTIVATION_MIN_CONFIDENCE = 0.74;
+const DEEP_ACTIVATION_THRESHOLD = 0.38;
 
 export function selectActiveSkillMatches(input: {
   readonly params: AgentRunParams;
@@ -34,12 +35,10 @@ export function selectActiveSkillMatches(input: {
   readonly mode: SkillActivationMode;
 }): ActiveSkillMatch[] {
   const skills = input.adapters.filter(isAgentSkill);
-  if (input.mode === 'always') {
-    return skills.map((skill) => ({
-      skill,
-      reason: 'always',
-      confidence: 1,
-    }));
+
+  // Single skill on `always`: activate unconditionally — no routing overhead needed.
+  if (input.mode === 'always' && skills.length <= 1) {
+    return skills.map((skill) => ({ skill, reason: 'always', confidence: 1 }));
   }
 
   const prompt = trustedActivationText(input.params.prompt ?? '');
@@ -47,42 +46,55 @@ export function selectActiveSkillMatches(input: {
   const directiveNames = new Set(
     Array.from(prompt.matchAll(/(?:^|\s)\/([a-zA-Z][\w-]*)/g)).map((match) => match[1]!)
   );
+
   if (input.mode === 'directive-only') {
     return skills.flatMap<ActiveSkillMatch>((skill) =>
       skill.directive && directiveNames.has(skill.directive)
-        ? [
-            {
-              skill,
-              reason: 'directive' as const,
-              confidence: 1,
-              matched: `/${skill.directive}`,
-            },
-          ]
+        ? [{ skill, reason: 'directive' as const, confidence: 1, matched: `/${skill.directive}` }]
         : []
     );
   }
 
+  const matches = autoRouteSkills(skills, prompt, normalizedPrompt, directiveNames);
+
+  if (input.mode === 'always') {
+    // Multiple skills on `always`: smart routing with a guaranteed floor so something always activates.
+    if (matches.length > 0) return matches;
+    const boost = boostUnderActivatedDomainSkills(skills, prompt, normalizedPrompt);
+    if (boost.length > 0) return boost;
+    const deep = deepActivationFallback(skills, prompt, normalizedPrompt);
+    if (deep.length > 0) return deep;
+    // Absolute fallback for non-domain or empty-prompt cases.
+    return skills.map((skill) => ({ skill, reason: 'always', confidence: 1 }));
+  }
+
+  // `auto` mode: routing only, no guaranteed floor beyond the boost.
+  if (matches.length > 0) return matches;
+  const boost = boostUnderActivatedDomainSkills(skills, prompt, normalizedPrompt);
+  if (boost.length > 0) return boost;
+  return deepActivationFallback(skills, prompt, normalizedPrompt);
+}
+
+function autoRouteSkills(
+  skills: readonly AgentSkill[],
+  prompt: string,
+  normalizedPrompt: string,
+  directiveNames: ReadonlySet<string>
+): ActiveSkillMatch[] {
   return skills
     .flatMap<ActiveSkillMatch>((skill) => {
       if (skill.directive && directiveNames.has(skill.directive)) {
-        return [
-          {
-            skill,
-            reason: 'directive' as const,
-            confidence: 1,
-            matched: `/${skill.directive}`,
-          },
-        ];
+        return [{ skill, reason: 'directive' as const, confidence: 1, matched: `/${skill.directive}` }];
       }
       const matched = skill.skillMetadata?.domain
         ? domainSkillActivationMatch(skill, prompt, normalizedPrompt)
         : legacyOrGenericSkillActivationMatch(skill, prompt, normalizedPrompt);
-      return matched && !shouldSkipAutoActivation(skill.name, prompt)
+      return matched && !shouldSkipAutoActivation(skill, prompt)
         ? [
             {
               skill,
               reason: matched.reason,
-              confidence: adjustedAutoSkillConfidence(skill.name, prompt, matched),
+              confidence: adjustedAutoSkillConfidence(skill, prompt, matched),
               matched: matched.term.trim(),
             },
           ]
@@ -247,38 +259,39 @@ function domainSkillActivationMatch(
   const category = normalizeCandidateTerm(metadata.category);
   const domain = normalizeCandidateTerm(metadata.domain);
   const stage = metadata.stage;
-  const categoryMatched = category !== undefined && normalizedPrompt.includes(` ${category} `);
-  const domainMatched = domain !== undefined && normalizedPrompt.includes(` ${domain} `);
-  if (categoryMatched && category !== undefined && isNegatedActivation(prompt, category)) {
+  const categoryAlias = matchedRouteAlias(metadata.domain, metadata.category, normalizedPrompt);
+  const domainAlias = matchedDomainAlias(metadata.domain, normalizedPrompt);
+  const categoryExactMatched = category !== undefined && normalizedPrompt.includes(` ${category} `);
+  const categoryMatched = categoryExactMatched || categoryAlias !== undefined;
+  const domainMatched =
+    (domain !== undefined && normalizedPrompt.includes(` ${domain} `)) ||
+    domainAlias !== undefined;
+  const matchedCategoryTerm = categoryAlias ?? category;
+  const matchedDomainTerm = domainAlias ?? domain;
+  if (categoryMatched && matchedCategoryTerm !== undefined && isNegatedActivation(prompt, matchedCategoryTerm)) {
     return undefined;
   }
   const stageMatched = stage !== undefined && hasStageIntent(stage, normalizedPrompt);
   const skillNameMatched = skillNameSignalTerms(skill.name, metadata.category).some((term) =>
     normalizedPrompt.includes(term)
   );
-  const artifactMatched = [
-    ...(metadata.consumesArtifacts ?? []),
-    ...(metadata.producesArtifacts ?? []),
-  ]
-    .map(normalizeCandidateTerm)
-    .filter((term): term is string => term !== undefined && !isAmbiguousDomainTerm(term))
-    .some((term) => normalizedPrompt.includes(` ${term} `));
-  const intelligenceMatched = [
-    ...(metadata.domainIntelligence?.minimumInput ?? []),
-    ...(metadata.domainIntelligence?.toolsAndDataSources ?? []),
-    ...(metadata.domainIntelligence?.vocabulary ?? []),
-    ...(metadata.domainIntelligence?.metricsAndSignals ?? []),
-  ]
-    .map(normalizeCandidateTerm)
-    .filter(
-      (term): term is string =>
-        term !== undefined && term.length > 6 && !isAmbiguousDomainTerm(term)
-    )
-    .some((term) => normalizedPrompt.includes(` ${term} `));
+  const artifactMatched = artifactRouteMatched(metadata, normalizedPrompt);
+  const intelligenceMatched = domainIntelligenceRouteMatched(
+    metadata.domainIntelligence,
+    normalizedPrompt
+  );
 
-  if ((categoryMatched || domainMatched) && stageMatched) {
+  const aliasOnlyNeedsSkillSignal =
+    !categoryExactMatched &&
+    categoryAlias !== undefined &&
+    (stage === 'context' || stage === 'review' || stage === 'operations') &&
+    !skillNameMatched &&
+    !artifactMatched &&
+    !intelligenceMatched;
+
+  if ((categoryMatched || domainMatched) && stageMatched && !aliasOnlyNeedsSkillSignal) {
     return {
-      term: ` ${(categoryMatched ? category : domain) ?? skill.name} ${stage} `,
+      term: ` ${(categoryMatched ? matchedCategoryTerm : matchedDomainTerm) ?? skill.name} ${stage} `,
       reason: 'semantic',
       confidence: 0.86,
     };
@@ -294,6 +307,223 @@ function domainSkillActivationMatch(
   }
   if (artifactMatched && stageMatched) {
     return { term: ` ${stage} artifact `, reason: 'creator-artifact', confidence: 0.78 };
+  }
+  return undefined;
+}
+
+function artifactRouteMatched(
+  metadata: NonNullable<AgentSkill['skillMetadata']>,
+  normalizedPrompt: string
+): boolean {
+  return [
+    ...(metadata.consumesArtifacts ?? []),
+    ...(metadata.producesArtifacts ?? []),
+  ]
+    .map(normalizeCandidateTerm)
+    .filter((term): term is string => term !== undefined && !isAmbiguousDomainTerm(term))
+    .some((term) => normalizedPrompt.includes(` ${term} `));
+}
+
+function domainIntelligenceRouteMatched(
+  intelligence: NonNullable<AgentSkill['skillMetadata']>['domainIntelligence'],
+  normalizedPrompt: string
+): boolean {
+  if (!intelligence) return false;
+  return [
+    ...(intelligence.minimumInput ?? []),
+    ...(intelligence.toolsAndDataSources ?? []),
+    ...(intelligence.vocabulary ?? []),
+    ...(intelligence.metricsAndSignals ?? []),
+  ]
+    .map(normalizeCandidateTerm)
+    .filter(
+      (term): term is string =>
+        term !== undefined && term.length > 6 && !isAmbiguousDomainTerm(term)
+    )
+    .some((term) => normalizedPrompt.includes(` ${term} `));
+}
+
+function matchedRouteAlias(
+  domain: string | undefined,
+  category: string | undefined,
+  normalizedPrompt: string
+): string | undefined {
+  const aliases = DOMAIN_CATEGORY_ROUTE_ALIASES[`${domain ?? ''}:${category ?? ''}`] ?? [];
+  return aliases
+    .map(normalizeCandidateTerm)
+    .filter((term): term is string => term !== undefined)
+    .sort((left, right) => right.length - left.length)
+    .find((term) => normalizedPrompt.includes(` ${term} `));
+}
+
+function matchedDomainAlias(
+  domain: string | undefined,
+  normalizedPrompt: string
+): string | undefined {
+  const aliases = DOMAIN_ROUTE_ALIASES[domain ?? ''] ?? [];
+  return aliases
+    .map(normalizeCandidateTerm)
+    .filter((term): term is string => term !== undefined)
+    .sort((left, right) => right.length - left.length)
+    .find((term) => normalizedPrompt.includes(` ${term} `));
+}
+
+function boostUnderActivatedDomainSkills(
+  skills: readonly AgentSkill[],
+  prompt: string,
+  normalizedPrompt: string
+): ActiveSkillMatch[] {
+  const domainSkills = skills.filter((skill) => skill.skillMetadata?.domain);
+  if (domainSkills.length === 0 || isPromptUnderspecified(prompt)) return [];
+
+  const threshold = underActivationThreshold(domainSkills.length);
+  const candidates = domainSkills
+    .map((skill) => ({
+      skill,
+      score: scoreDomainSkillRoute(skill, normalizedPrompt),
+    }))
+    .filter((candidate) => candidate.score >= threshold && !shouldSkipAutoActivation(candidate.skill, prompt))
+    .sort((left, right) => {
+      const priorityDelta = (right.skill.skillMetadata?.priority ?? 0) - (left.skill.skillMetadata?.priority ?? 0);
+      if (Math.abs(right.score - left.score) < 0.03 && priorityDelta !== 0) return priorityDelta;
+      return right.score - left.score;
+    })
+    .slice(0, underActivationBoostCap(domainSkills.length));
+
+  // This is intentionally a last-resort route, not a normal selector. It avoids
+  // the silent failure mode where a well-scoped pack is attached but no skill
+  // crosses the strict semantic threshold because the prompt used a nearby term
+  // such as "article" instead of the category name "blog".
+  return candidates.map((candidate) => ({
+    skill: candidate.skill,
+    reason: 'semantic' as const,
+    confidence: candidate.score,
+    matched: 'under-activation-boost',
+  }));
+}
+
+function scoreDomainSkillRoute(skill: AgentSkill, normalizedPrompt: string): number {
+  const metadata = skill.skillMetadata;
+  if (!metadata) return 0;
+
+  let score = 0;
+  const categoryAlias = matchedRouteAlias(metadata.domain, metadata.category, normalizedPrompt);
+  const domainAlias = matchedDomainAlias(metadata.domain, normalizedPrompt);
+  const category = normalizeCandidateTerm(metadata.category);
+  const domain = normalizeCandidateTerm(metadata.domain);
+  if (category !== undefined && normalizedPrompt.includes(` ${category} `)) score += 0.36;
+  if (categoryAlias !== undefined) score += categoryAlias.includes(' ') ? 0.34 : 0.28;
+  if (domain !== undefined && normalizedPrompt.includes(` ${domain} `)) score += 0.16;
+  if (domainAlias !== undefined) score += 0.14;
+  if (metadata.stage !== undefined && hasStageIntent(metadata.stage, normalizedPrompt)) score += 0.28;
+
+  const skillSignals = skillNameSignalTerms(skill.name, metadata.category);
+  const matchedSkillSignals = skillSignals.filter((term) => normalizedPrompt.includes(term)).length;
+  score += Math.min(0.22, matchedSkillSignals * 0.11);
+
+  if (skill.directive !== undefined && normalizedPrompt.includes(` ${normalizeCandidateTerm(skill.directive) ?? ''} `)) {
+    score += 0.22;
+  }
+
+  if (domainIntelligenceRouteMatched(metadata.domainIntelligence, normalizedPrompt)) score += 0.18;
+  if (artifactRouteMatched(metadata, normalizedPrompt)) score += 0.14;
+  return Math.min(0.9, score);
+}
+
+function underActivationThreshold(skillCount: number): number {
+  if (skillCount <= 3) return 0.56;
+  if (skillCount <= 6) return 0.62;
+  return 0.68;
+}
+
+function underActivationBoostCap(skillCount: number): number {
+  if (skillCount <= 3) return 1;
+  if (skillCount <= 6) return 2;
+  return 3;
+}
+
+function deepActivationFallback(
+  skills: readonly AgentSkill[],
+  prompt: string,
+  normalizedPrompt: string
+): ActiveSkillMatch[] {
+  // Strategy 1: sub-threshold domain rescue.
+  // Gated on underspecified because sub-threshold domain scores on short vague prompts
+  // are noise. Adjacent-vocabulary cases only arise in reasonably long prompts.
+  if (!isPromptUnderspecified(prompt)) {
+    const domainSkills = skills.filter((skill) => skill.skillMetadata?.domain);
+    const bestDomain = domainSkills
+      .filter((skill) => !shouldSkipAutoActivation(skill, prompt))
+      .map((skill) => ({ skill, score: scoreDomainSkillRoute(skill, normalizedPrompt) }))
+      .filter((candidate) => candidate.score >= DEEP_ACTIVATION_THRESHOLD)
+      .sort((left, right) => right.score - left.score)[0];
+    if (bestDomain) {
+      return [{
+        skill: bestDomain.skill,
+        reason: 'deep-boost',
+        confidence: bestDomain.score,
+        matched: 'deep-domain-rescue',
+      }];
+    }
+  }
+
+  // Strategy 2: primitive intent fallback.
+  // Only gates on the vague-pattern check, not word count — a short but specific prompt
+  // ("draft a summary of these notes") has clear intent and should reach a primitive.
+  const isVaguePattern = /\b(help|create|write|review|analyze|make|draft)\s+(it|this|something|content|post|article|brief)\b/i.test(prompt);
+  if (!isVaguePattern) {
+    const primitiveSkills = skills.filter((skill) => !skill.skillMetadata?.domain);
+    const primitive = selectPrimitiveByIntent(primitiveSkills, prompt, normalizedPrompt);
+    if (primitive) {
+      return [{
+        skill: primitive,
+        reason: 'deep-boost',
+        confidence: DEEP_ACTIVATION_THRESHOLD,
+        matched: 'primitive-intent',
+      }];
+    }
+  }
+
+  return [];
+}
+
+// Maps prompt intent signals to the built-in primitive directives they correspond to.
+// Order within each intent list encodes preference (most specific first).
+const PRIMITIVE_INTENT_DIRECTIVES: ReadonlyArray<{
+  readonly test: (prompt: string, normalizedPrompt: string) => boolean;
+  readonly directives: readonly string[];
+}> = [
+  {
+    test: (_p, n) => hasResearchIntent(n),
+    directives: ['investigate-deep', 'investigate'],
+  },
+  {
+    test: (p, n) => hasCreationIntent(p.toLowerCase()) || hasDeliverableIntent(n),
+    directives: ['write', 'draft-personal-email'],
+  },
+  {
+    test: (_p, n) => hasReviewIntent(n),
+    directives: ['audit', 'extract'],
+  },
+  {
+    test: (_p, n) => /\b(analy[sz]e|analysis|data|metrics|report|measure|chart|trend)\b/i.test(n),
+    directives: ['analyze', 'extract'],
+  },
+];
+
+function selectPrimitiveByIntent(
+  primitives: readonly AgentSkill[],
+  prompt: string,
+  normalizedPrompt: string
+): AgentSkill | undefined {
+  if (primitives.length === 0) return undefined;
+  const byDirective = new Map(primitives.map((skill) => [skill.directive, skill]));
+  for (const { test, directives } of PRIMITIVE_INTENT_DIRECTIVES) {
+    if (!test(prompt, normalizedPrompt)) continue;
+    for (const directive of directives) {
+      const match = byDirective.get(directive);
+      if (match && !shouldSkipAutoActivation(match, prompt)) return match;
+    }
   }
   return undefined;
 }
@@ -319,17 +549,8 @@ function creatorActivationTerms(manifest: CreatorSkillManifest): ActivationTerm[
       reason: 'capability' as const,
       confidence: 0.72,
     })),
-    ...creatorActivationAliases(manifest.name).map((value) => ({
-      value,
-      reason: 'keyword' as const,
-      confidence: 0.84,
-    })),
   ];
   return uniqueActivationTerms(terms);
-}
-
-function creatorActivationAliases(skillName: string): string[] {
-  return CREATOR_SKILL_ACTIVATION_ALIASES[skillName] ?? [];
 }
 
 function genericSkillActivationTerms(skill: AgentSkill): ActivationTerm[] {
@@ -444,8 +665,8 @@ function isNegatedActivation(prompt: string, term: string): boolean {
   );
 }
 
-function shouldSkipAutoActivation(skillName: string, prompt: string): boolean {
-  if (!CREATION_SKILL_NAMES.has(skillName)) return false;
+function shouldSkipAutoActivation(skill: AgentSkill, prompt: string): boolean {
+  if (!isCreationSkill(skill)) return false;
   const normalized = prompt.toLowerCase();
   const creationIntent = hasCreationIntent(normalized);
   if (creationIntent) return false;
@@ -455,11 +676,11 @@ function shouldSkipAutoActivation(skillName: string, prompt: string): boolean {
 }
 
 function adjustedAutoSkillConfidence(
-  skillName: string,
+  skill: AgentSkill,
   prompt: string,
   matched: SkillActivationMatch
 ): number {
-  if (!CREATION_SKILL_NAMES.has(skillName)) return matched.confidence;
+  if (!isCreationSkill(skill)) return matched.confidence;
   if (!hasCreationIntent(prompt.toLowerCase())) return matched.confidence;
   if (matched.reason === 'exact-alias' || matched.reason === 'keyword') {
     return Math.max(matched.confidence, 0.93);
@@ -471,42 +692,80 @@ function hasCreationIntent(normalizedPrompt: string): boolean {
   return /\b(write|draft|compose|create|produce|generate|turn|make)\b/.test(normalizedPrompt);
 }
 
-const CREATION_SKILL_NAMES = new Set([
-  'blog-writer',
-  'copywriter',
-  'video-scriptwriter',
-  'book-writer',
-  'newsletter-writer',
-  'social-writer',
-]);
+function isCreationSkill(skill: AgentSkill): boolean {
+  return skill.skillMetadata?.stage === 'creation';
+}
 
-const CREATOR_SKILL_ACTIVATION_ALIASES: Record<string, string[]> = {
-  'audience-research': ['audience', 'reader', 'persona', 'segment', 'customer'],
-  'content-positioning': ['positioning', 'angle', 'thesis', 'promise', 'differentiator'],
-  'content-brief': ['brief', 'outline', 'plan', 'structure'],
-  'research-synthesis': ['research', 'source', 'sources', 'evidence', 'synthesis'],
-  'fact-check': ['fact', 'verify', 'claim', 'claims', 'citation'],
-  'seo-strategy': ['seo', 'keyword', 'keywords', 'search intent'],
-  'serp-brief': ['serp', 'ranking', 'competitor', 'search results'],
-  'blog-writer': ['blog', 'article', 'post', 'medium', 'longform'],
-  copywriter: ['copy', 'copywriting', 'landing page', 'conversion'],
-  'video-scriptwriter': ['video', 'script', 'youtube', 'voiceover'],
-  repurposing: ['repurpose', 'repurposing', 'thread', 'carousel', 'snippet'],
-  'editorial-review': ['editorial', 'review', 'edit', 'clarity', 'coherence'],
-  'competitor-analysis': ['competitor', 'competitive', 'comparison'],
-  'trend-discovery': ['trend', 'trending', 'market signal'],
-  'seo-audit': ['seo audit', 'technical seo', 'crawl issue'],
-  'seo-review': ['seo review', 'metadata', 'meta description', 'slug'],
-  'book-writer': ['book', 'chapter', 'manuscript'],
-  'newsletter-writer': ['newsletter', 'email issue', 'subscriber'],
-  'social-writer': ['social', 'linkedin', 'x post', 'tweet', 'caption'],
-  'video-ideation': ['video idea', 'youtube idea', 'episode'],
-  'creative-direction': ['creative direction', 'visual direction', 'concept'],
-  'copy-review': ['copy review', 'conversion review', 'offer review'],
-  'claim-risk-review': ['claim risk', 'legal risk', 'compliance'],
-  'brand-voice': ['brand voice', 'tone', 'voice'],
-  'publish-qa': ['publish', 'publishing', 'preflight', 'qa'],
-  'content-calendar': ['calendar', 'schedule', 'editorial calendar'],
-  'performance-analysis': ['performance', 'analytics', 'metrics'],
-  'experiment-planner': ['experiment', 'a b test', 'hypothesis'],
+const DOMAIN_ROUTE_ALIASES: Record<string, readonly string[]> = {
+  brand: ['brand', 'positioning', 'messaging', 'audience', 'voice'],
+  business: ['business', 'strategy', 'operations', 'partnership', 'investment'],
+  creator: ['creator', 'content', 'post', 'article', 'video', 'newsletter'],
+  'data-analytics': ['analytics', 'metric', 'dashboard', 'experiment', 'cohort'],
+  engineering: ['code', 'system', 'architecture', 'debug', 'deployment'],
+  finance: ['finance', 'stock', 'equity', 'portfolio', 'market'],
+  healthcare: ['healthcare', 'clinical', 'medical', 'patient'],
+  legal: ['legal', 'contract', 'compliance', 'policy'],
+  marketing: ['marketing', 'seo', 'campaign', 'ad', 'email', 'landing page'],
+  'personal-productivity': ['productivity', 'task', 'calendar', 'life admin', 'weekly plan', 'time block'],
+  product: ['product', 'prd', 'roadmap', 'launch', 'ux'],
+  sales: ['sales', 'prospect', 'lead', 'deal', 'account'],
+  support: ['support', 'ticket', 'customer', 'refund', 'escalation'],
+};
+
+const DOMAIN_CATEGORY_ROUTE_ALIASES: Record<string, readonly string[]> = {
+  'brand:research': ['brand research', 'audience research', 'audience insight', 'customer language'],
+  'brand:positioning': ['brand positioning', 'positioning', 'differentiation', 'moat'],
+  'brand:messaging': ['messaging', 'tagline', 'proof point', 'brand story'],
+  'brand:voice': ['brand voice', 'tone of voice', 'voice guide', 'style guide'],
+  'creator:blog': ['blog', 'blog post', 'blog article', 'article', 'longform', 'longform article'],
+  'creator:book': ['book', 'chapter', 'manuscript'],
+  'creator:course': ['course', 'lesson', 'curriculum'],
+  'creator:facebook': ['facebook', 'facebook post', 'facebook group'],
+  'creator:instagram': ['instagram', 'caption', 'carousel', 'reel'],
+  'creator:linkedin': ['linkedin', 'linkedin post', 'carousel'],
+  'creator:medium': ['medium', 'medium article', 'medium essay', 'medium story', 'publication'],
+  'creator:newsletter': ['newsletter', 'email issue', 'subject line'],
+  'creator:pinterest': ['pinterest', 'pin', 'board'],
+  'creator:podcast': ['podcast', 'episode', 'show notes'],
+  'creator:resume': ['resume', 'cv', 'cover letter', 'ats'],
+  'creator:short-video': ['short video', 'shorts', 'reel', 'clip'],
+  'creator:snapchat': ['snapchat', 'snap', 'lens', 'ar filter'],
+  'creator:substack': ['substack', 'paid free', 'community thread'],
+  'creator:tiktok': ['tiktok', 'hook', 'shot list'],
+  'creator:webinar': ['webinar', 'live training', 'slide brief'],
+  'creator:x-twitter': ['x', 'twitter', 'tweet', 'thread'],
+  'creator:youtube': ['youtube', 'thumbnail', 'chapter', 'description tags'],
+  'data-analytics:dashboard': ['dashboard', 'metric definition', 'kpi dashboard'],
+  'data-analytics:experiment-analysis': ['experiment', 'ab test', 'a b test', 'causality', 'readout'],
+  'data-analytics:reporting': ['metric summary', 'executive data brief', 'anomaly', 'cohort'],
+  'finance:stock-research': ['stock', 'stocks', 'equity', 'earnings', 'valuation', 'catalyst'],
+  'finance:market-update': ['market update', 'macro', 'macro news', 'weekly update', 'market narrative'],
+  'finance:market-research': ['sector rotation', 'country market', 'currency risk', 'currency brief'],
+  'finance:portfolio-review': ['portfolio', 'allocation', 'exposure', 'drift'],
+  'finance:investment-opportunity': ['opportunity', 'investment thesis', 'private market'],
+  'finance:financial-reporting': ['finance summary', 'variance', 'budget', 'cash flow'],
+  'healthcare:clinical-admin': ['clinical note', 'intake', 'referral', 'care plan'],
+  'healthcare:medical-research': ['medical literature', 'clinical guideline', 'evidence grade'],
+  'healthcare:patient-education': ['patient education', 'plain language', 'care instruction'],
+  'marketing:ads': ['ad', 'ads', 'creative brief', 'ad copy'],
+  'marketing:campaign': ['campaign', 'asset planner', 'campaign calendar'],
+  'marketing:competitor-intelligence': ['competitor', 'competitive', 'offer review', 'gap synthesis'],
+  'marketing:digital-marketing': ['digital marketing', 'channel mix', 'funnel', 'attribution'],
+  'marketing:email-marketing': ['email marketing', 'email sequence', 'subject line'],
+  'marketing:landing-page': ['landing page', 'conversion page', 'wireframe brief'],
+  'marketing:seo': ['seo', 'serp', 'organic search', 'keyword', 'internal link'],
+  'personal-productivity:weekly-planning': ['weekly plan', 'weekly planning', 'time block', 'time blocking', 'weekly schedule'],
+  'product:launch': ['launch', 'release note', 'rollout'],
+  'product:prd': ['prd', 'product requirements', 'user story', 'acceptance criteria'],
+  'product:product-research': ['product research', 'user problem', 'jtbd', 'feedback'],
+  'product:roadmap': ['roadmap', 'rice score', 'dependency map'],
+  'product:ux-research': ['ux research', 'interview guide', 'usability', 'persona'],
+  'sales:account-research': ['account research', 'stakeholder map', 'buying committee'],
+  'sales:crm': ['crm', 'deal', 'pipeline', 'forecast'],
+  'sales:objection-handling': ['objection', 'competitive objection', 'call coach'],
+  'sales:proposal': ['proposal', 'pricing rationale', 'red team'],
+  'sales:prospecting': ['prospect', 'lead', 'account fit', 'outreach'],
+  'support:customer-success': ['customer success', 'renewal', 'qbr', 'churn'],
+  'support:customer-support': ['ticket', 'refund', 'support response', 'escalation'],
+  'support:knowledge-base': ['knowledge base', 'kb', 'support macro'],
 };

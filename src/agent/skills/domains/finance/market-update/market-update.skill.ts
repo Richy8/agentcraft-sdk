@@ -6,7 +6,7 @@ export const FINANCE_MARKET_RESEARCH_MARKET_UPDATE_SKILL_SPEC = defineFinanceSki
   title: 'Market Update',
   description:
     'Produces a structured market update that moves beyond price performance recaps to interpret current market dynamics, assess what is priced in vs. what is not, and translate the market environment into specific implications for portfolio positioning.',
-  category: 'market-research',
+  category: 'market-update',
   stage: 'strategy',
   optionalAdapters: ['filesystem', 'fetch', 'tavily', 'firecrawl'],
   consumesArtifacts: ['MacroNewsSynthesis', 'MarketBrief'],

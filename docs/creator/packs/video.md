@@ -1,15 +1,16 @@
-# Video Pack
+# Video Creator Packs
 
-The video pack covers ideation, script structure, creative direction, and repurposing. It is useful for YouTube, Shorts, course modules, webinars, and video-led campaigns.
+Video work is split into platform-native packs because YouTube, TikTok, Shorts, webinars, and podcasts optimize for different retention mechanics.
 
 ## Coverage
 
-| Stage    | Included skills      | Tools to attach                  | Purpose                                         |
-| -------- | -------------------- | -------------------------------- | ----------------------------------------------- |
-| Ideation | `video-ideation`     | `tavily`, `firecrawl`            | Find angles, hooks, and formats.                |
-| Script   | `video-scriptwriter` | `filesystem`                     | Produce scripts, beats, and narration.          |
-| Creative | `creative-direction` | `image-generation`, `elevenlabs` | Guide visuals, thumbnails, and audio direction. |
-| Reuse    | `repurposing`        | `publishing`, `storage`          | Extract clips, posts, and summaries.            |
+| Surface     | Pack                        | Representative Skills                                                                                                                   |
+| ----------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| YouTube     | `CreatorPacks.youtube()`    | `youtube-topic-research`, `youtube-title-thumbnail-brief`, `youtube-scriptwriter`, `youtube-retention-review`, `youtube-chapter-writer` |
+| Short video | `CreatorPacks.shortVideo()` | `short-video-ideation`, `short-video-scriptwriter`, `short-video-shot-list`, `short-video-platform-adapter`                             |
+| TikTok      | `CreatorPacks.tiktok()`     | `tiktok-trend-research`, `tiktok-hook-writer`, `tiktok-scriptwriter`, `tiktok-shot-list`                                                |
+| Webinar     | `CreatorPacks.webinar()`    | `webinar-topic-research`, `webinar-outline-writer`, `webinar-slide-brief`, `webinar-followup-sequence`                                  |
+| Podcast     | `CreatorPacks.podcast()`    | `podcast-topic-research`, `podcast-outline-writer`, `podcast-show-notes-writer`, `podcast-clip-repurposing`                             |
 
 ## Usage
 
@@ -20,32 +21,14 @@ import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 const agent = Agent.create({
   model: Provider.gemini["gemini-2.5-pro"],
   apiKey: process.env.GOOGLE_API_KEY!,
-}).use(CreatorPacks.video({ contentRoot: "./video", cache: "auto" }));
+  skillActivation: "auto",
+}).use(CreatorPacks.youtube({ contentRoot: "./video", cache: "auto" }));
 
 const response = await agent.run({
-  prompt: "Plan a 7 minute YouTube video about production-grade agent testing.",
+  prompt:
+    "Plan a 7-minute YouTube video about production-grade agent testing, including title, thumbnail brief, script, retention risks, chapters, and description tags.",
 });
 console.log(response.content);
 ```
 
-## Configuration
-
-| Option        | Required | Default       | Purpose                                      |
-| ------------- | -------- | ------------- | -------------------------------------------- |
-| `contentRoot` | No       | Undefined     | Stores scripts, beats, and asset notes.      |
-| `cache`       | No       | `false`       | Reuses source research and audience notes.   |
-| `memory`      | No       | `false`       | Applies channel voice and recurring formats. |
-| `budget`      | No       | Agent default | Controls heavier ideation and script passes. |
-
-## Examples
-
-Pair the pack with an audio adapter when generating voice direction:
-
-```ts
-agent.use(
-  ElevenLabsAdapter.connect({ apiKey: process.env.ELEVENLABS_API_KEY! }),
-);
-agent.use(CreatorPacks.video());
-```
-
-See [Creator Adapters](../adapters.md) and the [creator cookbook](../../examples-cookbook/creator.md).
+Use `CreatorPacks.shortVideo()` when the destination platform is undecided, then add `CreatorPacks.tiktok()` or `CreatorPacks.instagram()` when platform dynamics become important.

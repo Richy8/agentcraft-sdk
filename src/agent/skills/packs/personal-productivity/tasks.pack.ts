@@ -2,12 +2,11 @@ import { definePackSpec } from '../../../packs/registry.js';
 
 export const PERSONAL_PRODUCTIVITY_TASKS_PACK_SPEC = definePackSpec({
   name: 'personal-productivity-tasks-skills',
-  description: 'Personal Productivity And Life Admin Tasks skill pack.',
+  description: 'Personal Productivity tasks: prioritize work, triage your backlog, and review habits.',
   domain: 'personal-productivity',
   category: 'tasks',
   skillIds: [
     'task-prioritization',
-    'weekly-plan-writer',
     'personal-backlog-triage',
     'habit-review',
   ],

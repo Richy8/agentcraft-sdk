@@ -1,5 +1,5 @@
 import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { CreatorPacks, MarketingPacks } from "@deskcreate/agentcraft/packs";
 import { createSkillByName } from "@deskcreate/agentcraft/skills";
 import {
   CreatorResourcesAdapter,
@@ -13,7 +13,7 @@ const agent = Agent.create({
   toolSelection: "auto",
 })
   .use(CreatorPacks.blog({ contentRoot: "content", readOnlyByDefault: true }))
-  .use(CreatorPacks.seo())
+  .use(MarketingPacks.seo())
   .use(createSkillByName("blog-writer"))
   .use(
     CreatorResourcesAdapter.connect({
@@ -45,6 +45,6 @@ const agent = Agent.create({
 
 await agent.run({
   prompt:
-    "/write-blog Draft a practical Medium article about agent tool guardrails.",
+    "/write-blog Draft a practical blog article about agent tool guardrails.",
   budget: { maxToolCalls: 4 },
 });

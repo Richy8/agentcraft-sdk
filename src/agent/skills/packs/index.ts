@@ -46,6 +46,7 @@ import { SALES_OBJECTION_HANDLING_PACK_SPEC } from './sales/objection-handling.p
 import { SALES_ACCOUNT_RESEARCH_PACK_SPEC } from './sales/account-research.pack.js';
 import { FINANCE_STOCK_RESEARCH_PACK_SPEC } from './finance/stock-research.pack.js';
 import { FINANCE_MARKET_RESEARCH_PACK_SPEC } from './finance/market-research.pack.js';
+import { FINANCE_MARKET_UPDATE_PACK_SPEC } from './finance/market-update.pack.js';
 import { FINANCE_PORTFOLIO_REVIEW_PACK_SPEC } from './finance/portfolio-review.pack.js';
 import { FINANCE_INVESTMENT_OPPORTUNITY_PACK_SPEC } from './finance/investment-opportunity.pack.js';
 import { FINANCE_FINANCIAL_REPORTING_PACK_SPEC } from './finance/financial-reporting.pack.js';
@@ -53,6 +54,7 @@ import { PERSONAL_PRODUCTIVITY_TASKS_PACK_SPEC } from './personal-productivity/t
 import { PERSONAL_PRODUCTIVITY_CALENDAR_PACK_SPEC } from './personal-productivity/calendar.pack.js';
 import { PERSONAL_PRODUCTIVITY_LIFE_ADMIN_PACK_SPEC } from './personal-productivity/life-admin.pack.js';
 import { PERSONAL_PRODUCTIVITY_COMMUNICATION_PACK_SPEC } from './personal-productivity/communication.pack.js';
+import { PERSONAL_PRODUCTIVITY_WEEKLY_PLANNING_PACK_SPEC } from './personal-productivity/weekly-planning.pack.js';
 import { PRODUCT_PRODUCT_RESEARCH_PACK_SPEC } from './product/product-research.pack.js';
 import { PRODUCT_PRD_PACK_SPEC } from './product/prd.pack.js';
 import { PRODUCT_ROADMAP_PACK_SPEC } from './product/roadmap.pack.js';
@@ -135,6 +137,7 @@ export const SKILL_PACK_SPECS = [
   SALES_ACCOUNT_RESEARCH_PACK_SPEC,
   FINANCE_STOCK_RESEARCH_PACK_SPEC,
   FINANCE_MARKET_RESEARCH_PACK_SPEC,
+  FINANCE_MARKET_UPDATE_PACK_SPEC,
   FINANCE_PORTFOLIO_REVIEW_PACK_SPEC,
   FINANCE_INVESTMENT_OPPORTUNITY_PACK_SPEC,
   FINANCE_FINANCIAL_REPORTING_PACK_SPEC,
@@ -142,6 +145,7 @@ export const SKILL_PACK_SPECS = [
   PERSONAL_PRODUCTIVITY_CALENDAR_PACK_SPEC,
   PERSONAL_PRODUCTIVITY_LIFE_ADMIN_PACK_SPEC,
   PERSONAL_PRODUCTIVITY_COMMUNICATION_PACK_SPEC,
+  PERSONAL_PRODUCTIVITY_WEEKLY_PLANNING_PACK_SPEC,
   PRODUCT_PRODUCT_RESEARCH_PACK_SPEC,
   PRODUCT_PRD_PACK_SPEC,
   PRODUCT_ROADMAP_PACK_SPEC,

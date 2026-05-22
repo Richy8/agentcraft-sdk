@@ -5,13 +5,19 @@ export const PERSONAL_PRODUCTIVITY_DOMAIN_SKILL_CATEGORY_PLANS = [
     domain: 'personal-productivity',
     category: 'tasks',
     title: 'Personal Productivity And Life Admin',
-    plannedSkills: ['task-prioritization', 'weekly-plan-writer', 'personal-backlog-triage', 'habit-review'],
+    plannedSkills: ['task-prioritization', 'personal-backlog-triage', 'habit-review'],
+  },
+  {
+    domain: 'personal-productivity',
+    category: 'weekly-planning',
+    title: 'Personal Productivity And Life Admin',
+    plannedSkills: ['weekly-plan-writer', 'time-blocking-plan'],
   },
   {
     domain: 'personal-productivity',
     category: 'calendar',
     title: 'Personal Productivity And Life Admin',
-    plannedSkills: ['calendar-audit', 'time-blocking-plan', 'meeting-prep-brief', 'schedule-conflict-resolution'],
+    plannedSkills: ['calendar-audit', 'meeting-prep-brief', 'schedule-conflict-resolution'],
   },
   {
     domain: 'personal-productivity',

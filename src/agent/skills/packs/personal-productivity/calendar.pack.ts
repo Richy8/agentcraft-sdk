@@ -2,12 +2,11 @@ import { definePackSpec } from '../../../packs/registry.js';
 
 export const PERSONAL_PRODUCTIVITY_CALENDAR_PACK_SPEC = definePackSpec({
   name: 'personal-productivity-calendar-skills',
-  description: 'Personal Productivity And Life Admin Calendar skill pack.',
+  description: 'Personal Productivity calendar: audit your schedule, prep for meetings, and resolve conflicts.',
   domain: 'personal-productivity',
   category: 'calendar',
   skillIds: [
     'calendar-audit',
-    'time-blocking-plan',
     'meeting-prep-brief',
     'schedule-conflict-resolution',
   ],

@@ -3,7 +3,7 @@ import { definePersonalProductivitySkillSpec } from "../personal-productivity-sk
 export const PERSONAL_PRODUCTIVITY_COMMUNICATION_PERSONAL_EMAIL_DRAFT_SKILL_SPEC =
   definePersonalProductivitySkillSpec({
     name: "personal-email-draft",
-    directive: "draft-email",
+    directive: "draft-personal-email",
     title: "Personal Email Draft",
     category: "communication",
     stage: "creation",

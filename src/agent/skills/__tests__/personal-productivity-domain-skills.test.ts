@@ -6,6 +6,7 @@ import {
   PERSONAL_PRODUCTIVITY_DOMAIN_SKILL_SPECS,
   PERSONAL_PRODUCTIVITY_LIFE_ADMIN_SKILL_SPECS,
   PERSONAL_PRODUCTIVITY_TASKS_SKILL_SPECS,
+  PERSONAL_PRODUCTIVITY_WEEKLY_PLANNING_SKILL_SPECS,
 } from '../domains/personal-productivity/index.js';
 import { createSkillByName, listSkillSpecs } from '../registries/skill-registry.js';
 
@@ -33,8 +34,9 @@ describe('personal productivity domain skills', () => {
     expect(PERSONAL_PRODUCTIVITY_DOMAIN_SKILL_SPECS.map((spec) => spec.name).sort()).toEqual(
       [...expectedPersonalProductivitySkillNames].sort(),
     );
-    expect(PERSONAL_PRODUCTIVITY_TASKS_SKILL_SPECS).toHaveLength(4);
-    expect(PERSONAL_PRODUCTIVITY_CALENDAR_SKILL_SPECS).toHaveLength(4);
+    expect(PERSONAL_PRODUCTIVITY_TASKS_SKILL_SPECS).toHaveLength(3);
+    expect(PERSONAL_PRODUCTIVITY_WEEKLY_PLANNING_SKILL_SPECS).toHaveLength(2);
+    expect(PERSONAL_PRODUCTIVITY_CALENDAR_SKILL_SPECS).toHaveLength(3);
     expect(PERSONAL_PRODUCTIVITY_LIFE_ADMIN_SKILL_SPECS).toHaveLength(4);
     expect(PERSONAL_PRODUCTIVITY_COMMUNICATION_SKILL_SPECS).toHaveLength(4);
   });

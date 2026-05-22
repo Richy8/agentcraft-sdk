@@ -10,7 +10,7 @@ import {
   SeoAdapter,
   LinkCheckerAdapter,
 } from "@deskcreate/agentcraft/adapters";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { CreatorPacks, MarketingPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -19,12 +19,13 @@ const agent = Agent.create({
   toolSelection: "auto",
 })
   .use(CreatorPacks.blog())
-  .use(CreatorPacks.seo())
+  .use(MarketingPacks.seo())
   .use(SeoAdapter.connect())
   .use(LinkCheckerAdapter.connect());
 
 const response = await agent.run({
-  prompt: "Write an SEO-optimized blog post on agent caching.",
+  prompt:
+    "/write-blog Write an SEO-optimized blog post on agent caching with source and link-readiness notes.",
 });
 console.log(response.content);
 ```
@@ -44,11 +45,12 @@ const agent = Agent.create({
   apiKey: process.env.OPENAI_API_KEY!,
   skillActivation: "auto",
 })
-  .use(CreatorPacks.video())
+  .use(CreatorPacks.youtube())
   .use(CreatorResourcesAdapter.connect({ memoryStore }));
 
 const response = await agent.run({
-  prompt: "Ideate and script a 5-minute video on AI agents.",
+  prompt:
+    "Ideate and script a 5-minute YouTube video on AI agents, including retention risks and chapter ideas.",
 });
 console.log(response.content);
 ```
@@ -58,7 +60,7 @@ console.log(response.content);
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { AnalyticsAdapter } from "@deskcreate/agentcraft/adapters";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { MarketingPacks } from "@deskcreate/agentcraft/packs";
 import { FileSystemAnalyticsHistoryStore } from "@deskcreate/agentcraft";
 
 const historyStore = new FileSystemAnalyticsHistoryStore(
@@ -69,7 +71,7 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
 })
-  .use(CreatorPacks.analytics())
+  .use(MarketingPacks.digitalMarketing())
   .use(AnalyticsAdapter.connect({ historyStore }));
 
 const response = await agent.run({

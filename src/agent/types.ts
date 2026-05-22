@@ -151,6 +151,7 @@ export type SkillActivationReasonCode =
   | "capability"
   | "keyword"
   | "semantic"
+  | "deep-boost"
   | "not-activated";
 
 export interface SkillActivationReason {

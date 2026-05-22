@@ -1,17 +1,17 @@
 # Creator Overview
 
-The creator system turns AgentCraft into a workflow engine for research, planning, writing, SEO, video, social, publishing preparation, analytics, and repurposing.
+The creator system turns AgentCraft into a workflow engine for platform-native writing, video, newsletters, books, resumes, publishing readiness, and creator memory. Marketing SEO, ads, analytics, and campaign planning live in the marketing and data analytics packs and compose cleanly with creator packs.
 
 ## What It Includes
 
-| Piece            | Purpose                                           | More                                |
-| ---------------- | ------------------------------------------------- | ----------------------------------- |
-| Creator packs    | Curated skill bundles.                            | [Creator Packs](./packs.md)         |
-| Creator skills   | 28 specialized skills.                            | [Creator Skills](./skills.md)       |
-| Creator adapters | SEO, citations, resources, publishing, analytics. | [Creator Adapters](./adapters.md)   |
-| Memory           | Brand voice and corpus retrieval.                 | [Creator Memory](./memory.md)       |
-| Analytics        | Performance and experiment history.               | [Creator Analytics](./analytics.md) |
-| Workflows        | Blog, SEO, video, social, publishing.             | [Creator Workflows](./workflows.md) |
+| Piece            | Purpose                                                                                                      | More                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------- |
+| Creator packs    | Curated skill bundles.                                                                                       | [Creator Packs](./packs.md)         |
+| Creator skills   | Platform-specific skills across blog, Medium, LinkedIn, YouTube, TikTok, newsletter, book, resume, and more. | [Creator Skills](./skills.md)       |
+| Creator adapters | SEO, citations, resources, publishing, analytics.                                                            | [Creator Adapters](./adapters.md)   |
+| Memory           | Brand voice and corpus retrieval.                                                                            | [Creator Memory](./memory.md)       |
+| Analytics        | Performance and experiment history.                                                                          | [Creator Analytics](./analytics.md) |
+| Workflows        | Blog, Medium, video, newsletter, resume, and marketing-adjacent workflows.                                   | [Creator Workflows](./workflows.md) |
 
 ## Quick Start
 

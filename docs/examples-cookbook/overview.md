@@ -1,6 +1,6 @@
 # Examples Cookbook
 
-The cookbook is the variant library. Each chapter focuses on a specific dimension — providers, tools, skills, MCP, creator workflows, orchestration, or production safety — and shows the combination patterns that don't fit neatly in reference pages.
+The cookbook is the variant library. Each chapter focuses on a specific dimension — providers, tools, MCP, orchestration, or production safety — and shows the combination patterns that don't fit neatly in reference pages.
 
 ## Choose Your Starting Point
 
@@ -8,10 +8,8 @@ The cookbook is the variant library. Each chapter focuses on a specific dimensio
 | --- | --- | --- | --- |
 | First working agent | [Beginner](./beginner.md) | [Agents](../core/agents.md) | `examples/basic-chat.ts` |
 | Multiple providers and fallback | [Providers](./provider.md) | [Models and Providers](../core/models-and-providers.md) | `examples/provider-routing.ts` |
-| Web fetch, file system, browser tools | [Tools and Adapters](./tools-adapters.md) | [Adapters Overview](../adapters/overview.md) | `examples/adapter-skill-workflow.ts` |
+| Web fetch, file system, browser tools | [Tools and Adapters](./tools-adapters.md) | [Adapters Overview](../adapters/overview.md) | `examples/filesystem-safe-agent.ts` |
 | MCP servers (GitHub, Notion, filesystem) | [MCP](./mcp.md) | [MCP Overview](../mcp/overview.md) | — |
-| Skill packs, directives, domain skills | [Skills](./skills.md) | [Skill Activation](../skills/activation.md) | — |
-| Blog, LinkedIn, YouTube, newsletter pipelines | [Creator](./creator.md) | [Creator Packs](../creator/packs.md) | `examples/creator-pack-workflow.ts` |
 | Workflows, teams, pools | [Orchestration](./orchestration.md) | [AgentWorkflow](../orchestration/agent-workflow.md) | — |
 | Budgets, cache, guardrails, evals | [Production](./production.md) | [Security Model](../production/security-model.md) | `examples/cost-cache-compression.ts` |
 

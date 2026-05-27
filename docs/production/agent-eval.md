@@ -1,22 +1,19 @@
 # AgentEval
 
-`AgentEval` is the production gate for agent quality, cost, cache behavior, skill activation, and tool-call discipline. It extends the benchmark foundation with suites, cases, assertions, optional judging, markdown reports, JSON reports, and CI-friendly pass/fail status.
+`AgentEval` is the production gate for agent quality, cost, cache behavior, and tool-call discipline. It extends the benchmark foundation with suites, cases, assertions, optional judging, markdown reports, JSON reports, and CI-friendly pass/fail status.
 
-Use it when you want to answer: did this agent produce the right kind of answer, stay inside budget, activate the right skills, avoid bloating tools, and benefit from cache replay?
+Use it when you want to answer: did this agent produce the right kind of answer, stay inside budget, avoid bloating tools, and benefit from cache replay?
 
 ## Quick Start
 
 ```ts
 import { Agent, AgentCache, AgentEval, Provider } from "@deskcreate/agentcraft";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   cache: AgentCache.memory({ namespace: "eval-demo" }),
-  skillActivation: "auto",
-  toolSelection: "auto",
-}).use(CreatorPacks.blog({ cache: "auto", readOnlyByDefault: true }));
+});
 
 const suite = AgentEval.suite({
   name: "Blog workflow gate",
@@ -24,14 +21,12 @@ const suite = AgentEval.suite({
     maxCostUsd: 0.05,
     maxTotalTokens: 8_000,
     minQualityScore: 0.5,
-    requireSkillActivation: true,
   },
 }).case({
   name: "Medium article plan",
   prompt:
     "Create a Medium article plan about reducing AI agent costs with cache warming.",
   expect: {
-    activeSkills: ["blog-writer"],
     maxToolCalls: 2,
   },
   assertions: [
@@ -57,7 +52,6 @@ AgentEval focuses on practical production signals:
 
 - **Quality**: deterministic assertions by default, optional judge function when you need deeper scoring.
 - **Cost**: max run cost, total token gates, prompt token gates, and completion token gates.
-- **Skills**: required active skills, forbidden active skills, and activation-required gates.
 - **Tools**: exposed tool expectations and max executed tool call budgets.
 - **Cache**: hit-rate gates, miss gates, and replay hit-rate gates.
 - **Artifacts**: records artifact expectations as a warning until a future artifact-inspection bridge is attached.
@@ -71,7 +65,6 @@ const assertions = [
   AgentEval.assert.contains("claim map"),
   AgentEval.assert.notContains("as an AI language model"),
   AgentEval.assert.matches(/source|evidence|verify/i),
-  AgentEval.assert.skillActivated("fact-check"),
   AgentEval.assert.cacheHitRateAtLeast(0.5),
 ];
 ```
@@ -104,51 +97,6 @@ const suite = AgentEval.suite({
 ```
 
 ## Common Production Suites
-
-### Flat Prompt vs Skill-Enhanced
-
-Use this when you are proving that a skill or creator pack earns its prompt overhead.
-
-```ts
-import { Agent, AgentEval, Provider } from "@deskcreate/agentcraft";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
-
-const flatAgent = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "directive-only",
-});
-
-const skillAgent = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "auto",
-  promptCompression: "balanced",
-}).use(CreatorPacks.blog({ readOnlyByDefault: true }));
-
-const suite = AgentEval.suite({
-  name: "skill-value-check",
-  defaults: { maxTotalTokens: 6_000, maxCostUsd: 0.05 },
-}).case({
-  name: "medium-plan",
-  prompt: "Create a Medium article plan about reducing agent token waste.",
-  assertions: [
-    AgentEval.assert.matches(/cache|token|cost/i),
-    AgentEval.assert.notContains("game changer"),
-  ],
-});
-
-const baseline = await AgentEval.run({ agent: flatAgent, suite });
-const candidate = await AgentEval.run({ agent: skillAgent, suite });
-const comparison = AgentEval.compare({
-  name: "flat-vs-blog-pack",
-  baseline,
-  candidate,
-});
-
-console.log(comparison.deltas.totalTokens);
-console.log(comparison.deltas.averageQualityScore);
-```
 
 ### CI Gate
 
@@ -203,14 +151,14 @@ const report = await AgentEval.run({
 
 ## Compare Baseline and Candidate
 
-Use comparisons when tuning prompts, skills, adapters, cache strategy, or model choice.
+Use comparisons when tuning prompts, adapters, cache strategy, or model choice.
 
 ```ts
 const baseline = await AgentEval.run({ agent: flatAgent, suite });
-const candidate = await AgentEval.run({ agent: skillAgent, suite });
+const candidate = await AgentEval.run({ agent: candidateAgent, suite });
 
 const comparison = AgentEval.compare({
-  name: "flat vs skill-enhanced",
+  name: "baseline vs candidate",
   baseline,
   candidate,
 });
@@ -223,5 +171,4 @@ console.log(comparison.deltas.averageQualityScore);
 
 - [Observability Reports](./observability-reports.md)
 - [AgentCache](../persistence/agent-cache.md)
-- [Skill Activation](../skills/activation.md)
 - [Production examples](../examples-cookbook/production.md)

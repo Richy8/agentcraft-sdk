@@ -49,7 +49,7 @@ Each span has:
 | --- | --- | --- |
 | `spanId` | `string` | Unique identifier for this span. |
 | `name` | `string` | Human-readable span name. |
-| `kind` | `string` | Span kind: `llm`, `tool`, `cache`, `skill`, `run`, etc. |
+| `kind` | `string` | Span kind: `llm`, `tool`, `cache`, `run`, etc. |
 | `startedAt` | `number` | Unix ms timestamp. |
 | `status` | `'ok' \| 'error'` | Whether this span completed successfully. |
 | `durationMs` | `number` | How long the span took. |

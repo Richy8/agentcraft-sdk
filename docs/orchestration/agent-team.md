@@ -57,7 +57,6 @@ console.log(`Rounds: ${result.rounds}, Agents used: ${result.agentsUsed}`);
 | `supervisor`           | No       | None             | Optional agent that reviews the final result and requests revisions.                                                            |
 | `workspace`            | No       | None             | Propagates cache, adapters, tool policy, and events to all members. Use `workspace.adapters` to share adapters across the team. |
 | `rolePolicies`         | No       | `{}`             | Per-role `ToolPolicy` overrides keyed by member role string.                                                                    |
-| `sharedSkills`         | No       | `[]`             | Skills attached to every member agent.                                                                                          |
 | `executionHint`        | No       | `"auto"`         | `"parallel"`, `"sequential"`, `"pipeline"`, or `"auto"`.                                                                        |
 | `maxRounds`            | No       | `10`             | Maximum coordination rounds before the team stops.                                                                              |
 | `maxRevisions`         | No       | `3`              | Maximum revision cycles per member.                                                                                             |

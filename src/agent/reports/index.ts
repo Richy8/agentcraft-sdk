@@ -425,7 +425,7 @@ function formatMarkdown(report: AgentRunReport): string {
     report.selection ? "## Skills And Tools" : undefined,
     report.selection ? "" : undefined,
     report.selection
-      ? `Active skills: ${report.selection.activeSkills.length ? report.selection.activeSkills.map(code).join(", ") : "-"}`
+      ? `Active skills: ${report.selection.activeTraits.length ? report.selection.activeTraits.map(code).join(", ") : "-"}`
       : undefined,
     report.selection
       ? `Exposed tools: ${report.selection.exposedTools.length ? report.selection.exposedTools.map(code).join(", ") : "-"}`

@@ -9,7 +9,6 @@ For general cross-run memory that is not tied to creator resource tools, use [Se
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { CreatorResourcesAdapter } from "@deskcreate/agentcraft/adapters";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 import { FileSystemCreatorMemoryStore } from "@deskcreate/agentcraft";
 
 const memory = new FileSystemCreatorMemoryStore({
@@ -28,7 +27,6 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
 })
-  .use(CreatorPacks.blog())
   .use(CreatorResourcesAdapter.connect({ memoryStore: memory }));
 
 const response = await agent.run({

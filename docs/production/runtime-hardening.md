@@ -1,6 +1,6 @@
 # Runtime Hardening
 
-Runtime hardening is the ongoing work of splitting AgentCraft's core into smaller, independently testable modules — without changing the public API. The goal is to keep `Agent.create()` and `agent.run()` stable while making skill routing, prompt assembly, cache replay, memory injection, and adapter lifecycle behavior inspectable and safe.
+Runtime hardening is the ongoing work of splitting AgentCraft's core into smaller, independently testable modules — without changing the public API. The goal is to keep `Agent.create()` and `agent.run()` stable while making cache replay, memory injection, and adapter lifecycle behavior inspectable and safe.
 
 ## Architecture After Hardening
 
@@ -11,8 +11,6 @@ Agent (public facade)
   ├── agent/adapters/attachment-manager.ts — .use() validation, conflict checks
   ├── agent/adapters/lifecycle-manager.ts  — adapter init/cleanup ordering
   ├── agent/adapters/run-scope.ts          — run-scoped adapter isolation
-  ├── agent/skills/activation-engine.ts   — always/auto/directive activation
-  ├── agent/skills/prompt-assembler.ts    — section scoring and compression
   ├── agent/tools/                         — routing, policy, caching, budgets
   ├── agent/cache/backends/*               — memory, file, Redis, Postgres, SQLite
   └── agent/memory/*                       — local, embedding, vector-client
@@ -29,8 +27,6 @@ Each module has a focused responsibility and its own test file. The public `Agen
 | `attachment-manager.ts` | `.use()` validation, dependency checks, conflict detection | `src/agent/adapters/__tests__/attachment.test.ts` |
 | `lifecycle-manager.ts` | Adapter init/cleanup in correct order | `src/agent/adapters/__tests__/lifecycle.test.ts` |
 | `run-scope.ts` | Run-scoped adapter isolation per `.run()` call | `src/agent/adapters/__tests__/run-scope.test.ts` |
-| `activation-engine.ts` | Skill activation mode and reason codes | `src/agent/skills/__tests__/activation-engine.test.ts` |
-| `prompt-assembler.ts` | Section scoring, compression, directive injection | `src/agent/skills/__tests__/skills.test.ts` |
 | `agent/tools/*` | Tool selection, caching, policy enforcement, tracing | `src/agent/tools/__tests__/` |
 | `agent/cache/backends/*` | Backend-specific cache behavior | `src/agent/cache/__tests__/` |
 | `agent/memory/*` | Memory store integration and vector recall | `src/agent/memory/__tests__/` |
@@ -38,24 +34,6 @@ Each module has a focused responsibility and its own test file. The public `Agen
 ## Inspecting Runtime Behavior
 
 Use response fields to verify the runtime is doing real work rather than silently adding overhead:
-
-### Skill Activation
-
-```ts
-const response = await agent.run({
-  prompt: "/review-code Review this TypeScript function for type safety.",
-});
-
-const reasons = response.selection?.activationReasons ?? [];
-for (const { skill, reason, confidence } of reasons) {
-  console.log(`${skill}: ${reason} (confidence: ${confidence})`);
-}
-// → code-review: directive (confidence: 1.0)
-
-// What wasn't activated
-const activeSkills = response.selection?.activeSkills ?? [];
-console.log("Active skills:", activeSkills);
-```
 
 ### Prompt and Token Footprint
 
@@ -69,7 +47,6 @@ console.log(`Prompt: ${promptTokens}, Completion: ${completionTokens}, Total: ${
 
 const measurement = response.measurement;
 console.log("Estimated prompt tokens:", measurement?.estimatedPromptTokens);
-console.log("Skill sections injected:", measurement?.skillSectionsCount);
 ```
 
 ### Cache Effectiveness
@@ -130,7 +107,6 @@ Run these before shipping any change to the runtime:
 ```sh
 npm run typecheck          # TypeScript strict mode — no type errors
 npm test                   # All unit tests with fake providers
-npm run packs:check        # Creator pack exports and schema validation
 npm run build              # TypeScript → dist/ compilation
 npm run docs:api:check     # Generated API docs match public exports
 npm run examples:typecheck # All runnable examples type-check
@@ -153,7 +129,6 @@ INTEGRATION_TESTS=true npm run benchmark:live:light  # Cost and cache benchmarks
 
 The hardened runtime enforces several implicit security properties:
 
-- **Skill inspection is sanitized**: `response.selection.activationReasons` and `listInspections()` do not expose raw skill prompt bodies
 - **Cache eligibility is centralized**: Write tools, confirmation-gated tools, and tools with `sensitive: true` metadata are unconditionally excluded from cache — this logic lives in `cache-eligibility.ts` and cannot be bypassed per-call
 - **Adapter scoping is non-negotiable**: `FileSystemAdapter` enforces `rootPath` at the tool execution layer, not in the prompt
 - **Memory and cache events redact secrets**: The event emitter strips URL credentials, connection strings, and patterns matching `AGENTCRAFT_SECRET_PATTERN` before emitting

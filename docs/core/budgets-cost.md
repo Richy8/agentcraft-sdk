@@ -279,7 +279,7 @@ console.log(`Cache hits: ${response.cache?.hits}`);
 
 ## Run Measurement
 
-Every `agent.run()` response includes lightweight measurement metadata that helps compare flat prompts, skill-enhanced prompts, creator packs, and cached replays without exposing hidden prompts.
+Every `agent.run()` response includes lightweight measurement metadata that helps compare flat prompts, adapter-enhanced prompts, and cached replays without exposing hidden prompts.
 
 ```ts
 const response = await agent.run({
@@ -302,7 +302,7 @@ import {
 } from "@deskcreate/agentcraft";
 
 const report = await runAgentBenchmark({
-  name: "Blog cost comparison",
+  name: "Prompt cost comparison",
   prompt: "Create a Medium article plan about token waste.",
   variants: [
     {
@@ -311,9 +311,9 @@ const report = await runAgentBenchmark({
       run: () => flatAgent.run({ prompt }),
     },
     {
-      name: "creator pack auto",
-      kind: "creator-pack",
-      run: () => skilledAgent.run({ prompt }),
+      name: "with adapters",
+      kind: "adapter",
+      run: () => agentWithAdapters.run({ prompt }),
     },
   ],
 });
@@ -327,7 +327,7 @@ For the built-in light live benchmark, keep the run bounded:
 INTEGRATION_TESTS=true AGENTCRAFT_LIVE_BENCHMARKS=true AGENTCRAFT_LIVE_PROVIDERS=openai npm run benchmark:live:light
 ```
 
-The report is written to `reports/agentcraft-live-cost-cache-benchmark.md` and separates measured provider cost from tool/search estimates. It includes an `always` creator-pack baseline so you can compare full skill injection against `skillActivation: "auto"` and `promptCompression`.
+The report is written to `reports/agentcraft-live-cost-cache-benchmark.md` and separates measured provider cost from tool/search estimates. It includes a flat-prompt baseline so you can compare different adapter configurations and cache strategies.
 
 ### Cost Options (Region, Batch, Priority)
 

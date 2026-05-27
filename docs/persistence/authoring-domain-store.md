@@ -139,9 +139,9 @@ async put(profile: CustomerProfile): Promise<void> {
 }
 ```
 
-## Step 7 — Integrate With a Domain Pack
+## Step 7 — Integrate With a Workflow
 
-Expose the store to domain skills via workspace:
+Expose the store to agents via workspace:
 
 ```ts
 import { AgentWorkspace } from "@deskcreate/agentcraft/team";
@@ -153,7 +153,7 @@ const store = new FileCustomerStore({
 
 const workspace = AgentWorkspace.memory({ store });
 
-// Domain skills access store via workspace.store
+// Agents access store via workspace.store
 const workflow = AgentWorkflow.create({ workspace, steps: [...] });
 ```
 

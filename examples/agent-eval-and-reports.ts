@@ -5,17 +5,16 @@ import {
   AgentReports,
   Provider,
 } from "@deskcreate/agentcraft";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { FetchAdapter } from "@deskcreate/agentcraft/adapters";
 
 // AgentEval gives you a repeatable gate for quality, cost, cache behavior,
-// skill activation, and tool-call budgets before you ship a workflow.
+// and tool-call budgets before you ship a workflow.
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   cache: AgentCache.memory({ namespace: "eval-report-example" }),
-  skillActivation: "auto",
   toolSelection: "auto",
-}).use(CreatorPacks.blog({ cache: "auto", readOnlyByDefault: true }));
+}).use(FetchAdapter.connect({ allowedDomains: ["*"] }));
 
 const suite = AgentEval.suite({
   name: "Creator workflow certification",
@@ -23,14 +22,12 @@ const suite = AgentEval.suite({
     maxCostUsd: 0.05,
     maxTotalTokens: 8_000,
     minQualityScore: 0.5,
-    requireSkillActivation: true,
   },
 }).case({
   name: "Medium article plan",
   prompt:
     "Create a Medium article plan about reducing AI agent costs with cache warming.",
   expect: {
-    activeSkills: ["blog-writer"],
     maxToolCalls: 2,
   },
   assertions: [

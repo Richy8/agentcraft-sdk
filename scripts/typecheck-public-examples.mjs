@@ -10,8 +10,6 @@ const distIndex = path.join(packageRoot, "dist", "index.d.ts");
 const allowedPackageImports = new Set([
   "@deskcreate/agentcraft",
   "@deskcreate/agentcraft/adapters",
-  "@deskcreate/agentcraft/skills",
-  "@deskcreate/agentcraft/packs",
   "@deskcreate/agentcraft/mcp",
   "@deskcreate/agentcraft/team",
 ]);

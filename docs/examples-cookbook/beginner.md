@@ -1,6 +1,6 @@
 # Beginner Examples
 
-These examples build from the smallest working agent to one with tools, skills, and a budget. Copy and run each one — they require only an API key.
+These examples build from the smallest working agent to one with tools and a budget. Copy and run each one — they require only an API key.
 
 ## 1. Basic Chat
 
@@ -41,30 +41,7 @@ const result = await agent.run({
 console.log(result.content);
 ```
 
-## 3. One Skill
-
-Add a skill to inject reusable prompt behavior:
-
-```ts
-import { Agent, Provider } from "@deskcreate/agentcraft";
-import { WritingSkill } from "@deskcreate/agentcraft/skills";
-
-const agent = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "auto",
-}).use(WritingSkill.create());
-
-const response = await agent.run({
-  prompt: "Rewrite this in a clearer, more direct style: 'The utilization of said tooling enables the facilitation of automated workflows.'",
-});
-
-console.log(response.content);
-console.log("Active skills:", response.selection?.activeSkills);
-// → ["writing"]
-```
-
-## 4. Budget Cap
+## 3. Budget Cap
 
 Set a cost or tool-call limit to prevent runaway execution:
 
@@ -89,7 +66,7 @@ console.log(response.content);
 console.log("Cost:", response.costReport?.totalCost.toFixed(6));
 ```
 
-## 5. Structured Output
+## 4. Structured Output
 
 Get typed JSON instead of raw text using a Zod schema:
 
@@ -117,7 +94,7 @@ console.log(response.structuredResponse);
 // → { sentiment: "positive", confidence: 0.95, reasoning: "..." }
 ```
 
-## 6. Streaming
+## 5. Streaming
 
 Stream tokens as they arrive:
 
@@ -138,7 +115,7 @@ for await (const chunk of agent.stream({ prompt: "Write a haiku about TypeScript
 console.log("\nDone.");
 ```
 
-## 7. Cost and Token Inspection
+## 6. Cost and Token Inspection
 
 Check the cost and token breakdown after any run:
 
@@ -162,6 +139,4 @@ console.log(`Cost: $${cost?.totalCost.toFixed(6) ?? "n/a"}`);
 ## Next Steps
 
 - Add web search tools: [Tools and Adapters](./tools-adapters.md)
-- Add domain skills: [Skills](./skills.md)
-- Try a creator workflow: [Creator](./creator.md)
 - Use multiple providers: [Providers](./provider.md)

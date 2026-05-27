@@ -9,7 +9,7 @@ Click any example in the table to jump to the full source below. The source bloc
 | Example                                                    | What it demonstrates                                                                  | Config focus                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ---------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [basic-chat.ts](#basic-chat)                               | Minimal provider-backed agent setup.                                                  | [`model`](./guides/config/agent-creation.md#fields "Selects provider, model capabilities, request format, and pricing metadata"), [`apiKey`](./guides/config/agent-creation.md#provider-connection-variants "Authenticates cloud providers; omit for local providers unless required"), [`prompt`](./guides/config/run-parameters.md#fields "Inline task text passed to the run").                                                                                        |
-| [agent-pool-routing.ts](#agent-pool-routing)               | Explicit AgentPool routing, fallback, downgrade, and lookup behavior.                 | [`AgentPool`](./guides/config/budgets-and-routing.md#agentpool-routing "Routes across named agents by cost, speed, quality, round-robin, random, or best-fit"), `fallback`, `fallbackMode`, `downgradeOnBudgetPressure`, `upgradeOnQualityFailure`.                                                                                                                                                                                                                       |
+| [agent-pool-routing.ts](#agentpool-routing)                | Explicit AgentPool routing, fallback, downgrade, and lookup behavior.                 | [`AgentPool`](./guides/config/budgets-and-routing.md#agentpool-routing "Routes across named agents by cost, speed, quality, round-robin, random, or best-fit"), `fallback`, `fallbackMode`, `downgradeOnBudgetPressure`, `upgradeOnQualityFailure`.                                                                                                                                                                                                                       |
 | [provider-routing.ts](#provider-routing)                   | Cost, speed, quality, fallback, and best-fit provider routing.                        | [`AgentPool`](./guides/config/budgets-and-routing.md#agentpool-routing "Routes across agents by cost, speed, quality, random, round-robin, or best-fit"), fallback modes, model selection.                                                                                                                                                                                                                                                                                |
 | [model-catalog-and-cost.ts](#model-catalog-and-cost)       | Model inspection, catalog filtering, and preflight cost estimates.                    | [`Agent.inspect`](./guides/config/budgets-and-routing.md "Reads provider/model capability and pricing metadata"), [`Agent.catalog`](./guides/config/budgets-and-routing.md "Filters available models by capability and metadata"), [`Agent.estimateCost`](./guides/pricing-model.md "Estimates tokens and cost before a run").                                                                                                                                            |
 | [structured-output.ts](#structured-output)                 | JSON schema validation, retry repair, and structured response handling.               | [`responseSchema`](./guides/config/structured-output.md "Validates JSON into structuredResponse"), [`responseFormat`](./guides/config/structured-output.md "Requests provider-native JSON where supported"), [`structuredOutput`](./guides/config/structured-output.md "Controls retries and tool fallback").                                                                                                                                                             |
@@ -18,27 +18,21 @@ Click any example in the table to jump to the full source below. The source bloc
 | [filesystem-safe-agent.ts](#filesystem-safe-agent)         | Read-only and approval-gated file tooling.                                            | `FileSystemAdapter`, [`readOnly`](./guides/config/tools-and-guardrails.md#tool-policy "Blocks writes and confirmation-gated tools"), `allowedExtensions`, approval policy.                                                                                                                                                                                                                                                                                                |
 | [database-readonly.ts](#database-readonly)                 | Read-only database access with scoped query execution.                                | `DatabaseAdapter`, [`readOnly`](./guides/config/tools-and-guardrails.md#tool-policy "Use for analysis and review flows"), `rowLimit`, injected query executor.                                                                                                                                                                                                                                                                                                            |
 | [browser-automation.ts](#browser-automation)               | Browser adapter setup with side-effect-aware controls.                                | Browser launch config, domain policy, confirmation-gated actions.                                                                                                                                                                                                                                                                                                                                                                                                         |
-| [skill-composition.ts](#skill-composition)                 | Combining skills, adapters, prompt behavior, and dependency metadata.                 | Built-in skills, adapter dependencies, capability checks.                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| [custom-skills.ts](#custom-skills)                         | Two custom skill patterns: tool-bearing triage and hook-based launch review.          | [`defineSkill`](./guides/skill-authoring.md "Creates a reusable skill with prompt behavior, metadata, optional tools, and lifecycle hooks"), skill metadata, directives, skill-local tools.                                                                                                                                                                                                                                                                               |
 | [mcp-github-agent.ts](#mcp-github-agent)                   | MCP-backed tool connection with allowlists and metadata.                              | MCP transport, tool allowlists, package trust metadata.                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | [custom-mcp-connection.ts](#custom-mcp-connection)         | Direct custom MCP connection for internal or third-party servers.                     | [`MCPAdapter.connect`](./guides/mcp-lifecycle.md "Connects stdio, HTTP, or SSE MCP servers with allowlists and trust metadata"), `allowedTools`, `allowedResources`, `roots`, package pinning, trace events.                                                                                                                                                                                                                                                              |
-| [built-in-mcp-skill-memory.ts](#built-in-mcp-skill-memory) | Built-in Memory MCP plus Memory and Research skills.                                  | Built-in MCP wrappers, stateful memory, native fetch adapter, tool policy for persistent memory.                                                                                                                                                                                                                                                                                                                                                                          |
-| [adapter-skill-workflow.ts](#adapter-skill-workflow)       | Native adapters with a built-in skill for code review.                                | FileSystem and GitHub adapter config, read-only policy, CodeReviewSkill dependencies, approval callbacks.                                                                                                                                                                                                                                                                                                                                                                 |
-| [customer-ops-workflow.ts](#customer-ops-workflow)         | Customer-support workflow using Slack MCP, native Slack, email, and skills.           | Built-in MCP plus native adapters, `EmailDraftSkill`, `SummarizeSkill`, write approval boundaries, provider-specific secrets.                                                                                                                                                                                                                                                                                                                                             |
+| [built-in-mcp-skill-memory.ts](#built-in-mcp-skill-memory) | Built-in Memory MCP with stateful memory and retrieval adapters.                      | Built-in MCP wrappers, stateful memory, native fetch adapter, tool policy for persistent memory.                                                                                                                                                                                                                                                                                                                                                                                                     |
+| [customer-ops-workflow.ts](#customer-ops-workflow)         | Customer-support workflow using Slack MCP, native Slack, and email.                   | Built-in MCP plus native adapters, write approval boundaries, provider-specific secrets.                                                                                                                                                                                                                                                                                                                                                                                  |
 | [observability-tracing.ts](#observability-tracing)         | Traces, redaction, replay fixtures, and OpenTelemetry-style export.                   | `trace`, trace sinks, replay fixture output.                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | [local-ollama-private.ts](#local-ollama-private)           | Local/private model setup without cloud provider keys.                                | Local OpenAI-compatible provider, `baseUrl`, privacy posture.                                                                                                                                                                                                                                                                                                                                                                                                             |
 | [agent-team.ts](#agent-team)                               | Multi-agent orchestration with specialist roles.                                      | `AgentTeam`, members, supervisor, role budgets.                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| [agent-team-spawn.ts](#agent-team-spawn)                   | Dynamic AgentTeam formation from a root agent and role hints.                         | [`AgentTeam.spawn`](./guides/config/agentteam.md "Creates specialist members dynamically"), `roleHints`, `maxAgents`, supervisor, role budgets.                                                                                                                                                                                                                                                                                                                           |
+| [agent-team-spawn.ts](#agentteam-spawn)                    | Dynamic AgentTeam formation from a root agent and role hints.                         | [`AgentTeam.spawn`](./guides/config/agentteam.md "Creates specialist members dynamically"), `roleHints`, `maxAgents`, supervisor, role budgets.                                                                                                                                                                                                                                                                                                                           |
 | [cost-budgeting.ts](#cost-budgeting)                       | Preflight cost estimates and run budgets.                                             | `budget`, `maxCost`, token limits, cost options.                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | [custom-adapter.ts](#custom-adapter)                       | Authoring a custom adapter and tool.                                                  | `createAdapter`, `tool`, metadata, security labels.                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | [github-review-agent.ts](#github-review-agent)             | GitHub review workflow with scoped repo tooling.                                      | GitHub adapter config, repo scope, write approvals.                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | [guardrails-and-approvals.ts](#guardrails-and-approvals)   | Guardrail and approval behavior around tools.                                         | `guardrailMode`, `onApprovalRequired`, audit events.                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| [skill-directives.ts](#skill-directives)                   | Scoped skill behavior with slash directives inside a prompt.                          | Skill `directive`, `.use()`, `/humanizer`, `/write`, directive validation.                                                                                                                                                                                                                                                                                                                                                                                                |
 | [prompt-assembly.ts](#prompt-assembly)                     | Prompt files, includes, variables, config injection, strict assembly, and provenance. | [`promptFile`](./guides/config/prompt-assembly.md#prompt-sources "Loads an explicit prompt entry file"), [`vars`](./guides/config/prompt-assembly.md#injection-channels "Replaces double-curly variable placeholders"), [`assembly.config`](./guides/config/prompt-assembly.md#injection-channels "Replaces config placeholders from assembly config values"), [`include`](./guides/config/prompt-assembly.md#injection-channels "Composes files from the entry prompt"). |
 | [replay-mode.ts](#replay-mode)                             | Deterministic replay for demos and tests.                                             | `replay`, trace fixtures, no-provider execution.                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| [research-agent.ts](#research-agent)                       | Research workflow using search/retrieval style capabilities.                          | Research skills, fetch/search adapters, output shaping.                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| [creator-pack-workflow.ts](#creator-pack-workflow)         | Creator plus marketing workflow for blog and SEO content.                             | `CreatorPacks.blog`, `MarketingPacks.seo`, creator skills, `skillActivation`, `toolSelection`, SEO fixtures, creator resources.                                                                                                                                                                                                                                                                                                                                           |
-| [creator-memory-analytics.ts](#creator-memory-analytics)   | Durable local creator memory and analytics history setup.                             | `FileSystemCreatorMemoryStore`, `FileSystemAnalyticsHistoryStore`, `CreatorResourcesAdapter`, `AnalyticsAdapter`.                                                                                                                                                                                                                                                                                                                                                         |
+| [research-agent.ts](#research-agent)                       | Research workflow using search/retrieval style capabilities.                          | Fetch adapter, output shaping, retrieval-style prompting.                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 For an audit-style view of feature coverage, see [Feature Coverage](./guides/feature-coverage.md).
 
@@ -128,7 +122,7 @@ Config ideas to tweak: handle `model_delta`, `tool_call`, `tool_result`, and `fi
 
 ### Multimodal Inputs
 
-Use this when a run needs image, file, or audio inputs. It demonstrates the payload shape for each media type and pairs the inputs with relevant built-in skills.
+Use this when a run needs image, file, or audio inputs. It demonstrates the payload shape for each media type and shows how to choose capability-aware models.
 
 Config ideas to tweak: use `type: 'base64'` for private media loaded by your app, `type: 'url'` for provider-accessible media, set accurate `mediaType` values, and always choose models whose catalog capabilities support the media type.
 
@@ -174,30 +168,6 @@ Config ideas to tweak: run headless or visible browser sessions, restrict domain
 
 :::
 
-### Skill Composition
-
-Use this when a task benefits from packaged behavior such as writing, research, analysis, translation, or review. Skills add prompt behavior and dependency metadata without hiding app-level policy.
-
-Config ideas to tweak: attach only the skills needed for the current task, satisfy required adapters explicitly, inspect `sideEffectRisk`, and version skill prompts when changing output expectations.
-
-::: details Source: `skill-composition.ts`
-
-<<< ../examples/skill-composition.ts
-
-:::
-
-### Custom Skills
-
-Use this when you want app-owned behavior to be reusable across agents. The example shows two different custom skill shapes: a support triage skill that contributes a tool and a launch-readiness skill that contributes prompt behavior plus a lifecycle hook.
-
-Config ideas to tweak: add `directive` when users should target the skill by slash command, keep `metadata.sideEffectRisk` honest, use `requires` only for capabilities the skill truly needs, and version `promptVersion` whenever output expectations change.
-
-::: details Source: `custom-skills.ts`
-
-<<< ../examples/custom-skills.ts
-
-:::
-
 ### MCP GitHub Agent
 
 Use this when you want to connect an external MCP server and expose only selected server tools to an agent. The GitHub example highlights command/package trust, secrets, and tool allowlists.
@@ -224,7 +194,7 @@ Config ideas to tweak: use `transport: 'http'` or `transport: 'sse'` for hosted 
 
 ### Built-In MCP Skill Memory
 
-Use this when an agent needs durable memory plus retrieval-style work. It combines the built-in Memory MCP wrapper with `MemorySkill`, then adds a native fetch adapter and `ResearchSkill` so memory and research behavior can cooperate.
+Use this when an agent needs durable memory plus retrieval-style work. It combines the built-in Memory MCP wrapper with a native fetch adapter and TavilySearchAdapter for retrieval.
 
 Config ideas to tweak: set `filePath` for predictable local memory, replace Memory MCP with Redis/Pinecone/Supabase for production persistence, keep `readOnly` true unless memory writes are intentional, and cap `budget.maxToolCalls` so stateful runs stay bounded.
 
@@ -234,21 +204,9 @@ Config ideas to tweak: set `filePath` for predictable local memory, replace Memo
 
 :::
 
-### Adapter Skill Workflow
-
-Use this when a built-in skill needs concrete app capabilities. The code-review workflow attaches local filesystem context and GitHub context before adding `CodeReviewSkill`.
-
-Config ideas to tweak: scope `rootPath`, set `allowedExtensions`, configure `allowedRepos`, keep review flows read-only by default, and use approval callbacks for any tool that could create or update remote state.
-
-::: details Source: `adapter-skill-workflow.ts`
-
-<<< ../examples/adapter-skill-workflow.ts
-
-:::
-
 ### Customer Ops Workflow
 
-Use this for support or customer operations agents that need collaboration context and customer-facing drafts. It demonstrates a mixed MCP/native setup with Slack MCP, native Slack tools, EmailAdapter, `SummarizeSkill`, and `EmailDraftSkill`.
+Use this for support or customer operations agents that need collaboration context and customer-facing drafts. It demonstrates a mixed MCP/native setup with Slack MCP, native Slack tools, and EmailAdapter.
 
 Config ideas to tweak: use MCP when a hosted tool server gives the best integration path, use native adapters when you want direct SDK-style control, keep email sends approval-gated, and scope Slack tokens to the smallest channel/action set possible.
 
@@ -354,18 +312,6 @@ Config ideas to tweak: use `guardrailMode: 'enforce'` for production safety boun
 
 :::
 
-### Skill Directives
-
-Use this when the user should be able to target a skill to one section of a prompt. It demonstrates slash directives such as `/humanizer` and `/write`, which are validated against attached skills before the model call.
-
-Config ideas to tweak: attach only the directive-capable skills your product exposes, document supported directives in the UI, and treat unknown directives as user feedback because AgentCraft will fail fast instead of silently ignoring them.
-
-::: details Source: `skill-directives.ts`
-
-<<< ../examples/skill-directives.ts
-
-:::
-
 ### Prompt Assembly
 
 Use this when prompts are too large or reusable to keep inline. It demonstrates a single `promptFile`, an entry prompt that composes a bundle with includes, nested partials, variables, config injection, strict assembly, and provenance.
@@ -399,29 +345,5 @@ Config ideas to tweak: attach only trusted retrieval adapters, cap result sizes,
 ::: details Source: `research-agent.ts`
 
 <<< ../examples/research-agent.ts
-
-:::
-
-### Creator Pack Workflow
-
-Use this when you want a zero-config creator workflow that can grow into power-user configuration. It attaches blog and SEO packs, enables auto skill/tool selection, and adds creator resources plus SEO fixtures.
-
-Config ideas to tweak: switch `skillActivation` between `always`, `auto`, and `directive-only`; add durable memory through `FileSystemCreatorMemoryStore`; replace fixture SEO data with a provider-backed adapter; and set `AgentCache.file(...)` once repeated read tools are used.
-
-::: details Source: `creator-pack-workflow.ts`
-
-<<< ../examples/creator-pack-workflow.ts
-
-:::
-
-### Creator Memory Analytics
-
-Use this when creator workflows need brand voice, prior-work corpus retrieval, performance history, or experiment results to persist across runs. The example is local-only and deterministic.
-
-Config ideas to tweak: change store roots from temp directories to project paths, connect `CreatorResourcesAdapter` to creator packs, feed `AnalyticsAdapter` into analytics packs, and keep private client memory out of public repositories.
-
-::: details Source: `creator-memory-analytics.ts`
-
-<<< ../examples/creator-memory-analytics.ts
 
 :::

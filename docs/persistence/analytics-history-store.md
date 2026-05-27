@@ -103,17 +103,14 @@ import {
   Provider,
 } from "@deskcreate/agentcraft";
 import { AnalyticsAdapter } from "@deskcreate/agentcraft/adapters";
-import { createSkillPackByName } from "@deskcreate/agentcraft/skills";
 
 const history = new FileSystemAnalyticsHistoryStore("./.agentcraft/analytics-history");
 
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
-  skillActivation: "auto",
 })
-  .use(AnalyticsAdapter.connect({ historyStore: history }))
-  .use(createSkillPackByName("data-analytics"));
+  .use(AnalyticsAdapter.connect({ historyStore: history }));
 
 // Save this week's metrics
 await agent.run({
@@ -128,7 +125,7 @@ await agent.run({
 
 // Let history drive next week's content plan
 const plan = await agent.run({
-  prompt: "/write-data-brief Review analytics history and recommend content strategy for next week.",
+  prompt: "Review analytics history and recommend content strategy for next week.",
 });
 console.log(plan.content);
 ```

@@ -13,7 +13,7 @@ export interface AgentEvalGateDefaults {
   readonly maxToolCalls?: number;
   readonly minQualityScore?: number;
   readonly requireCacheReplay?: boolean;
-  readonly requireSkillActivation?: boolean;
+  readonly requireTraitActivation?: boolean;
 }
 
 export interface AgentEvalSuiteConfig {
@@ -34,8 +34,8 @@ export interface AgentEvalArtifactExpectation {
 }
 
 export interface AgentEvalExpectation {
-  readonly activeSkills?: readonly string[];
-  readonly inactiveSkills?: readonly string[];
+  readonly activeTraits?: readonly string[];
+  readonly inactiveTraits?: readonly string[];
   readonly exposedTools?: readonly string[];
   readonly maxToolCalls?: number;
   readonly cache?: AgentEvalCacheExpectation;
@@ -131,7 +131,7 @@ export interface AgentEvalCaseResult {
     readonly promptTokens: number;
     readonly completionTokens: number;
     readonly totalTokens: number;
-    readonly activeSkills: readonly string[];
+    readonly activeTraits: readonly string[];
     readonly exposedTools: readonly string[];
     readonly executedToolCalls: number;
     readonly cacheHitRate?: number;
@@ -365,13 +365,13 @@ export const AgentEval = {
 
     skillActivated(name: string): AgentEvalAssertion {
       return assertion(`skillActivated:${name}`, (response) => {
-        const passed = response.selection?.activeSkills.includes(name) ?? false;
+        const passed = response.selection?.activeTraits.includes(name) ?? false;
         return {
-          name: `skill activated '${name}'`,
+          name: `trait activated '${name}'`,
           passed,
           ...(passed
             ? {}
-            : { message: `Expected skill '${name}' to be active.` }),
+            : { message: `Expected trait '${name}' to be active.` }),
         };
       });
     },
@@ -503,7 +503,7 @@ function evaluateGates(
   const failures: string[] = [];
   const warnings: string[] = [];
   const expect = evalCase.expect;
-  const activeSkills = response.selection?.activeSkills ?? [];
+  const activeTraits = response.selection?.activeTraits ?? [];
   const exposedTools = response.selection?.exposedTools ?? [];
   const executedToolCalls = response.selection?.executedToolCalls ?? 0;
 
@@ -544,18 +544,18 @@ function evaluateGates(
       `Tool-call gate failed: ${executedToolCalls} > ${defaults.maxToolCalls}.`,
     );
   }
-  if (defaults?.requireSkillActivation && activeSkills.length === 0) {
-    failures.push("Skill activation gate failed: no skill was activated.");
+  if (defaults?.requireTraitActivation && activeTraits.length === 0) {
+    failures.push("Trait activation gate failed: no trait was activated.");
   }
 
-  for (const skill of expect?.activeSkills ?? []) {
-    if (!activeSkills.includes(skill)) {
-      failures.push(`Expected skill '${skill}' to be active.`);
+  for (const trait of expect?.activeTraits ?? []) {
+    if (!activeTraits.includes(trait)) {
+      failures.push(`Expected trait '${trait}' to be active.`);
     }
   }
-  for (const skill of expect?.inactiveSkills ?? []) {
-    if (activeSkills.includes(skill)) {
-      failures.push(`Expected skill '${skill}' to remain inactive.`);
+  for (const trait of expect?.inactiveTraits ?? []) {
+    if (activeTraits.includes(trait)) {
+      failures.push(`Expected trait '${trait}' to remain inactive.`);
     }
   }
   for (const tool of expect?.exposedTools ?? []) {
@@ -638,7 +638,7 @@ function caseMetrics(
     promptTokens: response.tokensUsed.prompt,
     completionTokens: response.tokensUsed.completion,
     totalTokens: response.tokensUsed.total,
-    activeSkills: response.selection?.activeSkills ?? [],
+    activeTraits: response.selection?.activeTraits ?? [],
     exposedTools: response.selection?.exposedTools ?? [],
     executedToolCalls: response.selection?.executedToolCalls ?? 0,
     ...(response.cache?.summary?.hitRate !== undefined && {
@@ -706,7 +706,7 @@ function formatAgentEvalMarkdown(report: AgentEvalReport): string {
     "| --- | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: |",
     ...report.results.map(
       (result) =>
-        `| ${escapeCell(result.name)} | ${result.status} | ${result.metrics.promptTokens} | ${result.metrics.totalTokens} | ${formatCost(result.metrics.cost)} | ${formatNumber(result.qualityScore ?? 0)} | ${result.metrics.activeSkills.length ? result.metrics.activeSkills.map(code).join(", ") : "-"} | ${result.metrics.executedToolCalls} | ${percent(result.metrics.cacheHitRate ?? 0)} |`,
+        `| ${escapeCell(result.name)} | ${result.status} | ${result.metrics.promptTokens} | ${result.metrics.totalTokens} | ${formatCost(result.metrics.cost)} | ${formatNumber(result.qualityScore ?? 0)} | ${result.metrics.activeTraits.length ? result.metrics.activeTraits.map(code).join(", ") : "-"} | ${result.metrics.executedToolCalls} | ${percent(result.metrics.cacheHitRate ?? 0)} |`,
     ),
     "",
     "## Findings",

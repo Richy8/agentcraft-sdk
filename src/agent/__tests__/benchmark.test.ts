@@ -37,13 +37,13 @@ describe("Agent benchmark harness", () => {
               content: "Cached outline.",
               promptTokens: 42,
               completionTokens: 18,
-              activeSkills: ["blog-writer"],
+              activeTraits: ["blog-writer"],
               cacheHits: 1,
               cacheMisses: 0,
               toolCallsAvoided: 1,
             }),
           score: (result: AgentResponse) =>
-            result.selection?.activeSkills.includes("blog-writer") ? 2 : 0,
+            result.selection?.activeTraits.includes("blog-writer") ? 2 : 0,
         },
       ],
     };
@@ -147,7 +147,7 @@ function response(config: {
   content: string;
   promptTokens: number;
   completionTokens: number;
-  activeSkills?: string[];
+  activeTraits?: string[];
   cacheHits?: number;
   cacheMisses?: number;
   toolCallsAvoided?: number;
@@ -168,14 +168,14 @@ function response(config: {
     model: "mock",
     provider: "mock",
     selection: {
-      skillActivation: "auto",
+      traitActivation: "auto",
       toolSelection: "auto",
-      activeSkills: config.activeSkills ?? [],
-      activationReasons: (config.activeSkills ?? []).map((skill) => ({
-        skill,
+      activeTraits: config.activeTraits ?? [],
+      activationReasons: (config.activeTraits ?? []).map((trait) => ({
+        trait,
         reason: "keyword",
         confidence: 0.7,
-        matched: skill,
+        matched: trait,
       })),
       exposedTools: ["mock_tool"],
       executedToolCalls: cacheMisses,

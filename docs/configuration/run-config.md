@@ -18,9 +18,7 @@ Run config (`AgentRunParams`) is the request-specific layer passed to `agent.run
 | `structuredOutput`    | No       | None          | `{ retries?, toolFallback? }` — structured output retry settings.                |
 | `responseFormat`      | No       | None          | Low-level response format hint passed to the provider.                           |
 | `tools`               | No       | `[]`          | Per-run tool definitions added on top of adapter tools.                          |
-| `use`                 | No       | None          | Skills, adapters, or creator packs attached for this run only.                   |
-| `promptCompression`   | No       | Agent default | `none`, `safe`, `balanced`, or `aggressive` skill prompt compression.            |
-| `skillPromptAssembly` | No       | Agent default | `full`, `adaptive-safe`, `compact`, or `minimal` skill prompt section selection. |
+| `use`        | No       | None          | Adapters attached for this run only.      |
 | `toolPolicy`          | No       | Agent default | Per-run `ToolPolicy` override merged with agent-level policy.                    |
 | `budget`              | No       | Agent default | `RunBudget` — caps tokens, cost, tool calls, and duration.                       |
 | `cache`               | No       | Agent default | `false` to bypass cache, or `{ bypass: true }` to disable for run.               |
@@ -124,51 +122,15 @@ const response = await agent.run({
 
 ```ts
 import { FirecrawlAdapter } from "@deskcreate/agentcraft/adapters";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const response = await agent.run({
   prompt: "Research this topic and draft a blog post.",
   use: [
     FirecrawlAdapter.connect({ apiKey: process.env.FIRECRAWL_API_KEY! }),
-    CreatorPacks.blog({ cache: "auto" }),
   ],
   budget: { maxToolCalls: 5, maxCost: 0.1 },
 });
 ```
-
-### Per-Run Prompt Compression
-
-Use `promptCompression` when a run attaches multiple skills or a creator pack and you want to reduce prompt overhead without changing the agent's global default.
-
-```ts
-const response = await agent.run({
-  prompt: "Create a compact blog plan about cost-aware agents.",
-  use: CreatorPacks.blog({ cache: "auto" }),
-  promptCompression: "balanced",
-  budget: { mode: "prefer-cache", maxCost: 0.03 },
-});
-
-console.log(response.measurement?.estimatedPromptTokens);
-```
-
-`safe` keeps nearly all skill detail while hoisting repeated safety/failure text. `balanced` also compacts repeated quality guidance. `aggressive` is best for narrow, highly constrained runs where every prompt token matters.
-
-### Per-Run Skill Prompt Assembly
-
-Use `skillPromptAssembly` to control which sections of activated skill prompts are assembled before the model call. `adaptive-safe` keeps role, goal, constraints, safety, and prompt-relevant sections. `full` includes every section. `compact` and `minimal` are useful when a pack is attached but the user prompt strongly signals a narrow task.
-
-```ts
-const response = await agent.run({
-  prompt: "Draft a LinkedIn post about agent cache warming.",
-  use: CreatorPacks.linkedin(),
-  skillActivation: "auto",
-  skillPromptAssembly: "adaptive-safe",
-});
-
-console.log(response.promptAssembly?.records);
-```
-
-`response.promptAssembly` reports which skill sections were included or omitted, the assembly mode, and whether runtime domain intelligence was added. It does not expose raw prompt text. For `agent.stream(...)`, the same sanitized report is attached to the final stream chunk as `chunk.promptAssembly`.
 
 ### Multimodal Inputs
 

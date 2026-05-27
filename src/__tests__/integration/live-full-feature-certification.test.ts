@@ -2,11 +2,11 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { afterAll, describe, expect, it } from 'vitest';
 import { Agent } from '../../agent/agent.js';
 import {
-  WritingSkill,
-  HumanizerSkill,
-  SummarizeSkill,
-  TranslationSkill,
-} from '../../agent/skills/index.js';
+  WritingTrait,
+  HumanizerTrait,
+  SummarizeTrait,
+  TranslationTrait,
+} from '../../agent/traits/index.js';
 import {
   BrandPacks,
   EngineeringPacks,
@@ -63,7 +63,7 @@ function makeAgent() {
     apiKey: openAiKey!,
     temperature: 0,
     maxTokens,
-    skillActivation: 'auto',
+    traitActivation: 'auto',
     toolSelection: 'auto',
     retry: { maxAttempts: 1, backoff: 'fixed', initialDelay: 100, maxDelay: 100 },
   });
@@ -114,7 +114,7 @@ describe('live full feature certification', () => {
         temperature: 0,
         maxTokens,
         retry: { maxAttempts: 1, backoff: 'fixed', initialDelay: 100, maxDelay: 100 },
-      }).use(WritingSkill.create());
+      }).use(WritingTrait.create());
 
       const translationAgent = Agent.create({
         model: `openai:${liveModel}`,
@@ -122,7 +122,7 @@ describe('live full feature certification', () => {
         temperature: 0,
         maxTokens,
         retry: { maxAttempts: 1, backoff: 'fixed', initialDelay: 100, maxDelay: 100 },
-      }).use(TranslationSkill.create());
+      }).use(TranslationTrait.create());
 
       const writingRes = await writingAgent.run({
         prompt:
@@ -147,8 +147,8 @@ describe('live full feature certification', () => {
       const writingScore = scoreSignals(writingRes.content, writingSignals);
       const translationScore = scoreSignals(translationRes.content, translationSignals);
 
-      expect(writingRes.selection.activeSkills, 'writing active skill').toContain('writing');
-      expect(translationRes.selection.activeSkills, 'translation active skill').toContain('translation');
+      expect(writingRes.selection.activeTraits, 'writing active skill').toContain('writing');
+      expect(translationRes.selection.activeTraits, 'translation active skill').toContain('translation');
       expect(writingScore, 'writing score').toBeGreaterThanOrEqual(2);
       expect(translationScore, 'translation score').toBeGreaterThanOrEqual(2);
 
@@ -157,10 +157,10 @@ describe('live full feature certification', () => {
         [
           '## Section 1: Primitive Skills — Writing & Translation',
           '',
-          '| Case | Skill | Activated | Score | Total tokens |',
+          '| Case | Trait | Activated | Score | Total tokens |',
           '| --- | --- | --- | ---: | ---: |',
-          `| writing | \`writing\` | ${writingRes.selection.activeSkills.includes('writing') ? 'yes' : 'no'} | ${writingScore} | ${writingRes.tokensUsed.total} |`,
-          `| translation | \`translation\` | ${translationRes.selection.activeSkills.includes('translation') ? 'yes' : 'no'} | ${translationScore} | ${translationRes.tokensUsed.total} |`,
+          `| writing | \`writing\` | ${writingRes.selection.activeTraits.includes('writing') ? 'yes' : 'no'} | ${writingScore} | ${writingRes.tokensUsed.total} |`,
+          `| translation | \`translation\` | ${translationRes.selection.activeTraits.includes('translation') ? 'yes' : 'no'} | ${translationScore} | ${translationRes.tokensUsed.total} |`,
           '',
           'Writing output preview:',
           '',
@@ -188,7 +188,7 @@ describe('live full feature certification', () => {
         temperature: 0,
         maxTokens,
         retry: { maxAttempts: 1, backoff: 'fixed', initialDelay: 100, maxDelay: 100 },
-      }).use(HumanizerSkill.create());
+      }).use(HumanizerTrait.create());
 
       const summarizeAgent = Agent.create({
         model: `openai:${liveModel}`,
@@ -196,7 +196,7 @@ describe('live full feature certification', () => {
         temperature: 0,
         maxTokens,
         retry: { maxAttempts: 1, backoff: 'fixed', initialDelay: 100, maxDelay: 100 },
-      }).use(SummarizeSkill.create());
+      }).use(SummarizeTrait.create());
 
       const humanizerRes = await humanizerAgent.run({
         prompt:
@@ -220,8 +220,8 @@ describe('live full feature certification', () => {
       const humanizerScore = scoreSignals(humanizerRes.content, humanizerSignals);
       const summarizeScore = scoreSignals(summarizeRes.content, summarizeSignals);
 
-      expect(humanizerRes.selection.activeSkills, 'humanizer active skill').toContain('humanizer');
-      expect(summarizeRes.selection.activeSkills, 'summarize active skill').toContain('summarize');
+      expect(humanizerRes.selection.activeTraits, 'humanizer active skill').toContain('humanizer');
+      expect(summarizeRes.selection.activeTraits, 'summarize active skill').toContain('summarize');
       expect(humanizerScore, 'humanizer score').toBeGreaterThanOrEqual(1);
       expect(summarizeScore, 'summarize score').toBeGreaterThanOrEqual(1);
 
@@ -230,10 +230,10 @@ describe('live full feature certification', () => {
         [
           '## Section 2: Primitive Skills — Humanizer & Summarize',
           '',
-          '| Case | Skill | Activated | Score | Total tokens |',
+          '| Case | Trait | Activated | Score | Total tokens |',
           '| --- | --- | --- | ---: | ---: |',
-          `| humanizer | \`humanizer\` | ${humanizerRes.selection.activeSkills.includes('humanizer') ? 'yes' : 'no'} | ${humanizerScore} | ${humanizerRes.tokensUsed.total} |`,
-          `| summarize | \`summarize\` | ${summarizeRes.selection.activeSkills.includes('summarize') ? 'yes' : 'no'} | ${summarizeScore} | ${summarizeRes.tokensUsed.total} |`,
+          `| humanizer | \`humanizer\` | ${humanizerRes.selection.activeTraits.includes('humanizer') ? 'yes' : 'no'} | ${humanizerScore} | ${humanizerRes.tokensUsed.total} |`,
+          `| summarize | \`summarize\` | ${summarizeRes.selection.activeTraits.includes('summarize') ? 'yes' : 'no'} | ${summarizeScore} | ${summarizeRes.tokensUsed.total} |`,
           '',
           'Humanizer output preview:',
           '',
@@ -261,7 +261,7 @@ describe('live full feature certification', () => {
         temperature: 0,
         maxTokens,
         retry: { maxAttempts: 1, backoff: 'fixed', initialDelay: 100, maxDelay: 100 },
-      }).use(WritingSkill.create());
+      }).use(WritingTrait.create());
 
       const techSummarizeAgent = Agent.create({
         model: `openai:${liveModel}`,
@@ -269,7 +269,7 @@ describe('live full feature certification', () => {
         temperature: 0,
         maxTokens,
         retry: { maxAttempts: 1, backoff: 'fixed', initialDelay: 100, maxDelay: 100 },
-      }).use(SummarizeSkill.create());
+      }).use(SummarizeTrait.create());
 
       const techDocRes = await techWritingAgent.run({
         prompt:
@@ -297,8 +297,8 @@ describe('live full feature certification', () => {
       const techDocScore = scoreSignals(techDocRes.content, techDocSignals);
       const specSummarizeScore = scoreSignals(specSummarizeRes.content, specSummarizeSignals);
 
-      expect(techDocRes.selection.activeSkills, 'writing active skill (tech doc)').toContain('writing');
-      expect(specSummarizeRes.selection.activeSkills, 'summarize active skill (spec)').toContain('summarize');
+      expect(techDocRes.selection.activeTraits, 'writing active skill (tech doc)').toContain('writing');
+      expect(specSummarizeRes.selection.activeTraits, 'summarize active skill (spec)').toContain('summarize');
       expect(techDocScore, 'tech doc writing score').toBeGreaterThanOrEqual(2);
       expect(specSummarizeScore, 'spec summarize score').toBeGreaterThanOrEqual(1);
 
@@ -307,10 +307,10 @@ describe('live full feature certification', () => {
         [
           '## Section 3: Primitive Skills — Technical Writing & Summarize',
           '',
-          '| Case | Skill | Activated | Score | Total tokens |',
+          '| Case | Trait | Activated | Score | Total tokens |',
           '| --- | --- | --- | ---: | ---: |',
-          `| writing (tech-doc) | \`writing\` | ${techDocRes.selection.activeSkills.includes('writing') ? 'yes' : 'no'} | ${techDocScore} | ${techDocRes.tokensUsed.total} |`,
-          `| summarize (spec) | \`summarize\` | ${specSummarizeRes.selection.activeSkills.includes('summarize') ? 'yes' : 'no'} | ${specSummarizeScore} | ${specSummarizeRes.tokensUsed.total} |`,
+          `| writing (tech-doc) | \`writing\` | ${techDocRes.selection.activeTraits.includes('writing') ? 'yes' : 'no'} | ${techDocScore} | ${techDocRes.tokensUsed.total} |`,
+          `| summarize (spec) | \`summarize\` | ${specSummarizeRes.selection.activeTraits.includes('summarize') ? 'yes' : 'no'} | ${specSummarizeScore} | ${specSummarizeRes.tokensUsed.total} |`,
           '',
           'Technical doc output preview:',
           '',
@@ -333,7 +333,7 @@ describe('live full feature certification', () => {
     'section 4: brand domain packs',
     async () => {
       const brandResearchRes = await makeAgent()
-        .use(BrandPacks.research({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(BrandPacks.research({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Research the brand positioning landscape for AI developer tools. Identify 3 key audience segments, 2 competitor positioning claims, and 1 differentiation gap. Keep it under 160 words.',
@@ -342,7 +342,7 @@ describe('live full feature certification', () => {
         });
 
       const brandPositioningRes = await makeAgent()
-        .use(BrandPacks.positioning({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(BrandPacks.positioning({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Write a compact brand positioning statement for an AI agent SDK targeting developer teams. Include target audience, key benefit, proof point, and differentiator. Keep it under 120 words.',
@@ -351,7 +351,7 @@ describe('live full feature certification', () => {
         });
 
       const brandVoiceRes = await makeAgent()
-        .use(BrandPacks.voice({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(BrandPacks.voice({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Create a compact brand voice profile for an AI developer tool brand. Include 3 tone characteristics, 1 vocabulary note, and 1 anti-pattern. Keep it under 120 words.',
@@ -382,14 +382,14 @@ describe('live full feature certification', () => {
       const positioningScore = scoreSignals(brandPositioningRes.content, positioningSignals);
       const voiceScore = scoreSignals(brandVoiceRes.content, voiceSignals);
 
-      expect(brandResearchRes.selection.activeSkills, 'brand-research active skill').toContain(
+      expect(brandResearchRes.selection.activeTraits, 'brand-research active skill').toContain(
         'brand-research'
       );
       expect(
-        brandPositioningRes.selection.activeSkills,
+        brandPositioningRes.selection.activeTraits,
         'brand-positioning active skill'
       ).toContain('brand-positioning');
-      expect(brandVoiceRes.selection.activeSkills, 'brand-voice-profile active skill').toContain(
+      expect(brandVoiceRes.selection.activeTraits, 'brand-voice-profile active skill').toContain(
         'brand-voice-profile'
       );
       expect(researchScore, 'brand research score').toBeGreaterThanOrEqual(2);
@@ -403,9 +403,9 @@ describe('live full feature certification', () => {
           '',
           '| Case | Expected skill | Active skills | Score | Total tokens |',
           '| --- | --- | --- | ---: | ---: |',
-          `| brand-research | \`brand-research\` | ${brandResearchRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${researchScore} | ${brandResearchRes.tokensUsed.total} |`,
-          `| brand-positioning | \`brand-positioning\` | ${brandPositioningRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${positioningScore} | ${brandPositioningRes.tokensUsed.total} |`,
-          `| brand-voice-profile | \`brand-voice-profile\` | ${brandVoiceRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${voiceScore} | ${brandVoiceRes.tokensUsed.total} |`,
+          `| brand-research | \`brand-research\` | ${brandResearchRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${researchScore} | ${brandResearchRes.tokensUsed.total} |`,
+          `| brand-positioning | \`brand-positioning\` | ${brandPositioningRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${positioningScore} | ${brandPositioningRes.tokensUsed.total} |`,
+          `| brand-voice-profile | \`brand-voice-profile\` | ${brandVoiceRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${voiceScore} | ${brandVoiceRes.tokensUsed.total} |`,
           '',
           'Brand research output preview:',
           '',
@@ -432,7 +432,7 @@ describe('live full feature certification', () => {
     'section 5: engineering domain packs',
     async () => {
       const codeReviewRes = await makeAgent()
-        .use(EngineeringPacks.codeReview({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(EngineeringPacks.codeReview({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Review this TypeScript function for correctness, performance, and security risks: async function getUser(id: string) { const result = await db.query("SELECT * FROM users WHERE id=" + id); return result.rows[0]; } Include risk, recommendation, and fix. Keep it under 140 words.',
@@ -441,7 +441,7 @@ describe('live full feature certification', () => {
         });
 
       const archRes = await makeAgent()
-        .use(EngineeringPacks.architecture({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(EngineeringPacks.architecture({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Review the architecture of a monolithic Node.js API that handles 50k daily requests with plans to scale to 500k. Identify 2 scalability risks and 1 architectural recommendation. Keep it under 140 words.',
@@ -450,7 +450,7 @@ describe('live full feature certification', () => {
         });
 
       const devopsRes = await makeAgent()
-        .use(EngineeringPacks.devops({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(EngineeringPacks.devops({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Assess deployment risk for the following: rolling deploy of a Node.js API to production during peak traffic, 3 services updated simultaneously, no feature flags, rollback takes 8 minutes. Include risk level, failure modes, and mitigation. Keep it under 140 words.',
@@ -472,13 +472,13 @@ describe('live full feature certification', () => {
       const devopsScore = scoreSignals(devopsRes.content, devopsSignals);
 
       expect(
-        codeReviewRes.selection.activeSkills.some((s) => s.includes('code-review')),
+        codeReviewRes.selection.activeTraits.some((s) => s.includes('code-review')),
         'code-review or security-code-review active skill'
       ).toBe(true);
-      expect(archRes.selection.activeSkills, 'architecture-review active skill').toContain(
+      expect(archRes.selection.activeTraits, 'architecture-review active skill').toContain(
         'architecture-review'
       );
-      expect(devopsRes.selection.activeSkills, 'deployment-risk-review active skill').toContain(
+      expect(devopsRes.selection.activeTraits, 'deployment-risk-review active skill').toContain(
         'deployment-risk-review'
       );
       expect(codeScore, 'engineering code review score').toBeGreaterThanOrEqual(2);
@@ -492,9 +492,9 @@ describe('live full feature certification', () => {
           '',
           '| Case | Expected skill | Active skills | Score | Total tokens |',
           '| --- | --- | --- | ---: | ---: |',
-          `| code-review | \`code-review\` or \`security-code-review\` | ${codeReviewRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${codeScore} | ${codeReviewRes.tokensUsed.total} |`,
-          `| architecture-review | \`architecture-review\` | ${archRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${archScore} | ${archRes.tokensUsed.total} |`,
-          `| deployment-risk-review | \`deployment-risk-review\` | ${devopsRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${devopsScore} | ${devopsRes.tokensUsed.total} |`,
+          `| code-review | \`code-review\` or \`security-code-review\` | ${codeReviewRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${codeScore} | ${codeReviewRes.tokensUsed.total} |`,
+          `| architecture-review | \`architecture-review\` | ${archRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${archScore} | ${archRes.tokensUsed.total} |`,
+          `| deployment-risk-review | \`deployment-risk-review\` | ${devopsRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${devopsScore} | ${devopsRes.tokensUsed.total} |`,
           '',
           'Code review output preview:',
           '',
@@ -521,7 +521,7 @@ describe('live full feature certification', () => {
     'section 6: finance extended packs',
     async () => {
       const portfolioRes = await makeAgent()
-        .use(FinancePacks.portfolioReview({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(FinancePacks.portfolioReview({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Review this portfolio for risk: 60% US tech equities, 20% international bonds, 15% crypto, 5% cash. Market context: rate uncertainty, USD strength, volatile crypto sentiment. Include allocation risk, concentration flag, and one rebalancing note. Keep it under 140 words.',
@@ -530,7 +530,7 @@ describe('live full feature certification', () => {
         });
 
       const marketRes = await makeAgent()
-        .use(FinancePacks.marketResearch({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(FinancePacks.marketResearch({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Provide a compact sector rotation analysis for Q3 given these macro signals: slowing inflation, cautious Fed, strong employment, consumer spending softening. Which sectors benefit and which face headwinds? Keep it under 140 words.',
@@ -554,10 +554,10 @@ describe('live full feature certification', () => {
       const portfolioScore = scoreSignals(portfolioRes.content, portfolioSignals);
       const marketScore = scoreSignals(marketRes.content, marketSignals);
 
-      expect(portfolioRes.selection.activeSkills, 'portfolio-risk-review active skill').toContain(
+      expect(portfolioRes.selection.activeTraits, 'portfolio-risk-review active skill').toContain(
         'portfolio-risk-review'
       );
-      expect(marketRes.selection.activeSkills, 'sector-rotation-analysis active skill').toContain(
+      expect(marketRes.selection.activeTraits, 'sector-rotation-analysis active skill').toContain(
         'sector-rotation-analysis'
       );
       expect(portfolioScore, 'portfolio review score').toBeGreaterThanOrEqual(2);
@@ -570,8 +570,8 @@ describe('live full feature certification', () => {
           '',
           '| Case | Expected skill | Active skills | Score | Total tokens |',
           '| --- | --- | --- | ---: | ---: |',
-          `| portfolio-risk-review | \`portfolio-risk-review\` | ${portfolioRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${portfolioScore} | ${portfolioRes.tokensUsed.total} |`,
-          `| sector-rotation-analysis | \`sector-rotation-analysis\` | ${marketRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${marketScore} | ${marketRes.tokensUsed.total} |`,
+          `| portfolio-risk-review | \`portfolio-risk-review\` | ${portfolioRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${portfolioScore} | ${portfolioRes.tokensUsed.total} |`,
+          `| sector-rotation-analysis | \`sector-rotation-analysis\` | ${marketRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${marketScore} | ${marketRes.tokensUsed.total} |`,
           '',
           'Portfolio review output preview:',
           '',
@@ -594,7 +594,7 @@ describe('live full feature certification', () => {
     'section 7: healthcare extended packs',
     async () => {
       const patientEdRes = await makeAgent()
-        .use(HealthcarePacks.patientEducation({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(HealthcarePacks.patientEducation({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Write a patient education summary for discharge after a laparoscopic appendectomy. Include: what to expect, warning signs to watch for, activity restrictions, and when to call the doctor. Plain language, no medical jargon. Keep it under 160 words.',
@@ -603,7 +603,7 @@ describe('live full feature certification', () => {
         });
 
       const clinicalAdminRes = await makeAgent()
-        .use(HealthcarePacks.clinicalAdmin({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(HealthcarePacks.clinicalAdmin({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Summarize this clinical note for a handoff: 67-year-old male, admitted for chest pain, ruled out MI, echo normal, stress test scheduled for tomorrow, currently stable on aspirin. Key issues, plan, and outstanding items only. Keep it under 120 words.',
@@ -628,10 +628,10 @@ describe('live full feature certification', () => {
       const clinicalScore = scoreSignals(clinicalAdminRes.content, clinicalSignals);
 
       expect(
-        patientEdRes.selection.activeSkills,
+        patientEdRes.selection.activeTraits,
         'patient-education-writer active skill'
       ).toContain('patient-education-writer');
-      expect(clinicalAdminRes.selection.activeSkills, 'clinical-note-summary active skill').toContain(
+      expect(clinicalAdminRes.selection.activeTraits, 'clinical-note-summary active skill').toContain(
         'clinical-note-summary'
       );
       expect(patientScore, 'patient education score').toBeGreaterThanOrEqual(2);
@@ -644,8 +644,8 @@ describe('live full feature certification', () => {
           '',
           '| Case | Expected skill | Active skills | Score | Total tokens |',
           '| --- | --- | --- | ---: | ---: |',
-          `| patient-education-writer | \`patient-education-writer\` | ${patientEdRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${patientScore} | ${patientEdRes.tokensUsed.total} |`,
-          `| clinical-note-summary | \`clinical-note-summary\` | ${clinicalAdminRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${clinicalScore} | ${clinicalAdminRes.tokensUsed.total} |`,
+          `| patient-education-writer | \`patient-education-writer\` | ${patientEdRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${patientScore} | ${patientEdRes.tokensUsed.total} |`,
+          `| clinical-note-summary | \`clinical-note-summary\` | ${clinicalAdminRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${clinicalScore} | ${clinicalAdminRes.tokensUsed.total} |`,
           '',
           'Patient education output preview:',
           '',
@@ -668,7 +668,7 @@ describe('live full feature certification', () => {
     'section 8: legal domain packs',
     async () => {
       const contractRes = await makeAgent()
-        .use(LegalPacks.contractReview({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(LegalPacks.contractReview({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Review this contract clause for risk: "Either party may terminate this agreement immediately upon written notice if the other party materially breaches any provision and fails to cure such breach within 5 business days." Identify risk, ambiguities, and recommended change. Keep it under 140 words.',
@@ -677,7 +677,7 @@ describe('live full feature certification', () => {
         });
 
       const complianceRes = await makeAgent()
-        .use(LegalPacks.compliance({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(LegalPacks.compliance({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Create a compact GDPR compliance checklist for a SaaS product that collects user email and usage data, uses third-party analytics, and stores data in EU and US regions. Include 5 checklist items with pass or fail criteria. Keep it under 160 words.',
@@ -701,10 +701,10 @@ describe('live full feature certification', () => {
       const contractScore = scoreSignals(contractRes.content, contractSignals);
       const complianceScore = scoreSignals(complianceRes.content, complianceSignals);
 
-      expect(contractRes.selection.activeSkills, 'contract-risk-review active skill').toContain(
+      expect(contractRes.selection.activeTraits, 'contract-risk-review active skill').toContain(
         'contract-risk-review'
       );
-      expect(complianceRes.selection.activeSkills, 'compliance-checklist active skill').toContain(
+      expect(complianceRes.selection.activeTraits, 'compliance-checklist active skill').toContain(
         'compliance-checklist'
       );
       expect(contractScore, 'contract review score').toBeGreaterThanOrEqual(2);
@@ -717,8 +717,8 @@ describe('live full feature certification', () => {
           '',
           '| Case | Expected skill | Active skills | Score | Total tokens |',
           '| --- | --- | --- | ---: | ---: |',
-          `| contract-risk-review | \`contract-risk-review\` | ${contractRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${contractScore} | ${contractRes.tokensUsed.total} |`,
-          `| compliance-checklist | \`compliance-checklist\` | ${complianceRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${complianceScore} | ${complianceRes.tokensUsed.total} |`,
+          `| contract-risk-review | \`contract-risk-review\` | ${contractRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${contractScore} | ${contractRes.tokensUsed.total} |`,
+          `| compliance-checklist | \`compliance-checklist\` | ${complianceRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${complianceScore} | ${complianceRes.tokensUsed.total} |`,
           '',
           'Contract review output preview:',
           '',
@@ -741,7 +741,7 @@ describe('live full feature certification', () => {
     'section 9: creator extended packs',
     async () => {
       const linkedinRes = await makeAgent()
-        .use(CreatorPacks.linkedin({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(CreatorPacks.linkedin({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Write a compact LinkedIn post for a founder sharing a lesson about reducing LLM costs using caching. Hook, insight, and CTA. Keep it under 120 words.',
@@ -750,7 +750,7 @@ describe('live full feature certification', () => {
         });
 
       const youtubeRes = await makeAgent()
-        .use(CreatorPacks.youtube({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(CreatorPacks.youtube({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Write a compact YouTube video script for a 3-minute explainer on how AI agent caching works. Include hook, 3 key points, and CTA. Keep it under 200 words.',
@@ -759,7 +759,7 @@ describe('live full feature certification', () => {
         });
 
       const newsletterRes = await makeAgent()
-        .use(CreatorPacks.newsletter({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(CreatorPacks.newsletter({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Write a newsletter on the topic: "AI agent cost efficiency in 2026". Include subject line, 3 content sections, and one sponsor angle. Keep it under 160 words.',
@@ -768,7 +768,7 @@ describe('live full feature certification', () => {
         });
 
       const resumeRes = await makeAgent()
-        .use(CreatorPacks.resume({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(CreatorPacks.resume({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Write a compact resume summary for a senior AI engineer with 8 years experience, specializing in LLM infrastructure, caching systems, and Python. Tailor for a Staff Engineer role at an AI startup. Keep it under 100 words.',
@@ -806,16 +806,16 @@ describe('live full feature certification', () => {
       const newsletterScore = scoreSignals(newsletterRes.content, newsletterSignals);
       const resumeScore = scoreSignals(resumeRes.content, resumeSignals);
 
-      expect(linkedinRes.selection.activeSkills, 'linkedin-post-writer active skill').toContain(
+      expect(linkedinRes.selection.activeTraits, 'linkedin-post-writer active skill').toContain(
         'linkedin-post-writer'
       );
-      expect(youtubeRes.selection.activeSkills, 'youtube-scriptwriter active skill').toContain(
+      expect(youtubeRes.selection.activeTraits, 'youtube-scriptwriter active skill').toContain(
         'youtube-scriptwriter'
       );
-      expect(newsletterRes.selection.activeSkills, 'newsletter-writer active skill').toContain(
+      expect(newsletterRes.selection.activeTraits, 'newsletter-writer active skill').toContain(
         'newsletter-writer'
       );
-      expect(resumeRes.selection.activeSkills, 'resume-writer active skill').toContain('resume-writer');
+      expect(resumeRes.selection.activeTraits, 'resume-writer active skill').toContain('resume-writer');
       expect(linkedinScore, 'linkedin score').toBeGreaterThanOrEqual(2);
       expect(youtubeScore, 'youtube score').toBeGreaterThanOrEqual(2);
       expect(newsletterScore, 'newsletter score').toBeGreaterThanOrEqual(2);
@@ -828,10 +828,10 @@ describe('live full feature certification', () => {
           '',
           '| Case | Expected skill | Active skills | Score | Total tokens |',
           '| --- | --- | --- | ---: | ---: |',
-          `| linkedin-post-writer | \`linkedin-post-writer\` | ${linkedinRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${linkedinScore} | ${linkedinRes.tokensUsed.total} |`,
-          `| youtube-scriptwriter | \`youtube-scriptwriter\` | ${youtubeRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${youtubeScore} | ${youtubeRes.tokensUsed.total} |`,
-          `| newsletter-writer | \`newsletter-writer\` | ${newsletterRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${newsletterScore} | ${newsletterRes.tokensUsed.total} |`,
-          `| resume-writer | \`resume-writer\` | ${resumeRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${resumeScore} | ${resumeRes.tokensUsed.total} |`,
+          `| linkedin-post-writer | \`linkedin-post-writer\` | ${linkedinRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${linkedinScore} | ${linkedinRes.tokensUsed.total} |`,
+          `| youtube-scriptwriter | \`youtube-scriptwriter\` | ${youtubeRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${youtubeScore} | ${youtubeRes.tokensUsed.total} |`,
+          `| newsletter-writer | \`newsletter-writer\` | ${newsletterRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${newsletterScore} | ${newsletterRes.tokensUsed.total} |`,
+          `| resume-writer | \`resume-writer\` | ${resumeRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${resumeScore} | ${resumeRes.tokensUsed.total} |`,
           '',
           'LinkedIn output preview:',
           '',
@@ -862,7 +862,7 @@ describe('live full feature certification', () => {
     'section 10: personal productivity & data analytics extended',
     async () => {
       const weeklyRes = await makeAgent()
-        .use(PersonalProductivityPacks.weeklyPlanning({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(PersonalProductivityPacks.weeklyPlanning({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Create a compact weekly plan for a startup founder with these priorities: ship agent caching feature, review 3 customer calls, prepare board deck, and keep 4 deep-work blocks. Include schedule, focus areas, and review trigger. Keep it under 160 words.',
@@ -871,7 +871,7 @@ describe('live full feature certification', () => {
         });
 
       const tasksRes = await makeAgent()
-        .use(PersonalProductivityPacks.tasks({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(PersonalProductivityPacks.tasks({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Prioritize this task backlog for a solo developer: fix critical auth bug (user reports), write unit tests for cache module, refactor old adapter code, review 2 PRs, respond to 5 Slack threads. Include priority order, rationale, and defer note. Keep it under 140 words.',
@@ -880,7 +880,7 @@ describe('live full feature certification', () => {
         });
 
       const reportingRes = await makeAgent()
-        .use(DataAnalyticsPacks.reporting({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(DataAnalyticsPacks.reporting({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Write an executive data brief for this weekly metrics update: DAU up 12% WoW to 8,400, churn down 0.4pp to 2.1%, avg session 4.2min, support tickets up 18%. Include headline metric, risk signal, and one recommended focus area. Keep it under 140 words.',
@@ -911,13 +911,13 @@ describe('live full feature certification', () => {
       const tasksScore = scoreSignals(tasksRes.content, tasksSignals);
       const reportingScore = scoreSignals(reportingRes.content, reportingSignals);
 
-      expect(weeklyRes.selection.activeSkills, 'weekly-plan-writer active skill').toContain(
+      expect(weeklyRes.selection.activeTraits, 'weekly-plan-writer active skill').toContain(
         'weekly-plan-writer'
       );
-      expect(tasksRes.selection.activeSkills, 'task-prioritization active skill').toContain(
+      expect(tasksRes.selection.activeTraits, 'task-prioritization active skill').toContain(
         'task-prioritization'
       );
-      expect(reportingRes.selection.activeSkills, 'executive-data-brief active skill').toContain(
+      expect(reportingRes.selection.activeTraits, 'executive-data-brief active skill').toContain(
         'executive-data-brief'
       );
       expect(weeklyScore, 'weekly planning score').toBeGreaterThanOrEqual(2);
@@ -934,9 +934,9 @@ describe('live full feature certification', () => {
           '',
           '| Case | Expected skill | Active skills | Score | Total tokens |',
           '| --- | --- | --- | ---: | ---: |',
-          `| weekly-plan-writer | \`weekly-plan-writer\` | ${weeklyRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${weeklyScore} | ${weeklyRes.tokensUsed.total} |`,
-          `| task-prioritization | \`task-prioritization\` | ${tasksRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${tasksScore} | ${tasksRes.tokensUsed.total} |`,
-          `| executive-data-brief | \`executive-data-brief\` | ${reportingRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${reportingScore} | ${reportingRes.tokensUsed.total} |`,
+          `| weekly-plan-writer | \`weekly-plan-writer\` | ${weeklyRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${weeklyScore} | ${weeklyRes.tokensUsed.total} |`,
+          `| task-prioritization | \`task-prioritization\` | ${tasksRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${tasksScore} | ${tasksRes.tokensUsed.total} |`,
+          `| executive-data-brief | \`executive-data-brief\` | ${reportingRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${reportingScore} | ${reportingRes.tokensUsed.total} |`,
           '',
           'Weekly planning output preview:',
           '',
@@ -957,7 +957,7 @@ describe('live full feature certification', () => {
   );
 
   // -------------------------------------------------------------------------
-  // Section 11: Skill Activation Mode Verification
+  // Section 11: Trait Activation Mode Verification
   // -------------------------------------------------------------------------
   liveIt(
     'section 11: skill activation mode verification',
@@ -969,7 +969,7 @@ describe('live full feature certification', () => {
         maxTokens,
         retry: { maxAttempts: 1, backoff: 'fixed', initialDelay: 100, maxDelay: 100 },
       })
-        .use(BrandPacks.positioning({ skillActivation: 'always', readOnlyByDefault: true }))
+        .use(BrandPacks.positioning({ traitActivation: 'always', readOnlyByDefault: true }))
         .run({
           prompt: 'Tell me a joke about programming.',
           temperature: 0,
@@ -977,7 +977,7 @@ describe('live full feature certification', () => {
         });
 
       const autoRes = await makeAgent()
-        .use(BrandPacks.positioning({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(BrandPacks.positioning({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({
           prompt:
             'Write a compact brand positioning statement for an AI agent SDK. Include audience, benefit, and differentiator. Keep it under 80 words.',
@@ -990,7 +990,7 @@ describe('live full feature certification', () => {
         apiKey: openAiKey!,
         temperature: 0,
         maxTokens,
-        skillActivation: 'directive-only',
+        traitActivation: 'directive-only',
         toolSelection: 'auto',
         retry: { maxAttempts: 1, backoff: 'fixed', initialDelay: 100, maxDelay: 100 },
       })
@@ -1002,27 +1002,27 @@ describe('live full feature certification', () => {
         });
 
       // always mode: at least one skill activated regardless of prompt relevance
-      expect(alwaysRes.selection.activeSkills.length, 'always mode: at least one skill').toBeGreaterThan(0);
+      expect(alwaysRes.selection.activeTraits.length, 'always mode: at least one skill').toBeGreaterThan(0);
       // auto mode: brand positioning skill activated for relevant prompt
-      expect(autoRes.selection.activeSkills, 'auto mode: brand-positioning active').toContain(
+      expect(autoRes.selection.activeTraits, 'auto mode: brand-positioning active').toContain(
         'brand-positioning'
       );
       // directive-only mode: no skills for irrelevant prompt without directive
       expect(
-        directiveOnlyRes.selection.activeSkills.length,
+        directiveOnlyRes.selection.activeTraits.length,
         'directive-only mode: no skills for irrelevant prompt'
       ).toBe(0);
 
-      sectionResults.push({ section: 'Section 11: Skill Activation Modes', passed: true });
+      sectionResults.push({ section: 'Section 11: Trait Activation Modes', passed: true });
       reportEntries.push(
         [
-          '## Section 11: Skill Activation Mode Verification',
+          '## Section 11: Trait Activation Mode Verification',
           '',
           '| Mode | Prompt relevance | Active skills | Skill count |',
           '| --- | --- | --- | ---: |',
-          `| always | irrelevant (joke) | ${alwaysRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${alwaysRes.selection.activeSkills.length} |`,
-          `| auto | relevant (positioning) | ${autoRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${autoRes.selection.activeSkills.length} |`,
-          `| directive-only | irrelevant (geography) | ${directiveOnlyRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} | ${directiveOnlyRes.selection.activeSkills.length} |`,
+          `| always | irrelevant (joke) | ${alwaysRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${alwaysRes.selection.activeTraits.length} |`,
+          `| auto | relevant (positioning) | ${autoRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${autoRes.selection.activeTraits.length} |`,
+          `| directive-only | irrelevant (geography) | ${directiveOnlyRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} | ${directiveOnlyRes.selection.activeTraits.length} |`,
           '',
           'Result: always mode activates skills regardless of prompt relevance; auto mode activates skills for relevant prompts; directive-only mode suppresses activation for non-directive prompts.',
           '',
@@ -1046,12 +1046,12 @@ describe('live full feature certification', () => {
         apiKey: openAiKey!,
         temperature: 0,
         maxTokens,
-        skillActivation: 'auto',
+        traitActivation: 'auto',
         toolSelection: 'auto',
-        skillPromptAssembly: 'full',
+        traitPromptAssembly: 'full',
         retry: { maxAttempts: 1, backoff: 'fixed', initialDelay: 100, maxDelay: 100 },
       })
-        .use(BrandPacks.voice({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(BrandPacks.voice({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({ prompt, temperature: 0, maxTokens });
 
       const compactRes = await Agent.create({
@@ -1059,12 +1059,12 @@ describe('live full feature certification', () => {
         apiKey: openAiKey!,
         temperature: 0,
         maxTokens,
-        skillActivation: 'auto',
+        traitActivation: 'auto',
         toolSelection: 'auto',
-        skillPromptAssembly: 'compact',
+        traitPromptAssembly: 'compact',
         retry: { maxAttempts: 1, backoff: 'fixed', initialDelay: 100, maxDelay: 100 },
       })
-        .use(BrandPacks.voice({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(BrandPacks.voice({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({ prompt, temperature: 0, maxTokens });
 
       const minimalRes = await Agent.create({
@@ -1072,12 +1072,12 @@ describe('live full feature certification', () => {
         apiKey: openAiKey!,
         temperature: 0,
         maxTokens,
-        skillActivation: 'auto',
+        traitActivation: 'auto',
         toolSelection: 'auto',
-        skillPromptAssembly: 'minimal',
+        traitPromptAssembly: 'minimal',
         retry: { maxAttempts: 1, backoff: 'fixed', initialDelay: 100, maxDelay: 100 },
       })
-        .use(BrandPacks.voice({ skillActivation: 'auto', readOnlyByDefault: true }))
+        .use(BrandPacks.voice({ traitActivation: 'auto', readOnlyByDefault: true }))
         .run({ prompt, temperature: 0, maxTokens });
 
       // All three modes should produce content and activate the same skills
@@ -1097,9 +1097,9 @@ describe('live full feature certification', () => {
           '',
           '| Assembly mode | Prompt tokens | Completion tokens | Active skills |',
           '| --- | ---: | ---: | --- |',
-          `| full | ${fullRes.tokensUsed.prompt} | ${fullRes.tokensUsed.completion} | ${fullRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} |`,
-          `| compact | ${compactRes.tokensUsed.prompt} | ${compactRes.tokensUsed.completion} | ${compactRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} |`,
-          `| minimal | ${minimalRes.tokensUsed.prompt} | ${minimalRes.tokensUsed.completion} | ${minimalRes.selection.activeSkills.map((s) => `\`${s}\``).join(', ') || '-'} |`,
+          `| full | ${fullRes.tokensUsed.prompt} | ${fullRes.tokensUsed.completion} | ${fullRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} |`,
+          `| compact | ${compactRes.tokensUsed.prompt} | ${compactRes.tokensUsed.completion} | ${compactRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} |`,
+          `| minimal | ${minimalRes.tokensUsed.prompt} | ${minimalRes.tokensUsed.completion} | ${minimalRes.selection.activeTraits.map((s) => `\`${s}\``).join(', ') || '-'} |`,
           '',
           'Full assembly output preview:',
           '',

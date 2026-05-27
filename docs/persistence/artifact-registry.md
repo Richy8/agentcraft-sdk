@@ -249,4 +249,3 @@ registerIfMissing("MyCustomType", z.object({ value: z.string() }));
 
 - [Artifact Store](./artifact-store.md) — persistence layer that consumes registry schemas
 - [Structured Output](../core/structured-output.md) — using schemas as `responseSchema`
-- [Creator Packs](../creator/packs.md) — packs that produce built-in artifact types

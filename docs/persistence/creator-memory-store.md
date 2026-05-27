@@ -1,11 +1,11 @@
 # Creator Memory Store
 
-`FileSystemCreatorMemoryStore` persists brand voice, corpus documents, and audience context so creator workflows resume with the same voice, persona, and knowledge without re-loading it every run. It powers the `memory: true` option on creator packs and is used by voice-aware skills like `brand-consistency-review`, `linkedin-post-writer`, and `blog-writer`.
+`FileSystemCreatorMemoryStore` persists brand voice, corpus documents, and audience context so creator workflows resume with the same voice, persona, and knowledge without re-loading it every run.
 
 ## How It Works
 
 ```txt
-Agent run with creator pack (memory: true)
+Agent run with CreatorResourcesAdapter
   → CreatorResourcesAdapter exposes tools:
       read_brand_voice       (read)   — load tone, phrases, examples
       upsert_brand_voice     (write)  — update stored voice profile
@@ -13,7 +13,7 @@ Agent run with creator pack (memory: true)
       search_corpus          (read)   — find relevant corpus sections
       summarize_memory       (read)   — compact memory context string
   → FileSystemCreatorMemoryStore reads/writes JSON files at root/
-  → Brand voice injected into skill prompt as system context
+  → Brand voice injected into systemMessage as context
 ```
 
 ## Quick Start
@@ -24,14 +24,14 @@ import {
   FileSystemCreatorMemoryStore,
   Provider,
 } from "@deskcreate/agentcraft";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { CreatorResourcesAdapter } from "@deskcreate/agentcraft/adapters";
 
 const memory = new FileSystemCreatorMemoryStore("./.agentcraft/creator-memory");
 
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
-}).use(CreatorPacks.blog({ memory: true }));
+}).use(CreatorResourcesAdapter.connect({ memoryStore: memory }));
 
 // First run: establish brand voice
 await agent.run({
@@ -42,9 +42,11 @@ await agent.run({
   Examples: "Claude agents compose well because they share a single event loop."`,
 });
 
-// Future runs: voice is loaded automatically
+// Future runs: load and inject voice context manually
+const context = await memory.summarizeContext({ query: "blog post" });
 const post = await agent.run({
-  prompt: "/write-blog Write a post about TypeScript generics for experienced developers.",
+  prompt: "Write a post about TypeScript generics for experienced developers.",
+  system: context,
 });
 console.log(post.content);
 ```
@@ -78,18 +80,6 @@ const memory = new FileSystemCreatorMemoryStore({
   },
   redactSensitive: true,
 });
-```
-
-### Pack-Level Memory Options
-
-Creator packs that support `memory: true` wire the store automatically:
-
-```ts
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
-
-CreatorPacks.linkedin({ memory: true })   // LinkedIn posts with brand voice
-CreatorPacks.blog({ memory: true })        // Blog writing with corpus recall
-CreatorPacks.seo({ memory: true })         // SEO briefs with audience context
 ```
 
 ## API
@@ -137,7 +127,7 @@ import {
   FileSystemCreatorMemoryStore,
   Provider,
 } from "@deskcreate/agentcraft";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { CreatorResourcesAdapter } from "@deskcreate/agentcraft/adapters";
 
 const memory = new FileSystemCreatorMemoryStore({
   root: "./.agentcraft/creator-memory",
@@ -147,19 +137,21 @@ const memory = new FileSystemCreatorMemoryStore({
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
-}).use(CreatorPacks.linkedin({ memory: true }));
+}).use(CreatorResourcesAdapter.connect({ memoryStore: memory }));
 
 // Establish voice from existing content
 await agent.run({
-  prompt: `/extract-voice Extract and store the brand voice from these sample LinkedIn posts.
+  prompt: `Extract and store the brand voice from these sample LinkedIn posts.
   
   Sample 1: "We shipped native streaming support. Here's what changed and why..."
   Sample 2: "Tool caching saved us $40/day in OpenAI costs. The setup took 15 minutes."`,
 });
 
-// All future runs use the stored voice
+// Load voice context and inject it for future runs
+const context = await memory.summarizeContext({ query: "LinkedIn post" });
 const post = await agent.run({
-  prompt: "/write-linkedin-post Write a post announcing our new MCP adapter support.",
+  prompt: "Write a post announcing our new MCP adapter support.",
+  system: context,
 });
 ```
 
@@ -191,10 +183,10 @@ const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
   system: context,
-}).use(CreatorPacks.blog());
+});
 
 const post = await agent.run({
-  prompt: "/write-blog Write a comparison post: AgentCraft vs. LangChain.",
+  prompt: "Write a comparison post: AgentCraft vs. LangChain.",
 });
 ```
 
@@ -251,4 +243,3 @@ const memory = new FileSystemCreatorMemoryStore({
 - [Creator Analytics](../creator/analytics.md) — performance-driven content memory
 - [Analytics History Store](./analytics-history-store.md) — experiment and metrics tracking
 - [Semantic Memory](./semantic-memory.md) — general cross-run agent memory
-- [Creator Packs](../creator/packs.md) — pack-level `memory: true` option

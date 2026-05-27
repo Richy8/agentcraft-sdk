@@ -13,7 +13,7 @@ import { AgentCache } from "../../agent/cache/index.js";
 import { FileSystemCreatorMemoryStore } from "../../agent/creator/memory.js";
 import { Provider } from "../../agent/provider-catalog.js";
 import { CreatorPacks } from "../../agent/packs/index.js";
-import { createSkillByName } from "../../agent/skills/index.js";
+import { createTraitByName } from "../../agent/traits/index.js";
 import { FileArtifactStore } from "../../artifact-store/file.js";
 
 const integrationEnabled = process.env.INTEGRATION_TESTS === "true";
@@ -100,7 +100,7 @@ describe("live cost, cache, and skill benchmark", () => {
                   apiKey: openAiKey!,
                   temperature: 0,
                   maxTokens: 180,
-                  skillActivation: "directive-only",
+                  traitActivation: "directive-only",
                   retry: {
                     maxAttempts: 1,
                     backoff: "fixed",
@@ -108,7 +108,7 @@ describe("live cost, cache, and skill benchmark", () => {
                     maxDelay: 100,
                   },
                 })
-                  .use(createSkillByName("blog-writer"))
+                  .use(createTraitByName("blog-writer"))
                   .run({
                     prompt: `/write-blog ${prompt}`,
                     temperature: 0,
@@ -128,7 +128,7 @@ describe("live cost, cache, and skill benchmark", () => {
                   apiKey: openAiKey!,
                   temperature: 0,
                   maxTokens: 180,
-                  skillActivation: "always",
+                  traitActivation: "always",
                   toolSelection: "auto",
                   retry: {
                     maxAttempts: 1,
@@ -158,7 +158,7 @@ describe("live cost, cache, and skill benchmark", () => {
                   apiKey: openAiKey!,
                   temperature: 0,
                   maxTokens: 180,
-                  skillActivation: "auto",
+                  traitActivation: "auto",
                   toolSelection: "auto",
                   retry: {
                     maxAttempts: 1,
@@ -188,7 +188,7 @@ describe("live cost, cache, and skill benchmark", () => {
                   apiKey: openAiKey!,
                   temperature: 0,
                   maxTokens: 180,
-                  skillActivation: "auto",
+                  traitActivation: "auto",
                   toolSelection: "auto",
                   promptCompression: "balanced",
                   retry: {
@@ -366,7 +366,7 @@ describe("live cost, cache, and skill benchmark", () => {
                   apiKey: openAiKey!,
                   temperature: 0,
                   maxTokens: 160,
-                  skillActivation: "auto",
+                  traitActivation: "auto",
                   promptCompression: "balanced",
                   retry: {
                     maxAttempts: 1,
@@ -375,7 +375,7 @@ describe("live cost, cache, and skill benchmark", () => {
                     maxDelay: 100,
                   },
                 })
-                  .use(createSkillByName("blog-writer"))
+                  .use(createTraitByName("blog-writer"))
                   .run({
                     prompt: [
                       "Resume from this stored ContentBrief artifact and produce a compact execution plan with audience, angle, outline, evidence, and takeaway/CTA.",
@@ -410,10 +410,10 @@ describe("live cost, cache, and skill benchmark", () => {
         const replay = report.results.find(
           (result) => result.name === "cache replay",
         );
-        expect(directive?.activeSkills).toContain("blog-writer");
-        expect(always?.activeSkills).toContain("blog-writer");
-        expect(creator?.activeSkills).toContain("blog-writer");
-        expect(compressed?.activeSkills).toContain("blog-writer");
+        expect(directive?.activeTraits).toContain("blog-writer");
+        expect(always?.activeTraits).toContain("blog-writer");
+        expect(creator?.activeTraits).toContain("blog-writer");
+        expect(compressed?.activeTraits).toContain("blog-writer");
         expect(
           creator?.tokensUsed.prompt ?? Number.POSITIVE_INFINITY,
         ).toBeLessThan(always?.tokensUsed.prompt ?? 0);

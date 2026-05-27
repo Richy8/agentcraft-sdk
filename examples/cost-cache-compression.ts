@@ -1,6 +1,5 @@
 import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
-import { tool } from "@deskcreate/agentcraft/adapters";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { tool, FetchAdapter } from "@deskcreate/agentcraft/adapters";
 
 // A deterministic read tool can be cached safely. On replay, AgentCraft should
 // return the cached result and report an avoided live tool execution.
@@ -31,10 +30,9 @@ const agent = Agent.create({
     strategy: "auto",
     namespace: "cost-cache-example",
   }),
-  skillActivation: "auto",
   toolSelection: "auto",
   promptCompression: "balanced",
-}).use(CreatorPacks.blog({ cache: "auto", readOnlyByDefault: true }));
+}).use(FetchAdapter.connect({ allowedDomains: ["*"] }));
 
 const response = await agent.run({
   prompt: "Create a compact Medium article plan about reducing wasted tokens.",
@@ -47,8 +45,6 @@ const response = await agent.run({
 });
 
 console.log(response.content);
-console.log("Active skills:", response.selection?.activeSkills);
-console.log("Activation reasons:", response.selection?.activationReasons);
 console.log("Prompt estimate:", response.measurement?.estimatedPromptTokens);
 console.log("Cache summary:", response.cache?.summary);
 console.log("Cost report:", response.costReport);

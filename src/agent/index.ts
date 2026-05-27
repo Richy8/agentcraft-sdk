@@ -107,15 +107,9 @@ export type {
   CostReport,
   ModelInfo,
   PromptCompressionMode,
-  SkillPromptAssemblyMode,
-  SkillPromptAssemblyRecord,
-  SkillPromptAssemblyReport,
-  SkillPromptAssemblySection,
   ResponseFormat,
   RetryConfig,
   RunBudget,
-  SkillActivationReason,
-  SkillActivationReasonCode,
   TokenUsage,
 } from "./types.js";
 export type { AgentAdapter } from "./adapters/types.js";
@@ -127,7 +121,6 @@ export type {
   ZodLikeSchema,
 } from "./structured-output.js";
 export * from "./adapters/index.js";
-export * from "./skills/index.js";
 export * from "./mcp-servers/index.js";
 export * from "./guardrails.js";
 export { summarizeCacheStats } from "./cache/index.js";

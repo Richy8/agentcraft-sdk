@@ -1,27 +1,54 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 - 2026-05-27
 
-- Added `promptCompression` on `Agent.create()` and `agent.run()` with `none`, `safe`, `balanced`, and `aggressive` modes for reducing skill and creator-pack prompt overhead.
-- Added `response.costReport` for run-level cost reporting and aggregate cost reports for teams and workflows.
-- Added `RunBudget.mode` with `fail-closed`, `prefer-cache`, `downgrade-model`, and `request-approval`.
-- Added `createPricingStalenessReport()` for model-pricing metadata checks.
-- Added richer `response.selection.activationReasons` with confidence and reason codes for directive, exact alias, creator artifact, capability, keyword/domain alias, and semantic-ready routing.
-- Hardened cached tool accounting so cached replay avoids live tool execution and no longer increments executed tool-call counts.
-- Added benchmark helpers and OpenAI-light live benchmark coverage for flat prompt, directive skill, creator pack `always`, creator pack `auto`, compressed creator pack, cache warm/replay, memory-informed output, and artifact-resume output.
-- Tuned creator-skill auto activation ranking so explicit creation intent keeps the relevant creation skill inside the bounded activation cap.
-- Added live skills certification fallback reporting for provider/model responses that are too short or low-quality under the configured model.
-- Added artifact-store schema validation through `ArtifactRegistry` for memory, file, and SQLite stores.
-- Added `ArtifactStore.updateByType()`, `listLinks()`, `capabilities()`, file-store history, and typed artifact helper APIs.
-- Added creator memory freshness metadata, stale-memory warnings, durable write approval policy, default secret/sensitive-data blocking, and compact `summarizeContext()`.
-- Added `AgentEval` suites, deterministic assertions, cache replay gates, baseline comparison, optional judge hooks, and markdown/JSON eval reports.
-- Added `AgentReports` for redacted markdown, JSON, and HTML reports from agent responses, teams, workflows, trace spans, workspace events, cache stats, approvals, artifacts, and memory events.
-- Added distributed cache drivers for Redis, Postgres/Supabase Postgres, SQLite, custom controllers, URL-based cache factories, distributed miss locks, and cache warming.
-- Added `ApprovalQueue` memory, artifact-store, and custom queue controllers for durable write approvals, reviewer assignment, denial, expiry, rollback metadata, and reportable governance events.
-- Added `AgentMemory` local, vector, and custom semantic memory providers with lexical/OpenAI/custom embeddings, Qdrant/Pinecone/Supabase pgvector options, bounded retrieval, approval-gated writes, and memory report events.
-- Added docs and examples for cost/cache compression, artifact validation/link traversal, memory freshness, and benchmark interpretation.
-- Expanded production docs and examples for AgentEval, observability reports, distributed cache, governance queues, semantic memory, and copy-ready production setups.
-- Hardened runtime maintainability with focused adapter attachment, lifecycle, structured output, cache, memory, and runtime service tests plus runtime hardening documentation.
+**Breaking changes** — removed the skills, packs, and traits systems.
+
+### Removed
+
+- `@deskcreate/agentcraft/skills` and `@deskcreate/agentcraft/packs` package entry points are gone. Any import from these paths will fail to resolve.
+- `Agent.create({ skillActivation, toolSelection, promptCompression })` config fields removed.
+- `agent.useNativeSkill()` method removed.
+- `CreatorPacks`, `MarketingPacks`, and all domain pack factories removed.
+- `AgentSkill`, `SkillRegistry`, `registerSkill`, `BuiltInSkillSpec`, `NativeSkillSource` types removed.
+- `WritingTrait`, `HumanizerTrait`, and all trait classes removed. `TraitNotAttachedError` removed.
+- `response.selection.activationReasons` removed (skill activation no longer exists).
+- `promptCompression` benchmark variants and live skill certification scripts removed.
+- All skill, pack, and trait documentation pages removed.
+
+### Why
+
+Benchmark comparison showed native LLM skills (Anthropic and OpenAI) are 25× more token-heavy, 3× slower, and score lower on quality than equivalent system prompts you control directly. The internal prompt-injection system (traits/skills/packs) added complexity without measurable output benefit. The infrastructure — adapters, tools, ToolPolicy, AgentWorkflow, AgentTeam, AgentMemory, AgentCache, ArtifactStore — delivers the same capability with less overhead and full user control over prompt quality.
+
+### Added / Retained
+
+- `createAdapter()` and `tool()` from `@deskcreate/agentcraft/adapters` — compose any capability as a typed adapter.
+- All built-in adapters retained: `FetchAdapter`, `FilesystemAdapter`, `GitHubAdapter`, `DatabaseAdapter`, `PlaywrightAdapter`, `SeoAdapter`, `TavilyAdapter`, `ElevenLabsAdapter`, `SlackAdapter`, `NotionAdapter`, `ImageGenerationAdapter`, `GoogleCalendarAdapter`, `GoogleSheetsAdapter`, `EmailAdapter`, `CitationManagerAdapter`, `AnalyticsAdapter`, `PublishingAdapter`, `ApifyAdapter`, `FirecrawlAdapter`, `RedisAdapter`, `StorageAdapter`, `PineconeAdapter`, `SupabaseAdapter`, `CreatorResourcesAdapter`.
+- `response.costReport` for run-level cost reporting.
+- `RunBudget.mode` with `fail-closed`, `prefer-cache`, `downgrade-model`, and `request-approval`.
+- `createPricingStalenessReport()` for model-pricing metadata checks.
+- All previously-unreleased additions from the prior `Unreleased` block that are not skill/pack-specific: artifact-store schema validation, `ArtifactStore.updateByType()` / `listLinks()` / `capabilities()`, creator memory freshness, `AgentEval`, `AgentReports`, distributed cache drivers, `ApprovalQueue`, `AgentMemory`, and runtime hardening.
+
+### Migration
+
+Replace `CreatorPacks.blog()` or skill directives with explicit `systemMessage` prompts and `createAdapter()` tool bundles. Write the system prompt you previously relied on skill injection to provide — you have full control and no token overhead from unused skill fragments.
+
+```ts
+// Before (0.2.x)
+import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+const agent = Agent.create({ model, apiKey, skillActivation: "auto" })
+  .use(CreatorPacks.blog());
+
+// After (0.3.0)
+import { createAdapter, tool } from "@deskcreate/agentcraft/adapters";
+const agent = Agent.create({
+  model,
+  apiKey,
+  systemMessage: "You are a professional blog writer. Write in a clear, direct tone.",
+}).use(myContentAdapter); // your own tools as needed
+```
+
+---
 
 ## 0.2.0 - 2026-05-14
 
@@ -43,4 +70,4 @@
 
 - Initial AgentCraft package foundation.
 - Provider protocols, model registry, cost calculator, config mapper, prompt assembler, public API layer.
-- Production adapters, MCP wrappers, skills, AgentTeam, structured output, streaming, observability, budgets, and security regression coverage.
+- Production adapters, MCP wrappers, AgentTeam, structured output, streaming, observability, budgets, and security regression coverage.

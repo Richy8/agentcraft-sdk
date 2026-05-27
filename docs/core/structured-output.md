@@ -248,9 +248,9 @@ console.log(`${brief.keyPoints.length} key points`);
 console.log(`~${brief.estimatedWordCount} words`);
 ```
 
-### With ArtifactRegistry (Creator Pack Schemas)
+### With ArtifactRegistry
 
-`ArtifactRegistry` provides pre-built schemas for creator workflows (drafts, briefs, SEO plans, etc.).
+`ArtifactRegistry` provides pre-built schemas for content workflows (drafts, briefs, SEO plans, etc.).
 
 ```ts
 import { Agent, ArtifactRegistry, Provider } from "@deskcreate/agentcraft";

@@ -77,9 +77,6 @@ export class AgentTeam {
 
     if (config.workspace) {
       applyWorkspaceToAgents(config.workspace, allAgents);
-      for (const agent of allAgents) {
-        for (const skill of config.sharedSkills ?? []) agent.use(skill);
-      }
       if (config.sharedAdapters?.length) {
         console.warn(
           '[AgentCraft] AgentTeam: workspace is present; sharedAdapters is deprecated and has been ignored. Move adapters to workspace.adapters.',
@@ -93,10 +90,8 @@ export class AgentTeam {
     } else {
       for (const member of config.members) {
         for (const adapter of config.sharedAdapters ?? []) member.agent.use(adapter);
-        for (const skill of config.sharedSkills ?? []) member.agent.use(skill);
       }
       for (const adapter of config.sharedAdapters ?? []) config.orchestrator.use(adapter);
-      for (const skill of config.sharedSkills ?? []) config.orchestrator.use(skill);
       if (config.memory) config.orchestrator.use(config.memory);
     }
 

@@ -153,7 +153,7 @@ describe("AgentMemory", () => {
     await agent.run({ prompt: "Draft one idea.", memory: false });
 
     const params = provider.call.mock.calls[0]?.[0] as { systemMessage?: string };
-    expect(params.systemMessage).not.toContain("AgentCraft Semantic Memory");
+    expect(params?.systemMessage ?? "").not.toContain("AgentCraft Semantic Memory");
   });
 });
 

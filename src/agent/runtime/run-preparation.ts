@@ -1,5 +1,4 @@
 import type { ToolDefinition } from "../../protocols/types.js";
-import type { ActiveSkillMatch } from "../skills/activation-engine.js";
 import { applyMemoryContext } from "../memory/context-injector.js";
 import { enforcePreflight } from "../budgets.js";
 import type { RunAdapterScope } from "../adapters/run-scope.js";
@@ -8,7 +7,6 @@ import { resolvePrompt } from "../utils/resolve-prompt.js";
 import type {
   AgentRunParams,
   PromptCompressionMode,
-  SkillPromptAssemblyRecord,
 } from "../types.js";
 import {
   createToolExecutionBudget,
@@ -27,9 +25,7 @@ export interface PreparedRuntimeInvocation {
 export interface PreparedPromptAndTools {
   readonly params: AgentRunParams;
   readonly executionBudget: ToolExecutionBudget;
-  readonly skillPromptAssemblyRecords: SkillPromptAssemblyRecord[];
   readonly promptCompression: PromptCompressionMode;
-  readonly activeSkillMatches: ActiveSkillMatch[];
   readonly allTools: readonly ToolDefinition[];
 }
 
@@ -71,41 +67,24 @@ export async function preparePromptAndTools(
   },
 ): Promise<PreparedPromptAndTools> {
   const executionBudget = createToolExecutionBudget(input.params);
-  const skillPromptAssemblyRecords: SkillPromptAssemblyRecord[] = [];
-  let params = await applyMemoryContext(input.params, context.memory);
-  params = context.applySkillSystemPrompts(
-    params,
-    input.runScope.adapters,
-    skillPromptAssemblyRecords,
-  );
+
+  let params = input.params;
+  params = await applyMemoryContext(params, context.memory);
   const promptCompression = context.resolvePromptCompression(params);
-  const activeSkillMatches = context.selectActiveSkillMatches(
-    params,
-    input.runScope.adapters,
-  );
   params = context.applyPromptCompression(params, promptCompression);
 
-  // Tool selection must see the original directive signal. Directive preprocessing
-  // strips slash commands from the prompt, so collecting tools first prevents
-  // directive-only skills from losing their adapter/tool routing context.
   const allTools = await context.collectTools(
     params,
     { tracer: input.tracer, parentSpanId: input.agentSpan.spanId },
     input.runScope.adapters,
     executionBudget,
   );
-  params = context.preprocessDirectives(
-    params,
-    input.runScope.adapters,
-    skillPromptAssemblyRecords,
-  );
   params = applyStructuredOutputPrompt(params, context.getCapabilities());
+
   return {
     params,
     executionBudget,
-    skillPromptAssemblyRecords,
     promptCompression,
-    activeSkillMatches,
     allTools,
   };
 }

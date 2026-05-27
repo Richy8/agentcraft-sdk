@@ -1,6 +1,6 @@
 # Creator Adapters
 
-Creator adapters provide the tools creator skills naturally need.
+Creator adapters provide tools for content workflows.
 
 ## Adapter Map
 
@@ -22,13 +22,11 @@ import {
   LinkCheckerAdapter,
   SeoAdapter,
 } from "@deskcreate/agentcraft/adapters";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
 })
-  .use(CreatorPacks.blog())
   .use(CitationManagerAdapter.connect({ root: "content/citations" }))
   .use(LinkCheckerAdapter.connect())
   .use(SeoAdapter.connect());

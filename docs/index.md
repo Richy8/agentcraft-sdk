@@ -1,7 +1,7 @@
 
 # AgentCraft
 
-AgentCraft is a production-grade TypeScript agent runtime. It gives you a single, portable API for building agents that work across every major LLM provider, with built-in tools, adapters, MCP servers, skills, multi-agent orchestration, caching, structured output, streaming, budgets, observability, and eval — all wired together in a type-safe, composable package.
+AgentCraft is a production-grade TypeScript agent runtime. It gives you a single, portable API for building agents that work across every major LLM provider, with built-in tools, adapters, MCP servers, multi-agent orchestration, caching, structured output, streaming, budgets, observability, and eval — all wired together in a type-safe, composable package.
 
 ```sh
 npm install @deskcreate/agentcraft
@@ -35,7 +35,6 @@ console.log(`Tokens: ${response.tokensUsed.total}`);
 | Switch between OpenAI, Anthropic, Gemini, and 15+ more | `Provider` catalog | [Models & Providers](./core/models-and-providers.md) |
 | Give the agent external tools to call | `ToolDefinition`, `FetchAdapter`, `FileSystemAdapter` | [Tools](./tools/tools.md) |
 | Connect to MCP servers | Built-in MCP wrappers | [MCP](./mcp/overview.md) |
-| Shape how the agent thinks | Primitive skills, Domain skill packs | [Skills](./skills/overview.md) |
 | Stream tokens as they arrive | `agent.stream()` | [Streaming](./core/streaming.md) |
 | Return typed structured data | `responseSchema` with Zod | [Structured Output](./core/structured-output.md) |
 | Coordinate multiple agents | `AgentTeam`, `AgentPool`, `AgentWorkflow` | [Orchestration](./orchestration/agent-workflow.md) |
@@ -46,13 +45,11 @@ console.log(`Tokens: ${response.tokensUsed.total}`);
 
 ## Entry Points
 
-AgentCraft ships six focused import paths. Use only what you need.
+AgentCraft ships focused import paths. Use only what you need.
 
 ```ts
 import { Agent, AgentPool, AgentCache } from "@deskcreate/agentcraft";
 import { FetchAdapter, FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
-import { WritingSkill, SummarizeSkill } from "@deskcreate/agentcraft/skills";
-import { createSkillPackByName } from "@deskcreate/agentcraft/skills";
 import { AgentTeam, AgentWorkflow, AgentWorkspace } from "@deskcreate/agentcraft/team";
 import { BraveSearchMcp, GitHubMcp } from "@deskcreate/agentcraft/mcp";
 ```
@@ -62,7 +59,6 @@ import { BraveSearchMcp, GitHubMcp } from "@deskcreate/agentcraft/mcp";
 ```ts
 import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
 import { FetchAdapter, FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
-import { WritingSkill, SummarizeSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -73,16 +69,13 @@ const agent = Agent.create({
   retry: { maxAttempts: 3, backoff: "exponential", initialDelay: 500, maxDelay: 15_000 },
   // Cache safe read-tool results to disk
   cache: AgentCache.file(".agentcraft/cache", { strategy: "auto" }),
-  // Skills activate when the prompt signals intent
-  skillActivation: "auto",
+  // Shape agent behavior via systemMessage
+  systemMessage: "You are a concise technical writer. Lead with the most important finding.",
 })
   // Give the agent web fetch capability
   .use(FetchAdapter.connect({ allowedDomains: ["api.github.com"] }))
   // Give it filesystem read access
-  .use(FileSystemAdapter.connect({ root: "./docs", readOnly: true }))
-  // Attach writing and summarization skills
-  .use(WritingSkill.create())
-  .use(SummarizeSkill.create());
+  .use(FileSystemAdapter.connect({ root: "./docs", readOnly: true }));
 
 const response = await agent.run({
   prompt: "Fetch the latest TypeScript release from GitHub and write a 3-bullet summary.",
@@ -102,7 +95,6 @@ console.log(`Cost: $${response.cost.toFixed(6)}`);
 | Looking for all features at a glance | [Feature Map](./start/feature-map.md) |
 | Trying to understand how it all fits | [Architecture](./architecture.md) |
 | Ready to add tools and adapters | [Tools](./tools/tools.md) · [Adapters](./adapters/overview.md) |
-| Building with domain-specific skills | [Skills](./skills/overview.md) · [Industry Domain Skills](./skills/domains/overview.md) |
 | Orchestrating multiple agents | [Orchestration](./orchestration/agent-workflow.md) |
 | Going to production | [Production](./production/security-model.md) |
 | Looking for runnable examples | [Examples & Cookbook](./examples-cookbook/overview.md) |

@@ -512,9 +512,6 @@ describe("AgentCache", () => {
     const agentModelB = Agent.create({ model: "ollama:model-b", cache: cacheV1 }).use(adapter);
     await (await collect(agentModelB))({ value: "same" });
 
-    const agentProviderB = Agent.create({ model: "lmstudio:model-a", cache: cacheV1 }).use(adapter);
-    await (await collect(agentProviderB))({ value: "same" });
-
     const agentNamespaceB = Agent.create({
       model: "ollama:model-a",
       cache: AgentCache.file(root, {
@@ -535,7 +532,7 @@ describe("AgentCache", () => {
     }).use(adapter);
     await (await collect(agentVersionB))({ value: "same" });
 
-    expect(calls).toBe(6);
+    expect(calls).toBe(5);
     await rm(root, { recursive: true, force: true });
   });
 

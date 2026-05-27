@@ -4,7 +4,7 @@ Write unit and integration tests for agents without making live API calls.
 
 ## Overview
 
-`DeterministicFakeProvider` is a scripted provider that returns queued responses without hitting any LLM API. Use it to test agent logic, tool call handling, skill activation, structured output, and error paths in CI.
+`DeterministicFakeProvider` is a scripted provider that returns queued responses without hitting any LLM API. Use it to test agent logic, tool call handling, structured output, and error paths in CI.
 
 ```ts
 import { Agent } from "@deskcreate/agentcraft";
@@ -67,16 +67,6 @@ const agent = Agent.create({ provider })
 
 const response = await agent.run({ prompt: "Read my config file." });
 expect(response.toolCalls[0].name).toBe("read_file");
-```
-
-## Testing Skill Activation
-
-Assert which skills fired during a run:
-
-```ts
-const response = await agent.run({ prompt: "/summarize Explain caching." });
-
-expect(response.selection.activeSkills).toContain("summarize");
 ```
 
 ## Testing Structured Output

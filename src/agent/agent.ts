@@ -23,7 +23,6 @@ import { parseModelString } from "../types/model-parser.js";
 import type { ModelCapabilities, StreamChunk } from "../types/provider.types.js";
 import type { ResolvedRetryStrategy } from "../types/retry.types.js";
 import type { AgentAdapter } from "./adapters/types.js";
-import type { CreatorPack } from "./creator/types.js";
 import {
   mergeToolPolicies,
   type ToolPolicy,
@@ -151,7 +150,7 @@ export class Agent {
     yield* streamAgentRuntime(this.createRuntimeContext(), params);
   }
 
-  use(adapter: AgentAdapter | CreatorPack): this {
+  use(adapter: AgentAdapter): this {
     const changed = attachAgentAdapter(adapter, {
       adapters: this.adapters,
       pendingInits: this.pendingInits,

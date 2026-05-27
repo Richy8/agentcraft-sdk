@@ -131,7 +131,7 @@ describe('live creator skills and cache smoke tests', () => {
         apiKey: openAiKey!,
         temperature: 0,
         maxTokens,
-        skillActivation: 'auto',
+        traitActivation: 'auto',
         toolSelection: 'auto',
         retry: { maxAttempts: 1, backoff: 'fixed', initialDelay: 100, maxDelay: 100 },
       }).use(CreatorPacks.blog({ cache: 'auto', readOnlyByDefault: true }));
@@ -142,14 +142,14 @@ describe('live creator skills and cache smoke tests', () => {
       const plainScore = scoreCreatorPlan(plainResponse.content);
       const skilledScore = scoreCreatorPlan(skilledResponse.content);
 
-      expect(skilledResponse.selection.activeSkills.length).toBeGreaterThan(0);
-      expect(skilledResponse.selection.activeSkills).toContain('blog-writer');
+      expect(skilledResponse.selection.activeTraits.length).toBeGreaterThan(0);
+      expect(skilledResponse.selection.activeTraits).toContain('blog-writer');
       expect(skilledScore).toBeGreaterThanOrEqual(plainScore);
       expect(skilledScore).toBeGreaterThanOrEqual(3);
 
       reportEntries.push(
         [
-          '## Creator Skill Quality Before/After',
+          '## Creator Trait Quality Before/After',
           '',
           '| Metric | Plain prompt | Creator blog pack |',
           '| --- | ---: | ---: |',
@@ -158,7 +158,7 @@ describe('live creator skills and cache smoke tests', () => {
           `| Completion tokens | ${plainResponse.tokensUsed.completion} | ${skilledResponse.tokensUsed.completion} |`,
           `| Total tokens | ${plainResponse.tokensUsed.total} | ${skilledResponse.tokensUsed.total} |`,
           '',
-          `Active creator skills: ${skilledResponse.selection.activeSkills.map((skill) => `\`${skill}\``).join(', ')}`,
+          `Active creator skills: ${skilledResponse.selection.activeTraits.map((trait) => `\`${skill}\``).join(', ')}`,
           '',
           'Plain prompt output preview:',
           '',

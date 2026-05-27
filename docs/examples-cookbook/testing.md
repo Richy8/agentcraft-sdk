@@ -67,19 +67,6 @@ expect(response.toolCalls).toHaveLength(1);
 expect(response.toolCalls[0].name).toBe("read_file");
 ```
 
-## Asserting Skill Activation
-
-```ts
-import { WritingSkill } from "@deskcreate/agentcraft/skills";
-
-const agent = Agent.create({ provider })
-  .use(WritingSkill.create());
-
-const response = await agent.run({ prompt: "/draft Write an email." });
-
-expect(response.selection.activeSkills).toContain("draft");
-```
-
 ## Testing Structured Output
 
 ```ts

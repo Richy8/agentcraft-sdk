@@ -42,14 +42,12 @@ All fields passed to `Agent.create()` belong to `AgentCreateConfig`. Only `model
 | `responseFormat`   | No                | `{ type: "text" }`      | `"text"` or `"json_object"` mode.                              |
 | `timeout`          | No                | `120000` (ms)           | Request timeout in milliseconds.                               |
 
-### Tool and Skill Fields
+### Tool Fields
 
-| Field             | Required | Default    | Purpose                                                                                                                                    |
-| ----------------- | -------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `tools`           | No       | `[]`       | Static tool definitions attached to every run.                                                                                             |
-| `toolPolicy`      | No       | Permissive | Controls approval, read-only mode, guardrails, redaction, and result size limits.                                                          |
-| `skillActivation` | No       | `"always"` | `"always"` — all attached skills run. `"auto"` — activated by prompt keywords. `"directive-only"` — activated by `/skill-name` directives. |
-| `toolSelection`   | No       | `"all"`    | `"all"` — all attached adapters expose tools. `"auto"` — only adapters relevant to active skills.                                          |
+| Field        | Required | Default    | Purpose                                                                           |
+| ------------ | -------- | ---------- | --------------------------------------------------------------------------------- |
+| `tools`      | No       | `[]`       | Static tool definitions attached to every run.                                    |
+| `toolPolicy` | No       | Permissive | Controls approval, read-only mode, guardrails, redaction, and result size limits. |
 
 ### Retry Fields
 
@@ -196,52 +194,21 @@ const response = await agent.run({ prompt: "Classify this support ticket." });
 console.log(response.content);
 ```
 
-### Skill Activation Modes
+## Attaching Adapters
 
-```ts
-import { Agent, Provider } from "@deskcreate/agentcraft";
-import { SomeSkill } from "./skills/some-skill.js";
-
-// "always" — skills are always active regardless of prompt content (default)
-const always = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "always",
-}).use(SomeSkill.create());
-
-// "auto" — skills activate only when the prompt mentions relevant keywords
-const auto = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "auto",
-  toolSelection: "auto", // pair with auto so only relevant tools are exposed
-}).use(SomeSkill.create());
-
-// "directive-only" — skills activate only when the prompt contains /skill-name
-const directive = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "directive-only",
-}).use(SomeSkill.create());
-```
-
-## Attaching Adapters and Skills
-
-Use `.use()` to attach adapters, skills, or creator packs to an agent. Adapters must be attached before the first `run()`.
+Use `.use()` to attach adapters or MCP connections to an agent. Adapters must be attached before the first `run()`.
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
-import { SomeSkill } from "./skills/some-skill.js";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
 })
-  .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }))
-  .use(SomeSkill.create());
+  .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
 
-// Now agent.run() can invoke Tavily search and SomeSkill tools
+// Now agent.run() can invoke Tavily search tools
 const response = await agent.run({
   prompt: "Research and summarize AgentCraft.",
 });

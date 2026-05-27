@@ -1,15 +1,15 @@
 # Configuration Overview
 
-AgentCraft configuration is layered. Create-time config defines the agent permanently; run-time config shapes one request; attached capabilities (adapters, MCP, skills, packs) each carry their own options. Layers compose: a workspace sets defaults, a team role can narrow them, and each `agent.run()` call can override further.
+AgentCraft configuration is layered. Create-time config defines the agent permanently; run-time config shapes one request; attached capabilities (adapters, MCP) each carry their own options. Layers compose: a workspace sets defaults, a team role can narrow them, and each `agent.run()` call can override further.
 
 ## Config Layers
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │ Agent.create(config)          ← permanent per-agent  │
-│   model, apiKey, cache, toolPolicy, skillActivation  │
+│   model, apiKey, cache, toolPolicy                   │
 ├─────────────────────────────────────────────────────┤
-│ agent.use(adapter / skill / pack / mcp)              │
+│ agent.use(adapter / mcp)                             │
 │   adds tools, behavior, prompt fragments             │
 ├─────────────────────────────────────────────────────┤
 │ agent.run(runConfig)          ← per-request          │
@@ -24,13 +24,11 @@ AgentCraft configuration is layered. Create-time config defines the agent perman
 
 | Config area            | Use it for                                          | Required?        | Deep dive                                              |
 | ---------------------- | --------------------------------------------------- | ---------------- | ------------------------------------------------------ |
-| Agent config           | Provider, model, cache, skill activation, defaults  | Yes              | [Agent Config](./agent-config.md)                      |
+| Agent config           | Provider, model, cache, defaults                    | Yes              | [Agent Config](./agent-config.md)                      |
 | Run config             | Prompt, inputs, budgets, output schema              | Yes, per run     | [Run Config](./run-config.md)                          |
 | Tool policy config     | Approvals, read-only gates, max calls, guardrails   | No               | [Tool Policy Config](./tool-policy-config.md)          |
 | Adapter config         | File, fetch, GitHub, Slack, Playwright, DB, email   | No               | [Adapter Config](./adapter-config.md)                  |
 | MCP config             | External MCP servers via wrappers or generic stdio  | No               | [MCP Config](./mcp-config.md)                          |
-| Skill config           | Primitive skills, domain skills, activation mode    | No               | [Skill Config](./skill-config.md)                      |
-| Creator pack config    | Blog, YouTube, LinkedIn, resume, newsletter packs   | No               | [Creator Pack Config](./creator-pack-config.md)        |
 | Cache config           | Memory, file, SQLite, Postgres, Redis backends      | No               | [Cache Config](./cache-config.md)                      |
 | Structured output      | Zod schema, mode (json / md / text), strict         | No               | [Structured Output Config](./structured-output-config.md) |
 | Workspace config       | Shared cache/store/memory for teams and workflows   | No               | [Workspace Config](./workspace-config.md)              |
@@ -71,11 +69,10 @@ const agent = Agent.create({
     maxResultBytes: 20_000,
     redactSecrets: true,
   },
-  skillActivation: "directive-only",
 });
 
 const response = await agent.run({
-  prompt: "/write Draft a release summary for v2.0.",
+  prompt: "Draft a release summary for v2.0.",
   budget: { maxToolCalls: 8, maxCost: 0.10 },
 });
 console.log(response.content);
@@ -101,7 +98,6 @@ const agent = Agent.create({
     maxResultBytes: 50_000,
     redactSecrets: true,
   },
-  skillActivation: "auto",
   traceSink: tracer,
 })
   .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
@@ -155,6 +151,5 @@ See [Workspace Config](./workspace-config.md) for the full config table and fact
 | ------- | ---- |
 | Passing `apiKey` directly in code | Use `process.env.YOUR_KEY!` and add the key to `.env` |
 | Using `readOnly: true` but expecting file writes | Set `readOnly: false` and add the write tool to `requireConfirmation` |
-| Setting `skillActivation: "auto"` with many packs | Switch to `"directive-only"` for predictable skill selection |
 | Omitting `budget` in production | Always set `maxCost` or `maxToolCalls` for long agentic pipelines |
 | Forgetting to `await agent.run(...)` | `agent.run()` is async; always await the result |

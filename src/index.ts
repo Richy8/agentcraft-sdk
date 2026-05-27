@@ -21,14 +21,8 @@ export type {
   CostReport,
   ModelInfo,
   PromptCompressionMode,
-  SkillPromptAssemblyMode,
-  SkillPromptAssemblyRecord,
-  SkillPromptAssemblyReport,
-  SkillPromptAssemblySection,
   RetryConfig,
   RunBudget,
-  SkillActivationReason,
-  SkillActivationReasonCode,
   TokenUsage,
 } from "./agent/index.js";
 export { PromptAssembler } from "./prompt-assembler/assembler.js";
@@ -221,8 +215,6 @@ export type {
 export type {
   BrandVoiceProfile as CreatorBrandVoiceProfile,
   ContentPillars,
-  CreatorPack,
-  CreatorPackConfig,
   MediaBrief,
   PersonaProfile,
   PublishingStatus,
@@ -299,18 +291,16 @@ export {
   RateLimitError,
   RetryExhaustedError,
   ServiceUnavailableError,
-  SkillNotAttachedError,
   TimeoutError,
   ToolExecutionError,
+  UnsupportedCapabilityError,
   UnsupportedInputError,
 } from "./errors/index.js";
 export type {
   AnthropicModelConfig,
-  AzureModelConfig,
   BaseModelConfig,
   BestFitCriteria,
   BedrockModelConfig,
-  CohereModelConfig,
   DeepSeekModelConfig,
   FinishReason,
   GeminiModelConfig,

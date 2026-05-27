@@ -4,7 +4,6 @@ import {
   TavilySearchAdapter,
 } from "@deskcreate/agentcraft/adapters";
 import { MemoryMCP } from "@deskcreate/agentcraft/mcp";
-import { MemorySkill, ResearchSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -15,16 +14,11 @@ const agent = Agent.create({
   // filePath is optional. Provide it when you want memory stored in a predictable
   // local file for demos or small internal workflows.
   .use(MemoryMCP.connect({ filePath: "./.agentcraft-memory.json" }))
-  // MemorySkill gives the model rules for when to store, recall, and update memory.
-  // It depends on a memory-capable adapter such as MemoryMCP, Redis, Pinecone, or Supabase.
-  .use(MemorySkill.create())
-  // FetchAdapter is a native adapter, not MCP. It lets the same agent fetch
-  // trusted web pages while the memory skill handles continuity across runs.
+  // FetchAdapter is a native adapter, not MCP. It lets the agent fetch
+  // trusted web pages while MemoryMCP handles continuity across runs.
   .use(FetchAdapter.connect({ allowedDomains: ["docs.example.com"] }))
-  // ResearchSkill requires a search/retrieval adapter. Tavily is the compact
-  // web-search path; Firecrawl can be swapped in when crawl depth matters more.
-  .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }))
-  .use(ResearchSkill.create());
+  // TavilySearchAdapter provides web search capability.
+  .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
 
 await agent.run({
   prompt:

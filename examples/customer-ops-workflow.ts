@@ -1,7 +1,6 @@
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { EmailAdapter, SlackAdapter } from "@deskcreate/agentcraft/adapters";
 import { SlackMCP } from "@deskcreate/agentcraft/mcp";
-import { EmailDraftSkill, SummarizeSkill } from "@deskcreate/agentcraft/skills";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -33,11 +32,7 @@ const agent = Agent.create({
       apiKey: process.env.RESEND_API_KEY!,
       from: "support@example.com",
     }),
-  )
-  // SummarizeSkill handles incident/thread condensation. EmailDraftSkill handles
-  // customer-facing copy and depends on EmailAdapter.
-  .use(SummarizeSkill.create())
-  .use(EmailDraftSkill.create());
+  );
 
 const response = await agent.run({
   prompt: [

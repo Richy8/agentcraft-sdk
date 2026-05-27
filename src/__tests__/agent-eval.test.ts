@@ -22,7 +22,7 @@ describe("AgentEval", () => {
         AgentEval.assert.skillActivated("writing"),
       ],
       expect: {
-        activeSkills: ["writing"],
+        activeTraits: ["writing"],
         maxToolCalls: 1,
         cache: { minHitRate: 0.5 },
       },
@@ -34,7 +34,7 @@ describe("AgentEval", () => {
         run: async () =>
           response({
             content: "cache savings improve repeated agent runs.",
-            activeSkills: ["writing"],
+            activeTraits: ["writing"],
             cacheHits: 1,
             cacheMisses: 1,
             toolCalls: 1,
@@ -70,7 +70,7 @@ describe("AgentEval", () => {
       name: "bad answer",
       prompt: "Write.",
       assertions: [AgentEval.assert.notContains("forbidden")],
-      expect: { activeSkills: ["research"] },
+      expect: { activeTraits: ["research"] },
     });
 
     const report = await AgentEval.run({
@@ -79,7 +79,7 @@ describe("AgentEval", () => {
           response({
             content: "forbidden generic output",
             promptTokens: 20,
-            activeSkills: [],
+            activeTraits: [],
           }),
       },
       suite,
@@ -90,7 +90,7 @@ describe("AgentEval", () => {
       "Prompt token gate failed",
     );
     expect(report.results[0]?.failures.join("\n")).toContain(
-      "Expected skill 'research' to be active",
+      "Expected trait 'research' to be active",
     );
   });
 
@@ -126,7 +126,7 @@ function response(config: {
   content: string;
   promptTokens?: number;
   completionTokens?: number;
-  activeSkills?: string[];
+  activeTraits?: string[];
   cacheHits?: number;
   cacheMisses?: number;
   toolCalls?: number;
@@ -144,9 +144,9 @@ function response(config: {
     model: "mock",
     provider: "mock",
     selection: {
-      skillActivation: "auto",
+      traitActivation: "auto",
       toolSelection: "auto",
-      activeSkills: config.activeSkills ?? [],
+      activeTraits: config.activeTraits ?? [],
       activationReasons: [],
       exposedTools: ["mock_tool"],
       executedToolCalls: config.toolCalls ?? 0,

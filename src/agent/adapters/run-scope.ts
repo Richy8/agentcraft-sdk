@@ -1,14 +1,7 @@
 import { AdapterRequirementError, AdapterToolConflictError } from "../../errors/index.js";
 import type { ModelCapabilities } from "../../types/provider.types.js";
-import { isCreatorPack, type CreatorPack } from "../creator/types.js";
-import type { AdapterRef, AgentSkill } from "../skills/types.js";
 import type { AgentRunParams } from "../types.js";
 import type { AgentAdapter } from "./types.js";
-import {
-  adapterRefName,
-  isAgentSkill,
-  isAttachedTo,
-} from "../skills/activation-engine.js";
 
 export interface RunAdapterScope {
   adapters: readonly AgentAdapter[];
@@ -28,15 +21,10 @@ export function createRunAdapterScope(options: {
 
   const runOnlyAdapters: AgentAdapter[] = [];
   const seenNames = new Set(options.currentAdapters.map((adapter) => adapter.name));
-  for (const attachment of requested) {
-    const adapters = isCreatorPack(attachment)
-      ? attachment.attachments
-      : [attachment];
-    for (const adapter of adapters) {
-      if (seenNames.has(adapter.name)) continue;
-      seenNames.add(adapter.name);
-      runOnlyAdapters.push(adapter);
-    }
+  for (const adapter of requested) {
+    if (seenNames.has(adapter.name)) continue;
+    seenNames.add(adapter.name);
+    runOnlyAdapters.push(adapter);
   }
 
   const scopedAdapters = [...options.currentAdapters, ...runOnlyAdapters];
@@ -57,11 +45,7 @@ export function validateScopedAdapters(options: {
 }): void {
   for (const adapter of options.scopedOnly) {
     assertAdapterRequirements(adapter, options.capabilities, options.model);
-    if (isAgentSkill(adapter)) {
-      assertSkillDependencies(adapter, options.scopedAdapters);
-    }
   }
-
   assertNoDeclaredToolConflicts(options.scopedAdapters);
 }
 
@@ -86,38 +70,17 @@ export function assertAdapterRequirements(
   }
 }
 
-export function assertSkillDependencies(
-  skill: AgentSkill,
-  adapters: readonly AgentAdapter[],
-): void {
-  for (const dep of skill.dependsOn ?? []) {
-    if (Array.isArray(dep)) {
-      if (!dep.some((ref) => isAttachedTo(adapters, ref))) {
-        const names = dep.map(adapterRefName).join(" or ");
-        throw new AdapterRequirementError(
-          `Skill '${skill.name}' requires at least one of: [${names}]`,
-        );
-      }
-    } else if (!isAttachedTo(adapters, dep)) {
-      throw new AdapterRequirementError(
-        `Skill '${skill.name}' requires '${adapterRefName(dep)}' - attach it first`,
-      );
-    }
-  }
-}
-
-export function isAttached(adapters: readonly AgentAdapter[], ref: AdapterRef): boolean {
-  const expected = adapterRefName(ref);
-  return adapters.some((adapter) => adapter.name === expected);
+export function isAttached(adapters: readonly AgentAdapter[], name: string): boolean {
+  return adapters.some((adapter) => adapter.name === name);
 }
 
 function normalizeRunAttachments(
   attachments: AgentRunParams["use"],
-): readonly (AgentAdapter | CreatorPack)[] {
+): readonly AgentAdapter[] {
   if (!attachments) return [];
   return Array.isArray(attachments)
-    ? ([...attachments] as Array<AgentAdapter | CreatorPack>)
-    : [attachments as AgentAdapter | CreatorPack];
+    ? ([...attachments] as AgentAdapter[])
+    : [attachments as AgentAdapter];
 }
 
 function assertNoDeclaredToolConflicts(

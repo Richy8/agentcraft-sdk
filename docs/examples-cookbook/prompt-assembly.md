@@ -96,26 +96,6 @@ prompts/
     bullet-points.md
 ```
 
-## Combining With Skill Prompt Fragments
-
-Assembled prompts compose with skills attached via `.use()`:
-
-```ts
-import { WritingSkill } from "@deskcreate/agentcraft/skills";
-
-const agent = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-}).use(WritingSkill.create());
-
-const response = await agent.run({
-  // File prompt + skill prompt fragments are merged in system prompt
-  prompt: promptFile("./prompts/tasks/write-blog.md", {
-    variables: { topic: "TypeScript 5.4 features" },
-  }),
-});
-```
-
 ## Assembly Modes
 
 | Mode | Behavior |
@@ -147,4 +127,3 @@ Use inline strings when:
 
 - [Prompt Assembly reference](../core/prompt-assembly.md)
 - [Prompt Assembly Config](../configuration/prompt-assembly-config.md)
-- [Skills](../skills/overview.md) — skills inject additional prompt fragments

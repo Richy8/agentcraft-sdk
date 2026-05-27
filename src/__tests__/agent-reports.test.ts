@@ -146,9 +146,9 @@ function agentResponse(overrides: Partial<AgentResponse> = {}): AgentResponse {
       },
     ],
     selection: {
-      skillActivation: "auto",
+      traitActivation: "auto",
       toolSelection: "auto",
-      activeSkills: ["writing"],
+      activeTraits: ["writing"],
       activationReasons: [],
       exposedTools: ["mock_tool"],
       executedToolCalls: 1,

@@ -87,7 +87,6 @@ All errors extend `AgentCraftError`, which itself extends `Error`. This means ev
 | `ConfigurationError` | `CONFIGURATION_ERROR` | No | Invalid agent or run configuration |
 | `AdapterRequirementError` | `ADAPTER_REQUIREMENT_NOT_MET` | No | Adapter dependency not satisfied |
 | `AdapterToolConflictError` | `ADAPTER_TOOL_CONFLICT` | No | Two adapters expose conflicting tool names |
-| `SkillNotAttachedError` | `SKILL_NOT_ATTACHED` | No | Directive used for a skill not attached to the agent |
 
 ### Tool and Assembly Errors
 

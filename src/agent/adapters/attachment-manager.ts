@@ -3,11 +3,7 @@ import {
   AdapterToolConflictError,
 } from "../../errors/index.js";
 import type { ModelCapabilities } from "../../types/provider.types.js";
-import { isCreatorPack, type CreatorPack } from "../creator/types.js";
-import {
-  isAgentSkill,
-} from "../skills/activation-engine.js";
-import { assertAdapterRequirements, assertSkillDependencies } from "./run-scope.js";
+import { assertAdapterRequirements } from "./run-scope.js";
 import type { PendingAdapterInit } from "./lifecycle-manager.js";
 import type { AgentAdapter } from "./types.js";
 
@@ -21,36 +17,14 @@ export interface AdapterAttachmentState {
 }
 
 export function attachAgentAdapter(
-  attachment: AgentAdapter | CreatorPack,
+  attachment: AgentAdapter,
   state: AdapterAttachmentState,
 ): boolean {
-  if (isCreatorPack(attachment)) {
-    let changed = false;
-    for (const adapter of attachment.attachments) {
-      changed = attachAgentAdapter(adapter, state) || changed;
-    }
-    return changed;
-  }
-
   if (state.adapters.some((item) => item.name === attachment.name)) {
     return false;
   }
 
   assertAdapterRequirements(attachment, state.capabilities, state.model);
-
-  if (isAgentSkill(attachment)) {
-    try {
-      assertSkillDependencies(attachment, state.adapters);
-    } catch (error) {
-      if (error instanceof AdapterRequirementError) throw error;
-      throw new AdapterRequirementError(
-        `Skill '${attachment.name}' has an invalid dependency: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-    }
-  }
-
   assertNoStaticToolConflict(attachment, state.adapters);
   registerDynamicToolConflictCheck(attachment, state);
 

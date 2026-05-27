@@ -1,10 +1,8 @@
 export type {
   AnthropicModelConfig,
-  AzureModelConfig,
   BaseModelConfig,
   BestFitCriteria,
   BedrockModelConfig,
-  CohereModelConfig,
   DeepSeekModelConfig,
   GeminiModelConfig,
   LocalOpenAICompatConfig,

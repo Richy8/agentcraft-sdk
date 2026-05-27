@@ -47,36 +47,6 @@ Full inventory of every AgentCraft feature. Use this as a navigation index — e
 | **Custom MCP** | Wrap any MCP-compatible server | [Custom MCP](../mcp/custom.md) | [MCP Config](../configuration/mcp-config.md) | [MCP](../examples-cookbook/mcp.md) |
 | **MCP Security** | Prompt injection defense, trust boundaries, allowlisting | [MCP Security](../mcp/security.md) | — | — |
 
-## Skills
-
-| Feature | What it does | Reference | Config | Examples |
-| --- | --- | --- | --- | --- |
-| **Skills** | Structured prompt behaviors that shape how an agent thinks | [Overview](../skills/overview.md) | [Skill Config](../configuration/skill-config.md) | [Skills](../examples-cookbook/skills.md) |
-| **Primitive Skills** | 17 built-in cross-domain skills: Writing, Research, Analysis, Review, Operations | [Primitive Skills](../skills/built-in.md) | [Skill Config](../configuration/skill-config.md) | [Skills](../examples-cookbook/skills.md) |
-| **Skill Activation** | Auto, directive-only, and always-on activation modes | [Skill Activation](../skills/activation.md) | [Skill Config](../configuration/skill-config.md) | [Skills](../examples-cookbook/skills.md) |
-| **Directives** | `/directive` syntax for explicit in-prompt skill activation | [Directives](../skills/directives.md) | — | [Skills](../examples-cookbook/skills.md) |
-| **Skill Registry** | Register, inspect, and instantiate skills programmatically | [Skill Registry](../skills/activation.md) | [Skill Config](../configuration/skill-config.md) | [Skills](../examples-cookbook/skills.md) |
-| **Custom Skills** | Define your own skill with `defineSkill()` | [Custom Skills](../skills/custom.md) | [Skill Config](../configuration/skill-config.md) | [Skills](../examples-cookbook/skills.md) |
-| **External Skills** | Load skills from a GitHub repository with `GitHubSkillLoader` | [External Skills](../skills/external-skills.md) | — | — |
-
-## Industry Domain Skills
-
-| Domain | Skills | Reference |
-| --- | --- | --- |
-| **Brand & Voice** | Brand positioning, tone calibration, voice consistency, competitive analysis | [Brand & Voice](../skills/domains/brand.md) |
-| **Business Operations** | Process analysis, operations reporting, workflow automation | [Business Operations](../skills/domains/business.md) |
-| **Content & Creator** | Content planning, editorial, newsletter, script writing | [Content & Creator](../skills/domains/creator.md) |
-| **Data & Analytics** | Data interpretation, insight generation, visualization planning | [Data & Analytics](../skills/domains/data-analytics.md) |
-| **Engineering** | Code review, architecture, debugging, technical documentation | [Engineering](../skills/domains/engineering.md) |
-| **Finance** | Financial analysis, reporting, forecasting, risk assessment | [Finance](../skills/domains/finance.md) |
-| **Healthcare** | Clinical documentation, patient communication, medical research | [Healthcare](../skills/domains/healthcare.md) |
-| **Legal** | Contract review, legal research, document drafting, compliance | [Legal](../skills/domains/legal.md) |
-| **Marketing** | Campaign planning, copywriting, audience targeting, channel strategy | [Marketing](../skills/domains/marketing.md) |
-| **Personal Productivity** | Task management, scheduling, summarization, meeting prep | [Personal Productivity](../skills/domains/personal-productivity.md) |
-| **Product** | PRD writing, roadmap planning, user research synthesis, discovery | [Product](../skills/domains/product.md) |
-| **Sales** | Outreach, objection handling, pipeline analysis, proposal generation | [Sales](../skills/domains/sales.md) |
-| **Support** | Ticket triage, response drafting, escalation handling, KB search | [Support](../skills/domains/support.md) |
-
 ## Orchestration
 
 | Feature | What it does | Reference | Config | Examples |
@@ -130,16 +100,12 @@ Full inventory of every AgentCraft feature. Use this as a navigation index — e
 | Tools, Tool Policy, Guardrails, Approvals | Stable |
 | Built-In Adapters, Custom Adapters | Stable |
 | Built-In MCP Wrappers, Custom MCP | Stable |
-| Primitive Skills, Skill Activation, Directives | Stable |
 | AgentCache (memory, file, SQLite) | Stable |
 | Artifact Store (Memory, File, SQLite) | Stable |
 | AgentWorkflow, AgentTeam, AgentPool, AgentWorkspace | Stable |
 | AgentEval, AgentReports | Stable |
-| Industry Domain Skills | Beta |
 | Semantic Memory | Beta |
 | AgentCache (Redis, Postgres) | Beta |
 | Distributed Cache with locking | Beta |
 | Dynamic Team Spawning | Beta |
 | Creator Memory Store, Analytics History Store | Beta |
-| Skill Registry programmatic API | Beta |
-| External Skills (GitHubSkillLoader) | Experimental |

@@ -26,16 +26,12 @@
 | `responseFormat`   | `{ type: "text" }` | `"text"` or `"json_object"` output format. |
 | `timeout`          | `120000` ms        | Per-request timeout in milliseconds.       |
 
-### Tools and Skills
+### Tools
 
-| Field                 | Default           | Purpose                                                                                             |
-| --------------------- | ----------------- | --------------------------------------------------------------------------------------------------- |
-| `tools`               | `[]`              | Static tool definitions available on every run.                                                     |
-| `toolPolicy`          | Permissive        | Controls approval, read-only mode, guardrails, result truncation, and secret redaction.             |
-| `skillActivation`     | `"always"`        | `"always"` — all skills active. `"auto"` — keyword-activated. `"directive-only"` — `/name` trigger. |
-| `toolSelection`       | `"all"`           | `"all"` — all adapters expose tools. `"auto"` — only adapters relevant to active skills.            |
-| `promptCompression`   | `"none"`          | `"none"`, `"safe"`, `"balanced"`, or `"aggressive"` skill prompt compression.                       |
-| `skillPromptAssembly` | `"adaptive-safe"` | `"full"`, `"adaptive-safe"`, `"compact"`, or `"minimal"` skill prompt section selection.            |
+| Field        | Default    | Purpose                                                                                 |
+| ------------ | ---------- | --------------------------------------------------------------------------------------- |
+| `tools`      | `[]`       | Static tool definitions available on every run.                                         |
+| `toolPolicy` | Permissive | Controls approval, read-only mode, guardrails, result truncation, and secret redaction. |
 
 ### Retry
 
@@ -229,61 +225,6 @@ const response = await agent.run({
   prompt: "Draft a customer update about the cache rollout.",
 });
 console.log(response.content);
-```
-
-### With Skill Activation Modes
-
-```ts
-import { Agent, Provider } from "@deskcreate/agentcraft";
-import { SomeSkill } from "./skills/some-skill.js";
-
-// "always": skill is always active (default) — good for single-purpose agents
-const always = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "always",
-}).use(SomeSkill.create());
-
-// "auto": skill activates when prompt keywords match — good for multi-skill agents
-const auto = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "auto",
-  toolSelection: "auto", // pair with "auto" so only relevant tools are exposed
-}).use(SomeSkill.create());
-
-// "directive-only": skill activates only when prompt contains /skill-name
-const directive = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "directive-only",
-}).use(SomeSkill.create());
-
-const r1 = await always.run({ prompt: "Do the thing." });
-const r2 = await auto.run({ prompt: "Do something related to some-skill." });
-const r3 = await directive.run({ prompt: "/some-skill do the thing." });
-```
-
-### With Prompt Compression
-
-```ts
-import { Agent, Provider } from "@deskcreate/agentcraft";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
-
-const agent = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "auto",
-  toolSelection: "auto",
-  promptCompression: "balanced",
-}).use(CreatorPacks.blog({ cache: "auto" }));
-
-const response = await agent.run({
-  prompt: "Create a Medium article plan about lowering agent token waste.",
-  budget: { mode: "prefer-cache", maxCost: 0.03 },
-});
-
-console.log(response.measurement?.estimatedPromptTokens);
 ```
 
 ### Azure OpenAI Provider

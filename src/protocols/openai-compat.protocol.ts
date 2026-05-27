@@ -1,4 +1,4 @@
-import OpenAI, { AzureOpenAI } from 'openai';
+import OpenAI from 'openai';
 import type {
   ChatCompletion,
   ChatCompletionCreateParams,
@@ -14,7 +14,7 @@ import type {
 } from 'openai/resources/responses/responses.js';
 import type { AgentCraftError } from '../errors/index.js';
 import type { ProviderDefinition } from '../provider-registry/registry.js';
-import type { AzureModelConfig, ModelConfig } from '../types/config.types.js';
+import type { ModelConfig } from '../types/config.types.js';
 import type { FinishReason, LLMCallParams, LLMResponse, StreamChunk, ToolCall } from '../types/provider.types.js';
 import { mapCommonError } from './shared/map-error.js';
 import type { ProviderProtocol, ToolDefinition, ToolResult } from './types.js';
@@ -36,23 +36,13 @@ export class OpenAICompatProtocol implements ProviderProtocol {
     const apiKey = definition.noAuth ? 'no-key' : 'apiKey' in config ? config.apiKey : 'no-key';
     const headers = { ...definition.defaultHeaders };
 
-    if (definition.useAzureClient) {
-      const azCfg = config as AzureModelConfig;
-      return new AzureOpenAI({
-        endpoint: azCfg.endpoint,
-        apiKey,
-        deployment: azCfg.deployment,
-        apiVersion: azCfg.apiVersion ?? '2024-08-01-preview',
-        defaultHeaders: headers,
-      });
-    }
-
     return new OpenAI({ apiKey, baseURL, defaultHeaders: headers });
   }
 
   formatRequest(params: LLMCallParams, config: ModelConfig): ChatCompletionCreateParamsNonStreaming | TaggedOpenAIRequest {
     if (usesResponsesApi(config)) {
-      return { api: 'responses', request: this.formatResponsesRequest(params, config) };
+      const request = this.formatResponsesRequest(params, config);
+      return { api: 'responses', request };
     }
 
     return this.formatChatRequest(params, config);
@@ -67,7 +57,7 @@ export class OpenAICompatProtocol implements ProviderProtocol {
     ];
 
     const request: ChatCompletionCreateParamsNonStreaming = {
-      model: config.provider === 'azure' ? config.deployment : config.model,
+      model: config.model,
       messages,
     };
 
@@ -107,11 +97,12 @@ export class OpenAICompatProtocol implements ProviderProtocol {
 
   formatRequestWithTools(params: LLMCallParams, config: ModelConfig, nativeTools: unknown): ChatCompletionCreateParamsNonStreaming | TaggedOpenAIRequest {
     if (usesResponsesApi(config)) {
+      const functionTools = toResponsesTools(nativeTools as ChatCompletionTool[]);
       return {
         api: 'responses',
         request: {
           ...this.formatResponsesRequest(params, config),
-          tools: toResponsesTools(nativeTools as ChatCompletionTool[]),
+          tools: functionTools as NonNullable<ResponseCreateParamsNonStreaming['tools']>,
         },
       };
     }

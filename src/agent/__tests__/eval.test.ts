@@ -96,9 +96,9 @@ describe('AgentEval.assert', () => {
     expect(result.passed).toBe(false);
   });
 
-  it('skillActivated passes when skill is in activeSkills', async () => {
+  it('skillActivated passes when skill is in activeTraits', async () => {
     const response = fakeResponse('ok', {
-      selection: { skillActivation: 'auto', toolSelection: 'auto', activeSkills: ['blog-writer'], exposedTools: [] },
+      selection: { traitActivation: 'auto', toolSelection: 'auto', activeTraits: ['blog-writer'], exposedTools: [] },
     });
     const result = await AgentEval.assert.skillActivated('blog-writer').evaluate(response, ctx);
     expect(result.passed).toBe(true);
@@ -106,7 +106,7 @@ describe('AgentEval.assert', () => {
 
   it('skillActivated fails when skill is absent', async () => {
     const response = fakeResponse('ok', {
-      selection: { skillActivation: 'auto', toolSelection: 'auto', activeSkills: [], exposedTools: [] },
+      selection: { traitActivation: 'auto', toolSelection: 'auto', activeTraits: [], exposedTools: [] },
     });
     const result = await AgentEval.assert.skillActivated('blog-writer').evaluate(response, ctx);
     expect(result.passed).toBe(false);
@@ -205,7 +205,7 @@ describe('AgentEval.compare', () => {
           promptTokens: tokens,
           completionTokens: 50,
           totalTokens: tokens + 50,
-          activeSkills: [],
+          activeTraits: [],
           exposedTools: [],
           executedToolCalls: 0,
         },

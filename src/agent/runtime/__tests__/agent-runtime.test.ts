@@ -21,7 +21,6 @@ describe("agent runtime orchestration", () => {
 
     expect(response.content).toBe("ok");
     expect(response.selection).toMatchObject({
-      skillActivation: "always",
       toolSelection: "all",
       exposedTools: ["mock_tool"],
     });
@@ -87,7 +86,6 @@ function runtimeContext(
       toolCallsAvoided: 1,
       estimatedSavedTokens: 12,
     }),
-    skillActivationMode: "always",
     toolSelectionMode: "all",
     getCapabilities: () => capabilities,
     resetCacheStats: vi.fn(),
@@ -97,10 +95,7 @@ function runtimeContext(
     createRunAdapterScope: vi.fn(() => ({ adapters: [] as AgentAdapter[], runOnlyAdapters: [] })),
     initRunAdapters: vi.fn(async () => undefined),
     cleanupRunAdapters: vi.fn(async () => undefined),
-    applySkillSystemPrompts: vi.fn((params) => params),
     resolvePromptCompression: vi.fn(() => "none"),
-    resolveSkillPromptAssembly: vi.fn(() => "adaptive-safe"),
-    selectActiveSkillMatches: vi.fn(() => []),
     applyPromptCompression: vi.fn((params) => params),
     preprocessDirectives: vi.fn((params) => params),
     collectTools: vi.fn(async () => [tool]),

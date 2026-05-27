@@ -9,8 +9,7 @@ Every `agent.run()` call follows this sequence:
 ```txt
 1. Preflight
    └─ Budget check (preflight cost estimation)
-   └─ Skill activation (auto / directive-only / always)
-   └─ Prompt assembly (skill fragments + user prompt + system)
+   └─ Prompt assembly (user prompt + system)
 
 2. Tool exposure
    └─ Adapters expose their ToolDefinitions
@@ -43,17 +42,17 @@ Every `agent.run()` call follows this sequence:
 ┌──────────────────────────▼──────────────────────────────────────┐
 │                         Agent (Facade)                          │
 │  create · use · run · stream · estimateCost · inspect · catalog │
-└──────┬──────────────┬──────────────┬──────────────┬────────────┘
-       │              │              │              │
-  ┌────▼────┐   ┌─────▼──────┐ ┌────▼────┐   ┌────▼────────┐
-  │ Runtime │   │   Skills   │ │  Tools  │   │   Memory    │
-  │         │   │ Activation │ │ Manager │   │  Injector   │
-  │ run/    │   │ Engine     │ │         │   │             │
-  │ stream  │   │            │ │ policy  │   │ semantic    │
-  │ trace   │   │ prompt     │ │ cache   │   │ retrieval   │
-  │ cost    │   │ assembly   │ │ execute │   │ injection   │
-  └────┬────┘   └─────┬──────┘ └────┬────┘   └────────────┘
+└──────┬──────────────┬──────────────┬────────────────────────┘
        │              │              │
+  ┌────▼────┐   ┌─────▼──────┐ ┌────▼────────┐
+  │ Runtime │   │   Tools    │ │   Memory    │
+  │         │   │  Manager   │ │  Injector   │
+  │ run/    │   │            │ │             │
+  │ stream  │   │ policy     │ │ semantic    │
+  │ trace   │   │ cache      │ │ retrieval   │
+  │ cost    │   │ execute    │ │ injection   │
+  └────┬────┘   └─────┬──────┘ └────────────┘
+       │              │
   ┌────▼──────────────▼──────────────▼──────────────────────────┐
   │                    Provider Protocol                         │
   │  OpenAI · Anthropic · Gemini · Bedrock · Groq · Mistral     │
@@ -79,8 +78,6 @@ The `Agent` class is an intentionally thin facade. Internal behavior is split ac
 | `agent/adapters/attachment-manager` | `.use()` attachment validation, dependency checks, tool-name conflict detection |
 | `agent/adapters/lifecycle-manager` | Adapter init/cleanup, run-only adapter cleanup order |
 | `agent/adapters/run-scope` | Run-level `use` attachments and scoped dependency validation |
-| `agent/skills/activation-engine` | Skill activation decisions for `always`, `auto`, and `directive-only` modes |
-| `agent/skills/prompt-assembler` | Adaptive skill prompt section selection and prompt inspection |
 | `agent/tools/tool-manager` | Tool exposure, policy wrapping, trace policy, MCP wrapping, cache wiring |
 | `agent/tools/tool-cache-manager` | Cache lookup/write behavior around tool execution |
 | `agent/memory/context-injector` | Per-run semantic memory retrieval and bounded context injection |
@@ -115,32 +112,6 @@ Model requests tool call
         ▼
 6. Cache write (if security.cache.safe && security.cache.deterministic)
 7. Result appended to conversation → next LLM turn
-```
-
-## Skill Activation Flow
-
-```txt
-agent.run({ prompt })
-        │
-        ▼
-Parse directives from prompt
-   e.g. "/write" → WritingSkill
-   e.g. "/summarize" → SummarizeSkill
-        │
-        ▼
-Apply skillActivation mode
-   "always"         → all attached skills active
-   "auto"           → keyword matching against skill domains
-   "directive-only" → only explicitly /directed skills active
-        │
-        ▼
-Build skill prompt fragments
-   Each active skill contributes a system-level section
-   Fragments assembled in priority order
-        │
-        ▼
-Final system prompt = base system + skill fragments
-Injected into LLM call alongside user prompt
 ```
 
 ## Orchestration Layer
@@ -182,7 +153,6 @@ AgentPool (request distribution)
 | Tool execution | `ToolDefinition` + `ToolPolicy` | All tool calls through this agent |
 | Adapter lifecycle | Adapter constructor config + `.use()` | Adapter's tools on this agent |
 | MCP server | `MCPAdapter.connect()` or built-in wrapper config | All tool calls from that MCP server |
-| Skills | `defineSkill()` spec or `.use(SomeSkill.create())` | Skill prompt contribution per run |
 | Workspace | `AgentWorkspace.memory()` | Shared across all agents in the workspace |
 | Workflow | `AgentWorkflow.create({ steps, workspace })` | All steps in the workflow run |
 
@@ -194,12 +164,6 @@ import { Agent, AgentCache, PromptAssembler } from "@deskcreate/agentcraft";
 
 // Adapters — all built-in and specialized adapters
 import { FetchAdapter, FileSystemAdapter, EmailAdapter } from "@deskcreate/agentcraft/adapters";
-
-// Skills — primitive skills, skill registry, skill packs
-import { WritingSkill, SummarizeSkill, SkillRegistry } from "@deskcreate/agentcraft/skills";
-
-// Domain packs — industry skill packs
-import { createSkillPackByName } from "@deskcreate/agentcraft/skills";
 
 // Team — AgentTeam, AgentWorkflow, AgentWorkspace
 import { AgentTeam, AgentWorkflow, AgentWorkspace } from "@deskcreate/agentcraft/team";

@@ -21,29 +21,31 @@ export class AnthropicProtocol implements ProviderProtocol {
 
   formatRequest(params: LLMCallParams, config: ModelConfig): Anthropic.MessageCreateParamsNonStreaming {
     const state = params._providerState as AnthropicState | undefined;
-    const request: Anthropic.MessageCreateParamsNonStreaming = {
+    const request: Record<string, unknown> = {
       model: config.model,
       max_tokens: params.maxTokens ?? 1024,
       messages: [...(state?.messages ?? []), { role: 'user', content: params.prompt }],
     };
 
-    if (params.systemMessage !== undefined) request.system = params.systemMessage;
-    if (params.temperature !== undefined) request.temperature = params.temperature;
-    if (params.topP !== undefined) request.top_p = params.topP;
-    if (params.stopSequences !== undefined) request.stop_sequences = params.stopSequences;
+    if (params.systemMessage !== undefined) request['system'] = params.systemMessage;
+    if (params.temperature !== undefined) request['temperature'] = params.temperature;
+    if (params.topP !== undefined) request['top_p'] = params.topP;
+    if (params.stopSequences !== undefined) request['stop_sequences'] = params.stopSequences;
 
-    return request;
+    return request as unknown as Anthropic.MessageCreateParamsNonStreaming;
   }
 
   formatRequestWithTools(params: LLMCallParams, config: ModelConfig, nativeTools: unknown): Anthropic.MessageCreateParamsNonStreaming {
-    return {
-      ...this.formatRequest(params, config),
-      tools: nativeTools as Anthropic.Tool[],
-    };
+    const base = this.formatRequest(params, config) as unknown as Record<string, unknown>;
+    const agentTools = nativeTools as Anthropic.Tool[];
+    base['tools'] = [...agentTools];
+    return base as unknown as Anthropic.MessageCreateParamsNonStreaming;
   }
 
   async callRaw(client: unknown, nativeRequest: unknown): Promise<unknown> {
-    return (client as Anthropic).messages.create(nativeRequest as Anthropic.MessageCreateParamsNonStreaming);
+    const anthropic = client as Anthropic;
+    const params = nativeRequest as Anthropic.MessageCreateParamsNonStreaming;
+    return anthropic.messages.create(params);
   }
 
   extractResponse(raw: unknown): LLMResponse {
@@ -113,7 +115,9 @@ export class AnthropicProtocol implements ProviderProtocol {
   }
 
   async *stream(client: unknown, nativeRequest: unknown): AsyncGenerator<StreamChunk> {
-    const stream = (client as Anthropic).messages.stream(nativeRequest as Anthropic.MessageCreateParamsNonStreaming);
+    const stream = (client as Anthropic).messages.stream(
+      nativeRequest as Anthropic.MessageCreateParamsNonStreaming,
+    );
     const toolBlocks = new Map<number, { id: string; name: string; arguments: string }>();
 
     for await (const event of stream) {

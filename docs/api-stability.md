@@ -10,7 +10,6 @@ Current stable entry points:
 
 - `agentcraft`
 - `agentcraft/adapters`
-- `agentcraft/skills`
 - `agentcraft/mcp`
 - `agentcraft/team`
 

@@ -57,14 +57,14 @@ describe('AgentReports.fromResponse', () => {
   it('includes selection data when present', () => {
     const response = makeResponse({
       selection: {
-        skillActivation: 'auto',
+        traitActivation: 'auto',
         toolSelection: 'auto',
-        activeSkills: ['blog-writer'],
+        activeTraits: ['blog-writer'],
         exposedTools: ['web-search'],
       },
     });
     const report = AgentReports.fromResponse(response, { include: { toolCalls: true } });
-    expect(report.selection?.activeSkills).toContain('blog-writer');
+    expect(report.selection?.activeTraits).toContain('blog-writer');
   });
 
   it('redacts secrets when redact option is true', () => {

@@ -6,8 +6,8 @@ Accepted
 
 ## Context
 
-`Agent` is the primary public entry point for running prompts, attaching skills,
-tools, memory, cache, budgets, and observability. As features expanded, runtime
+`Agent` is the primary public entry point for running prompts, attaching
+tools, adapters, memory, cache, budgets, and observability. As features expanded, runtime
 coordination and implementation details began to live in the same class.
 
 ## Decision
@@ -21,5 +21,5 @@ through `Agent.create()`, `.use()`, `.run()`, and `.stream()`.
 - Public API stability is preserved while internals become easier to test.
 - New runtime behavior should be added behind focused helpers before being wired
   into `Agent`.
-- Refactors must be protected by characterization tests around run, stream, skill,
+- Refactors must be protected by characterization tests around run, stream,
   cache, memory, budget, and tool behavior.

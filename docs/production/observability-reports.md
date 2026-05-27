@@ -32,7 +32,7 @@ Reports can include:
 
 - run identity, provider, model, status, and timestamps.
 - token usage, cost, budget mode, and stale-pricing warnings.
-- skill selection, activation reasons, exposed tools, and executed tool calls.
+- exposed tools and executed tool calls.
 - cache hits, misses, writes, hit rate, avoided calls, and estimated saved tokens.
 - workflow steps, team rounds, team traces, and trace timeline.
 - errors, retry spans, and guardrail/tool failures when traces capture them.

@@ -3,6 +3,7 @@ import type { ToolDefinition } from "../../protocols/types.js";
 import type { BaseLLMProvider } from "../../providers/base.provider.js";
 import type { LLMCallParams, LLMResponse, ModelCapabilities, StreamChunk } from "../../types/provider.types.js";
 import type { AgentMemoryStore } from "../memory/index.js";
+import type { AgentCacheController } from "../cache/index.js";
 import { RunTracer } from "../observability.js";
 import { summarizeCacheStats, type CacheStatsLike } from "../cache/index.js";
 import {
@@ -19,15 +20,11 @@ import {
   createStructuredOutputToolForRun,
 } from "./structured-output-flow.js";
 import type { StructuredOutputToolState } from "./structured-output-handler.js";
-import { buildSkillPromptAssemblyReport } from "../skills/prompt-assembler.js";
 import type {
   AgentResponse,
   AgentRunParams,
   PromptCompressionMode,
-  SkillPromptAssemblyMode,
-  SkillPromptAssemblyRecord,
 } from "../types.js";
-import type { ActiveSkillMatch } from "../skills/activation-engine.js";
 import {
   applyBeforeRunAdapters,
   preparePromptAndTools,
@@ -43,7 +40,6 @@ export interface AgentRuntimeContext {
   readonly memory?: AgentMemoryStore;
   readonly attachedAdapters: readonly AgentAdapter[];
   readonly getCacheStats: () => CacheStatsLike;
-  readonly skillActivationMode: "always" | "directive-only" | "auto";
   readonly toolSelectionMode: "all" | "auto";
   readonly getCapabilities: () => ModelCapabilities;
   readonly resetCacheStats: () => void;
@@ -53,25 +49,10 @@ export interface AgentRuntimeContext {
   readonly createRunAdapterScope: (params: AgentRunParams) => RunAdapterScope;
   readonly initRunAdapters: (adapters: readonly AgentAdapter[]) => Promise<void>;
   readonly cleanupRunAdapters: (adapters: readonly AgentAdapter[]) => Promise<void>;
-  readonly applySkillSystemPrompts: (
-    params: AgentRunParams,
-    adapters: readonly AgentAdapter[],
-    assemblyRecords: SkillPromptAssemblyRecord[],
-  ) => AgentRunParams;
   readonly resolvePromptCompression: (params: AgentRunParams) => PromptCompressionMode;
-  readonly resolveSkillPromptAssembly: (params: AgentRunParams) => SkillPromptAssemblyMode;
-  readonly selectActiveSkillMatches: (
-    params: AgentRunParams,
-    adapters: readonly AgentAdapter[],
-  ) => ActiveSkillMatch[];
   readonly applyPromptCompression: (
     params: AgentRunParams,
     mode: PromptCompressionMode,
-  ) => AgentRunParams;
-  readonly preprocessDirectives: (
-    params: AgentRunParams,
-    adapters: readonly AgentAdapter[],
-    assemblyRecords: SkillPromptAssemblyRecord[],
   ) => AgentRunParams;
   readonly collectTools: (
     params: AgentRunParams,
@@ -80,6 +61,7 @@ export interface AgentRuntimeContext {
     executionBudget: ToolExecutionBudget,
   ) => Promise<ToolDefinition[]>;
   readonly toLLMParams: (params: AgentRunParams) => LLMCallParams;
+  readonly getCache?: () => AgentCacheController | undefined;
   readonly callModelWithStructuredOutput: (
     llmParams: LLMCallParams,
     tools: readonly ToolDefinition[],
@@ -109,14 +91,14 @@ export async function runAgentRuntime(
       tracer,
       agentSpan,
     });
+
     params = promptState.params;
     const {
       executionBudget,
-      skillPromptAssemblyRecords,
       promptCompression,
-      activeSkillMatches,
       allTools,
     } = promptState;
+
     const structuredTool = createStructuredOutputToolForRun(params, context.getCapabilities());
     const modelTools: ToolDefinition[] = structuredTool
       ? [
@@ -164,22 +146,12 @@ export async function runAgentRuntime(
       runId: tracer.runId,
       promptProvenance: promptProvenance(params),
       selection: {
-        skillActivation: context.skillActivationMode,
         toolSelection: context.toolSelectionMode,
-        activeSkills: activeSkillMatches.map((match) => match.skill.name),
-        activationReasons: activeSkillMatches.map(({ skill, ...reason }) => ({
-          skill: skill.name,
-          ...reason,
-        })),
+        activeTraits: [],
+        activationReasons: [],
         exposedTools: allTools.map((tool) => tool.name),
         executedToolCalls: executionBudget.count,
       },
-      ...(skillPromptAssemblyRecords.length > 0 && {
-        promptAssembly: {
-          mode: context.resolveSkillPromptAssembly(params),
-          records: skillPromptAssemblyRecords,
-        },
-      }),
       measurement,
       cache: {
         ...context.getCacheStats(),
@@ -261,6 +233,7 @@ export async function* streamAgentRuntime(
       tracer,
       agentSpan,
     });
+
     params = promptState.params;
     const runParams = await applyBeforeRunAdapters(params, runScope);
 
@@ -272,13 +245,6 @@ export async function* streamAgentRuntime(
       tracer,
       parentSpanId: agentSpan.spanId,
       ...(params.signal !== undefined && { signal: params.signal }),
-      ...(() => {
-        const promptAssembly = buildSkillPromptAssemblyReport(
-          context.resolveSkillPromptAssembly(params),
-          promptState.skillPromptAssemblyRecords,
-        );
-        return promptAssembly === undefined ? {} : { promptAssembly };
-      })(),
     });
     tracer.end(agentSpan);
   } finally {
@@ -293,7 +259,6 @@ async function* streamWithHooks(options: {
   readonly tracer: RunTracer;
   readonly parentSpanId: string;
   readonly signal?: AbortSignal;
-  readonly promptAssembly?: ReturnType<typeof buildSkillPromptAssemblyReport>;
 }): AsyncGenerator<StreamChunk> {
   const chunks: StreamChunk[] = [];
   const modelSpan = options.tracer.start(
@@ -322,10 +287,6 @@ async function* streamWithHooks(options: {
       runId: options.tracer.runId,
       spanId: modelSpan.spanId,
       parentSpanId: options.parentSpanId,
-      ...(type === "final" &&
-        options.promptAssembly !== undefined && {
-          promptAssembly: options.promptAssembly,
-        }),
     } satisfies StreamChunk;
     chunks.push(enriched);
     yield enriched;

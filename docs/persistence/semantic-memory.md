@@ -207,48 +207,6 @@ await agent.run({
 });
 ```
 
-## Memory With Creator Packs
-
-Use this when a creator workflow should remember brand and audience context while still using skill auto-activation.
-
-```ts
-import {
-  Agent,
-  AgentMemory,
-  AgentWorkspace,
-  Provider,
-} from "@deskcreate/agentcraft";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
-
-const memory = AgentMemory.local({
-  root: ".agentcraft/memory",
-  namespace: "creator-workspace",
-  writes: { requireApproval: false },
-});
-
-await memory.add({
-  scope: "brand",
-  text: "Voice: practical, specific, no hype. Audience: technical founders.",
-  source: "brand-workshop",
-});
-
-const agent = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-  workspace: AgentWorkspace.create({ memory }),
-  skillActivation: "auto",
-  promptCompression: "balanced",
-}).use(CreatorPacks.linkedin({ readOnlyByDefault: true }));
-
-const response = await agent.run({
-  prompt: "Draft five LinkedIn post ideas about reducing agent runtime cost.",
-  memory: { scopes: ["brand"], topK: 2, maxContextChars: 900 },
-});
-
-console.log(response.selection?.activeSkills);
-console.log(response.content);
-```
-
 ## Memory With Approval Queue
 
 Use a queue when user memories should be reviewed before becoming durable cross-run context.

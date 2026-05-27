@@ -10,11 +10,9 @@ import type {
 import type { CostOptions } from "../cost-calculator/index.js";
 import type { Agent } from "./agent.js";
 import type { AgentAdapter } from "./adapters/types.js";
-import type { CreatorPack } from "./creator/types.js";
 import type { ToolPolicy } from "./adapters/tool-policy.js";
 import type { TraceSink, TraceSpan } from "./observability.js";
 import type { AgentMemoryStore, MemoryRetrievalOptions } from "./memory/index.js";
-import type { AgentSkill } from "./skills/types.js";
 import type { AgentWorkspaceInstance } from "./workspace.js";
 import type { CacheEfficiencySummary } from "./cache/index.js";
 import type {
@@ -62,35 +60,6 @@ export interface AgentFile {
   data: string;
 }
 
-export type SkillPromptAssemblySection =
-  | "role"
-  | "goal"
-  | "constraints"
-  | "toolUsePolicy"
-  | "outputFormat"
-  | "qualityChecklist"
-  | "failureBehavior"
-  | "safetyNotes"
-  | "examples"
-  | "systemPromptExtension";
-
-export interface SkillPromptAssemblyRecord {
-  readonly skill: string;
-  readonly mode: SkillPromptAssemblyMode;
-  readonly activationMode: "always" | "auto" | "directive-only";
-  readonly directiveBoundary: boolean;
-  readonly activeSkillCount: number;
-  readonly includedSections: readonly SkillPromptAssemblySection[];
-  readonly omittedSections: readonly SkillPromptAssemblySection[];
-  readonly assemblyChars: number;
-  readonly fullPromptChars?: number;
-  readonly runtimeContextIncluded: boolean;
-}
-
-export interface SkillPromptAssemblyReport {
-  readonly mode: SkillPromptAssemblyMode;
-  readonly records: readonly SkillPromptAssemblyRecord[];
-}
 
 export interface AgentResponse {
   content: string;
@@ -111,14 +80,12 @@ export interface AgentResponse {
     assembled: boolean;
   };
   selection?: {
-    skillActivation: "always" | "auto" | "directive-only";
     toolSelection: "all" | "auto";
-    activeSkills: string[];
-    activationReasons?: SkillActivationReason[];
+    activeTraits: string[];
+    activationReasons?: readonly { readonly trait: string; readonly reason: string; readonly confidence: number; readonly matched?: string }[];
     exposedTools: string[];
     executedToolCalls?: number;
   };
-  promptAssembly?: SkillPromptAssemblyReport;
   measurement?: {
     promptChars: number;
     systemChars: number;
@@ -143,23 +110,6 @@ export interface AgentResponse {
   };
 }
 
-export type SkillActivationReasonCode =
-  | "always"
-  | "directive"
-  | "exact-alias"
-  | "creator-artifact"
-  | "capability"
-  | "keyword"
-  | "semantic"
-  | "deep-boost"
-  | "not-activated";
-
-export interface SkillActivationReason {
-  readonly skill: string;
-  readonly reason: SkillActivationReasonCode;
-  readonly confidence: number;
-  readonly matched?: string;
-}
 
 export interface CachePolicy {
   /**
@@ -210,7 +160,6 @@ export interface CostReport {
 }
 
 export type PromptCompressionMode = "none" | "safe" | "balanced" | "aggressive";
-export type SkillPromptAssemblyMode = "full" | "adaptive-safe" | "compact" | "minimal";
 
 export interface AgentRunParams {
   prompt?: string;
@@ -231,7 +180,6 @@ export interface AgentRunParams {
     loader?: IPromptLoader;
   };
   promptCompression?: PromptCompressionMode;
-  skillPromptAssembly?: SkillPromptAssemblyMode;
   system?: string;
   temperature?: number;
   maxTokens?: number;
@@ -241,12 +189,12 @@ export interface AgentRunParams {
   stopSequences?: string[];
   tools?: ToolDefinition[];
   /**
-   * Attach skills, adapters, or creator packs for this run only.
+   * Attach adapters for this run only.
    *
-   * Use this when a tool/skill should be available to one prompt without
+   * Use this when a tool/adapter should be available to one prompt without
    * becoming part of the agent's global context or default tool surface.
    */
-  use?: AgentRunAttachment | readonly AgentRunAttachment[];
+  use?: AgentAdapter | readonly AgentAdapter[];
   toolPolicy?: ToolPolicy;
   images?: AgentImage[];
   audio?: AgentAudio[];
@@ -269,7 +217,7 @@ export interface AgentRunParams {
       });
 }
 
-export type AgentRunAttachment = AgentAdapter | CreatorPack;
+export type AgentRunAttachment = AgentAdapter;
 
 export interface AgentPoolOptions {
   strategy:
@@ -346,7 +294,6 @@ export interface AgentTeamConfig {
    * sharedAdapters is ignored with a warning.
    */
   readonly sharedAdapters?: AgentAdapter[];
-  readonly sharedSkills?: AgentSkill[];
   /**
    * @deprecated Include memory as an MCP adapter in workspace.mcps instead.
    */

@@ -21,31 +21,13 @@ export interface OpenAIModelConfig extends BaseModelConfig {
 }
 
 export interface OpenAICompatCloudConfig extends BaseModelConfig {
-  provider:
-    | 'groq'
-    | 'mistral'
-    | 'together'
-    | 'fireworks'
-    | 'perplexity'
-    | 'openrouter'
-    | 'anyscale'
-    | 'novita'
-    | 'xai'
-    | 'cerebras';
+  provider: 'groq' | 'mistral' | 'xai';
   apiKey: string;
   baseUrl?: string;
 }
 
-export interface AzureModelConfig extends BaseModelConfig {
-  provider: 'azure';
-  apiKey: string;
-  endpoint: string;
-  deployment: string;
-  apiVersion?: string;
-}
-
 export interface LocalOpenAICompatConfig extends BaseModelConfig {
-  provider: 'ollama' | 'lmstudio' | 'vllm' | 'localai';
+  provider: 'ollama';
   baseUrl?: string;
 }
 
@@ -65,11 +47,6 @@ export interface GeminiModelConfig extends BaseModelConfig {
   apiKey: string;
 }
 
-export interface CohereModelConfig extends BaseModelConfig {
-  provider: 'cohere';
-  apiKey: string;
-}
-
 export interface BedrockModelConfig extends BaseModelConfig {
   provider: 'bedrock';
   region: string;
@@ -86,12 +63,10 @@ export interface VertexAIModelConfig extends BaseModelConfig {
 export type ModelConfig =
   | OpenAIModelConfig
   | OpenAICompatCloudConfig
-  | AzureModelConfig
   | LocalOpenAICompatConfig
   | DeepSeekModelConfig
   | AnthropicModelConfig
   | GeminiModelConfig
-  | CohereModelConfig
   | BedrockModelConfig
   | VertexAIModelConfig;
 

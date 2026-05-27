@@ -9,8 +9,6 @@ const docsDir = path.join(packageRoot, 'docs');
 const allowedPackageImports = new Set([
   '@deskcreate/agentcraft',
   '@deskcreate/agentcraft/adapters',
-  '@deskcreate/agentcraft/skills',
-  '@deskcreate/agentcraft/packs',
   '@deskcreate/agentcraft/mcp',
   '@deskcreate/agentcraft/team',
 ]);

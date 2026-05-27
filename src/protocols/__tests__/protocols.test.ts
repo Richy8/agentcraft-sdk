@@ -4,7 +4,6 @@ import type { ModelConfig } from '../../types/config.types.js';
 import type { LLMCallParams } from '../../types/provider.types.js';
 import { AnthropicProtocol } from '../anthropic.protocol.js';
 import { BedrockProtocol } from '../bedrock.protocol.js';
-import { CohereProtocol } from '../cohere.protocol.js';
 import { GoogleProtocol } from '../google.protocol.js';
 import { OpenAICompatProtocol } from '../openai-compat.protocol.js';
 import type { ToolDefinition } from '../types.js';
@@ -48,7 +47,6 @@ describe('OpenAICompatProtocol', () => {
       response_format: { type: 'json_object' },
     });
     expect(request.messages[0]).toEqual({ role: 'system', content: 'System' });
-    expect(protocol.formatRequest({ prompt: 'Hi' }, { provider: 'azure', model: 'gpt-4o', apiKey: 'key', endpoint: 'https://example.com', deployment: 'dep' })).toMatchObject({ model: 'dep' });
     expect(protocol.formatTools([tool])[0]?.type).toBe('function');
 
     const raw = {
@@ -132,12 +130,8 @@ describe('OpenAICompatProtocol', () => {
     expect(protocol.extractToolCalls(raw)).toEqual([{ id: 'call-1', name: 'get_weather', arguments: '{"city":"Lagos"}' }]);
   });
 
-  it('constructs OpenAI-compatible and Azure clients without network access', () => {
+  it('constructs OpenAI-compatible client without network access', () => {
     expect(protocol.createClient(config, { protocol })).toBeDefined();
-    expect(protocol.createClient(
-      { provider: 'azure', model: 'gpt-4o', apiKey: 'key', endpoint: 'https://azure.test', deployment: 'dep' },
-      { protocol, useAzureClient: true }
-    )).toBeDefined();
   });
 });
 
@@ -309,97 +303,6 @@ describe('BedrockProtocol', () => {
   });
 });
 
-describe('CohereProtocol', () => {
-  it('formats chat requests/tools, extracts responses/tool calls, and builds follow-up state', () => {
-    vi.spyOn(Date, 'now').mockReturnValue(456);
-    const protocol = new CohereProtocol();
-    const config = { provider: 'cohere', model: 'command-r-08-2024', apiKey: 'key' } satisfies ModelConfig;
-    const request = protocol.formatRequest({ prompt: 'Hi', systemMessage: 'System', responseFormat: { type: 'json_object' } }, config) as Record<string, unknown>;
-
-    expect(request).toMatchObject({ model: 'command-r-08-2024', message: 'Hi', preamble: 'System', responseFormat: { type: 'json_object' } });
-    expect(protocol.formatTools([tool])).toEqual([
-      {
-        name: 'get_weather',
-        description: 'Get weather',
-        parameterDefinitions: { city: { description: 'City', type: 'string', required: true } },
-      },
-    ]);
-
-    const raw = {
-      text: 'ok',
-      finishReason: 'TOOL_CALL',
-      meta: { tokens: { inputTokens: 4, outputTokens: 5 } },
-      toolCalls: [{ name: 'get_weather', parameters: { city: 'Lagos' } }],
-    };
-    expect(protocol.extractResponse(raw)).toMatchObject({
-      content: 'ok',
-      finishReason: 'tool_calls',
-      tokensUsed: { prompt: 4, completion: 5, total: 9 },
-    });
-    expect(protocol.extractToolCalls(raw)).toEqual([{ id: 'cohere-456-0', name: 'get_weather', arguments: '{"city":"Lagos"}' }]);
-    expect(protocol.formatFollowUp({ prompt: 'Hi' }, raw, [{ toolCallId: 'c1', toolName: 'get_weather', result: '{"ok":true}', arguments: '{"city":"Lagos"}' }])._providerState).toBeDefined();
-    vi.restoreAllMocks();
-  });
-
-  it('constructs Cohere clients, streams events, and maps common errors', async () => {
-    const protocol = new CohereProtocol();
-    const config = { provider: 'cohere', model: 'command-r-08-2024', apiKey: 'key' } satisfies ModelConfig;
-    expect(protocol.createClient(config, { protocol })).toBeDefined();
-    const client = {
-      chatStream: vi.fn(async function* () {
-        yield { eventType: 'text-generation', text: 'hi' };
-        yield { eventType: 'stream-end', response: { finishReason: 'MAX_TOKENS', meta: { tokens: { inputTokens: 1, outputTokens: 2 } } } };
-      }),
-    };
-    const chunks = [];
-    for await (const chunk of protocol.stream(client, {})) chunks.push(chunk);
-    expect(chunks).toEqual([
-      { delta: 'hi' },
-      { delta: '', finishReason: 'length' },
-      { delta: '', usage: { prompt: 1, completion: 2, total: 3 } },
-    ]);
-    expect(protocol.mapError(errorWithStatus(404, 'missing'), config)).toBeInstanceOf(ModelNotFoundError);
-  });
-
-  it('routes Command A models through Cohere v2 chat', async () => {
-    const protocol = new CohereProtocol();
-    const config = { provider: 'cohere', model: 'command-a-reasoning-08-2025', apiKey: 'key' } satisfies ModelConfig;
-    const request = protocol.formatRequest(
-      { prompt: 'Hi', systemMessage: 'System', maxTokens: 16, responseFormat: { type: 'json_object' } },
-      config
-    ) as { api: string; request: Record<string, unknown> };
-
-    expect(request).toMatchObject({
-      api: 'v2',
-      request: {
-        model: 'command-a-reasoning-08-2025',
-        maxTokens: 16,
-        responseFormat: { type: 'json_object' },
-        thinking: { type: 'disabled' },
-      },
-    });
-    expect(request.request.messages).toEqual([
-      { role: 'system', content: 'System' },
-      { role: 'user', content: 'Hi' },
-    ]);
-
-    const raw = {
-      id: 'v2-1',
-      finishReason: 'COMPLETE',
-      message: { role: 'assistant', content: [{ type: 'text', text: 'ok' }] },
-      usage: { tokens: { inputTokens: 4, outputTokens: 5 } },
-    };
-    expect(protocol.extractResponse(raw)).toMatchObject({
-      content: 'ok',
-      finishReason: 'stop',
-      tokensUsed: { prompt: 4, completion: 5, total: 9 },
-    });
-
-    const client = { v2: { chat: vi.fn(async () => raw) } };
-    await expect(protocol.callRaw(client, request)).resolves.toBe(raw);
-    expect(client.v2.chat).toHaveBeenCalledWith(request.request);
-  });
-});
 
 function errorWithStatus(status: number, message: string): Error & { status: number; headers?: Record<string, string> } {
   return Object.assign(new Error(message), { status, headers: { 'retry-after': '30' } });

@@ -81,20 +81,16 @@ npm run benchmark:mock
 INTEGRATION_TESTS=true AGENTCRAFT_LIVE_BENCHMARKS=true AGENTCRAFT_LIVE_PROVIDERS=openai npm run benchmark:live:light
 ```
 
-The live benchmark writes `reports/agentcraft-live-cost-cache-benchmark.md`. Current benchmark variants cover flat prompt, directive skill, creator pack with `always`, creator pack with `auto`, compressed creator pack, cache warm/replay, memory-informed output, and artifact-resume output.
+The live benchmark writes `reports/agentcraft-live-cost-cache-benchmark.md`. Current benchmark variants cover flat prompt, cache warm/replay, memory-informed output, and artifact-resume output.
 
 ```ts
 import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   cache: AgentCache.file("./.agentcraft/cache", { strategy: "auto" }),
-  skillActivation: "auto",
-  toolSelection: "auto",
-  promptCompression: "balanced",
-}).use(CreatorPacks.blog({ cache: "auto", readOnlyByDefault: true }));
+});
 
 const response = await agent.run({
   prompt: "Create a compact Medium article plan about reducing token waste.",
@@ -107,31 +103,26 @@ console.log(response.cache?.summary);
 
 ## AgentEval Gate
 
-Use `AgentEval` when a prompt, skill pack, adapter set, or cache strategy needs a repeatable quality and cost gate.
+Use `AgentEval` when a prompt, adapter set, or cache strategy needs a repeatable quality and cost gate.
 
 ```ts
 import { Agent, AgentEval, Provider } from "@deskcreate/agentcraft";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "auto",
-  toolSelection: "auto",
-}).use(CreatorPacks.blog({ readOnlyByDefault: true }));
+});
 
 const suite = AgentEval.suite({
-  name: "Production creator gate",
+  name: "Production quality gate",
   defaults: {
     maxCostUsd: 0.05,
     maxTotalTokens: 8_000,
-    requireSkillActivation: true,
   },
 }).case({
   name: "cost article plan",
   prompt: "Create a Medium article plan about reducing agent token waste.",
   expect: {
-    activeSkills: ["blog-writer"],
     maxToolCalls: 2,
   },
   assertions: [
@@ -217,11 +208,10 @@ import {
   AgentWorkspace,
   Provider,
 } from "@deskcreate/agentcraft";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
 
 const memory = AgentMemory.local({
   root: ".agentcraft/memory",
-  namespace: "linkedin-system",
+  namespace: "writing-system",
   maxContextChars: 1_000,
   writes: {
     requireApproval: true,
@@ -246,15 +236,14 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   workspace,
-  skillActivation: "auto",
-}).use(CreatorPacks.linkedin());
+});
 
 const response = await agent.run({
-  prompt: "Draft three LinkedIn post ideas about reducing agent token waste.",
+  prompt: "Draft three post ideas about reducing agent token waste.",
   memory: { scopes: ["brand"], topK: 2 },
 });
 
-await AgentReports.writeMarkdown(response, "reports/linkedin-memory.md", {
+await AgentReports.writeMarkdown(response, "reports/memory-run.md", {
   events: events.events(),
 });
 ```

@@ -6,7 +6,7 @@ AgentCraft is built from a small set of composable surfaces. Once these click, t
 
 ```txt
 Agent.create(config)
-  -> .use(skill | adapter | creatorPack | mcpAdapter)
+  -> .use(adapter | mcpAdapter)
   -> agent.run(params)
   -> model call + optional tools
   -> response + trace + cost + cache metadata
@@ -20,8 +20,6 @@ Agent.create(config)
 | Tool         | A callable function the model may use.                                   | [Tools](../tools/tools.md)                  | [Tool examples](../examples-cookbook/tools-adapters.md)   |
 | Adapter      | A bundle of tools for a system such as GitHub, files, web, or analytics. | [Adapters](../adapters/overview.md)         | [Built-ins](../reference/built-in-adapters.md)            |
 | MCP          | External tool server connection.                                         | [MCP](../mcp/overview.md)                   | [MCP examples](../examples-cookbook/mcp.md)               |
-| Skill        | Reusable behavior and prompt structure.                                  | [Skills](../skills/overview.md)             | [Skill examples](../examples-cookbook/skills.md)          |
-| Creator Pack | Curated group of creator skills.                                         | [Creator Packs](../creator/packs.md)        | [Creator examples](../examples-cookbook/creator.md)       |
 | ToolPolicy   | Approval, read-only, timeout, redaction, and guardrails.                 | [Tool Policy](../tools/tool-policy.md)      | [Production examples](../examples-cookbook/production.md) |
 | Cache        | Reuses safe read results.                                                | [AgentCache](../persistence/agent-cache.md) | [Caching](../persistence/agent-cache.md)                  |
 
@@ -32,21 +30,18 @@ const agent = Agent.create({
   model,
   toolPolicy,
   cache,
-  skillActivation: "auto",
-  toolSelection: "auto",
+  systemMessage: "You are a precise technical analyst. Show your work.",
 })
-  .use(CreatorPacks.blog())
   .use(FetchAdapter.connect({ allowedDomains: ["docs.example.com"] }))
   .use(LinkCheckerAdapter.connect());
 ```
 
 This setup means:
 
-- the pack contributes creator skills
-- adapters expose concrete tools
+- `systemMessage` shapes how the model reasons and writes
+- adapters expose concrete tools the model can call
 - `ToolPolicy` decides whether tools can execute
 - cache may reuse safe read results
-- auto activation/tool selection narrows what is active for the prompt
 
 ## Drill-Down
 

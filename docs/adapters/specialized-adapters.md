@@ -333,14 +333,11 @@ import {
   EmailAdapter,
   PublishingAdapter,
 } from "@deskcreate/agentcraft/adapters";
-import { WritingSkill } from "@deskcreate/agentcraft/skills";
 
 const contentAgent = Agent.create({
   model: Provider.openai["gpt-4o"],
   apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "auto",
 })
-  .use(WritingSkill.create())
   .use(ImageGenerationAdapter.connect({
     provider: "openai",
     apiKey: process.env.OPENAI_API_KEY!,

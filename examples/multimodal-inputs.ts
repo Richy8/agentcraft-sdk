@@ -1,14 +1,9 @@
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import {
-  VisionSkill,
-  DocumentAnalysisSkill,
-  TranscriptionSkill,
-} from "@deskcreate/agentcraft/skills";
 
 const visionAgent = Agent.create({
   model: Provider.openai["gpt-4o"],
   apiKey: process.env.OPENAI_API_KEY!,
-}).use(VisionSkill.create());
+});
 
 const imageResponse = await visionAgent.run({
   prompt: "Describe this screenshot for an accessibility review.",
@@ -31,7 +26,7 @@ const documentAgent = Agent.create({
   // File inputs require a model whose catalog entry supports files.
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
-}).use(DocumentAnalysisSkill.create());
+});
 
 const documentResponse = await documentAgent.run({
   prompt: "Extract obligations, dates, and open questions from this document.",
@@ -56,7 +51,7 @@ const audioAgent = Agent.create({
   // model here instead of assuming every chat model can transcribe.
   model: Provider.gemini["gemini-2.5-flash"],
   apiKey: process.env.GOOGLE_API_KEY!,
-}).use(TranscriptionSkill.create());
+});
 
 const transcript = await audioAgent.run({
   prompt: "Transcribe this short meeting clip and list action items.",

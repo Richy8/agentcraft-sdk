@@ -76,55 +76,7 @@ console.log(response.toolCalls?.map((t) => t.name));
 // → ["fetch"]
 ```
 
-## Step 3 — Add a Skill
-
-Skills shape how the agent reasons and writes — they inject structured prompt guidance for specific domains.
-
-```ts
-import { Agent, Provider } from "@deskcreate/agentcraft";
-import { WritingSkill } from "@deskcreate/agentcraft/skills";
-
-const agent = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-}).use(WritingSkill.create());
-
-// Use the /write directive to activate the skill explicitly
-const response = await agent.run({
-  prompt: "/write Draft a warm product update email for existing users about a new caching feature.",
-});
-
-console.log(response.content);
-// → "Subject: Your agent now runs faster (and cheaper)..."
-
-// See which skills activated
-console.log(response.selection?.activeSkills);
-// → ["writing"]
-```
-
-## Step 4 — Use a Domain Skill Pack
-
-Domain packs bundle an entire set of skills for a specific industry or workflow. One `.use()` call adds everything.
-
-```ts
-import { Agent, Provider } from "@deskcreate/agentcraft";
-import { createSkillPackByName } from "@deskcreate/agentcraft/skills";
-
-const agent = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "auto", // skills activate when the prompt signals intent
-}).use(createSkillPackByName("engineering"));
-
-const response = await agent.run({
-  prompt: "Review this TypeScript function for type safety issues and suggest improvements.",
-});
-
-console.log(response.content);
-// → "The function has three type safety concerns: first, the return type..."
-```
-
-## Step 5 — Cache Tool Results
+## Step 3 — Cache Tool Results
 
 Enable caching to avoid paying for the same tool call twice. The cache is transparent — the agent doesn't change.
 
@@ -154,7 +106,7 @@ console.log(`Cache hits: ${second.cache?.hits}`);   // → 1
 console.log(`Calls avoided: ${second.cache?.toolCallsAvoided}`); // → 1
 ```
 
-## Step 6 — Enforce a Budget
+## Step 4 — Enforce a Budget
 
 Prevent runaway costs by setting token or dollar limits. Hard mode throws `QuotaExceededError`; soft mode warns.
 
@@ -184,7 +136,7 @@ try {
 }
 ```
 
-## Step 7 — Stream the Response
+## Step 5 — Stream the Response
 
 Use `agent.stream()` when you want to display tokens as they arrive rather than waiting for the full response.
 
@@ -209,7 +161,7 @@ for await (const chunk of stream) {
 // → "Agent caching works by storing..." (streams token by token)
 ```
 
-## Step 8 — Return Structured Data
+## Step 6 — Return Structured Data
 
 Use a Zod schema to force the model to return validated, typed JSON.
 
@@ -261,7 +213,6 @@ console.log(feature.risks);          // → ["Cache invalidation complexity", ..
 | Understand every run parameter | [Running Agents](../core/running-agents.md) |
 | Build tools and adapters | [Tools](../tools/tools.md) · [Adapters](../adapters/overview.md) |
 | Use MCP servers | [MCP](../mcp/overview.md) |
-| Add domain skills | [Skills](../skills/overview.md) · [Industry Domain Skills](../skills/domains/overview.md) |
 | Orchestrate multiple agents | [Agent Workflow](../orchestration/agent-workflow.md) |
 | Persist outputs | [Artifact Store](../persistence/artifact-store.md) |
 | Go to production | [Security Model](../production/security-model.md) · [AgentEval](../production/agent-eval.md) |

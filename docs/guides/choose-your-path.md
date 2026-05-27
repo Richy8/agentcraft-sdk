@@ -6,8 +6,6 @@ Start here when you know what you want to build but do not yet know which AgentC
 | ------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | Run private/local agents without cloud keys                                                 | [Local And Private Agents](./paths/local-private.md)      | [local-ollama-private.ts](../examples.md#local-ollama-private)         | `model`, `baseUrl`, local provider connection, budgets            |
 | Add MCP tool servers                                                                        | [MCP Tools](./paths/mcp-tools.md)                         | [custom-mcp-connection.ts](../examples.md#custom-mcp-connection)       | `MCPAdapter.connect()`, built-in wrappers, tool allowlists, roots |
-| Package reusable behavior as skills                                                         | [Custom Skills](./paths/custom-skills.md)                 | [custom-skills.ts](../examples.md#custom-skills)                       | `defineSkill()`, directives, metadata, skill-local tools          |
-| Build creator workflows for blog, SEO, social, video, books, copy, publishing, or analytics | [Creator Packs](../creator/packs.md)                      | [creator-pack-workflow.ts](../examples.md#creator-pack-workflow)       | `CreatorPacks`, creator skills, creator adapters, cache, memory   |
 | Persist creator brand voice, corpus, and performance history                                | [Creator Memory And Analytics](../creator/analytics.md)   | [creator-memory-analytics.ts](../examples.md#creator-memory-analytics) | `FileSystemCreatorMemoryStore`, `FileSystemAnalyticsHistoryStore` |
 | Reduce repeated read-tool calls and token burn                                              | [Caching](../persistence/agent-cache.md)                  | [creator-memory-analytics.ts](../examples.md#creator-memory-analytics) | `AgentCache.file`, TTLs, per-run bypass, response cache metadata  |
 | Expose application capabilities as tools                                                    | [Custom Adapters](./paths/custom-adapters.md)             | [custom-adapter.ts](../examples.md#custom-adapter)                     | `createAdapter()`, `tool()`, metadata, guardrails                 |
@@ -42,27 +40,23 @@ Recommended simple progression:
 
 ## Mid-Level Paths
 
-These paths are for real application workflows where agents inspect files, call APIs, use skills, or route across models.
+These paths are for real application workflows where agents inspect files, call APIs, or route across models.
 
 | Scenario                    | Start with                                                             | Add next                                                  | Outcome                                                                       |
 | --------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | Safe file-review assistant  | [filesystem-safe-agent.ts](../examples.md#filesystem-safe-agent)       | [Tools And Guardrails](./config/tools-and-guardrails.md)  | A local file reader or reviewer with path, extension, and read-only limits.   |
 | Database analysis assistant | [database-readonly.ts](../examples.md#database-readonly)               | [Production Guardrails](./paths/production-guardrails.md) | Read-only database questions with row limits and host-owned query execution.  |
 | Research assistant          | [research-agent.ts](../examples.md#research-agent)                     | [MCP Tools](./paths/mcp-tools.md)                         | Search/fetch-backed research with retrieval policy and source handling.       |
-| Creator content engine      | [creator-pack-workflow.ts](../examples.md#creator-pack-workflow)       | [Creator Packs](../creator/packs.md)                      | Platform-native creator packs with marketing/domain packs for SEO and review. |
 | Creator memory/history      | [creator-memory-analytics.ts](../examples.md#creator-memory-analytics) | [Creator Memory And Analytics](../creator/analytics.md)   | Brand voice, corpus retrieval, and analytics history as local durable state.  |
-| Skill-powered workflow      | [skill-composition.ts](../examples.md#skill-composition)               | [Skill Directives](../examples.md#skill-directives)       | Reusable writing, review, research, translation, or analysis behavior.        |
-| Custom domain skill         | [custom-skills.ts](../examples.md#custom-skills)                       | [Custom Skills](./paths/custom-skills.md)                 | App-owned behavior packaged with metadata, prompt sections, hooks, and tools. |
 | Custom app capability       | [custom-adapter.ts](../examples.md#custom-adapter)                     | [Custom Adapters](./paths/custom-adapters.md)             | Your application APIs exposed as typed, policy-aware tools.                   |
 | Cost-aware model routing    | [agent-pool-routing.ts](../examples.md#agent-pool-routing)             | [Routing And Budgets](./paths/routing-budgets.md)         | Provider fallback, cost/speed/quality routing, and budget enforcement.        |
-| Multimodal review           | [multimodal-inputs.ts](../examples.md#multimodal-inputs)               | [Run Parameters](./config/run-parameters.md)              | Image, file, or audio inputs paired with capability-aware models and skills.  |
+| Multimodal review           | [multimodal-inputs.ts](../examples.md#multimodal-inputs)               | [Run Parameters](./config/run-parameters.md)              | Image, file, or audio inputs paired with capability-aware models.             |
 
 Recommended mid-level progression:
 
 1. Add tools through a built-in adapter.
 2. Put `toolPolicy` around those tools.
-3. Attach a built-in or custom skill for domain behavior.
-4. Add cost budgets or provider routing once the workflow has real traffic.
+3. Add cost budgets or provider routing once the workflow has real traffic.
 
 ## Advanced Paths
 
@@ -73,7 +67,7 @@ These paths are for production operations, multi-agent systems, external tool se
 | Production tool execution    | [guardrails-and-approvals.ts](../examples.md#guardrails-and-approvals)   | [Production Guardrails](./paths/production-guardrails.md) | Approval-gated, audited, redacted tool execution.                                 |
 | MCP-backed internal tools    | [custom-mcp-connection.ts](../examples.md#custom-mcp-connection)         | [MCP Security Checklist](./mcp-security-checklist.md)     | Internal or third-party MCP servers connected with allowlists and trust metadata. |
 | Built-in MCP with memory     | [built-in-mcp-skill-memory.ts](../examples.md#built-in-mcp-skill-memory) | [MCP Tools](./paths/mcp-tools.md)                         | Stateful memory plus retrieval behavior across runs.                              |
-| Code-review workflow         | [adapter-skill-workflow.ts](../examples.md#adapter-skill-workflow)       | [Custom Adapters](./paths/custom-adapters.md)             | File/GitHub context with review-specific skill behavior and read-only policy.     |
+| Code-review workflow         | [github-review-agent.ts](../examples.md#github-review-agent)             | [Custom Adapters](./paths/custom-adapters.md)             | File/GitHub context with read-only policy and structured review output.           |
 | Customer operations workflow | [customer-ops-workflow.ts](../examples.md#customer-ops-workflow)         | [Production Guardrails](./paths/production-guardrails.md) | Slack, email, MCP, summaries, drafts, and approval boundaries.                    |
 | Browser automation           | [browser-automation.ts](../examples.md#browser-automation)               | [Security Model](./security-model.md)                     | Controlled page inspection or action flows with side-effect awareness.            |
 | Multi-agent orchestration    | [agent-team.ts](../examples.md#agent-team)                               | [AgentTeam Config](./config/agentteam.md)                 | Fixed specialist roles with supervisor review and bounded rounds.                 |
@@ -104,10 +98,9 @@ Best when: teams need private docs search, policy-aware answers, and traceable t
 
 ### Support Triage And Customer Reply
 
-1. Start with [custom-skills.ts](../examples.md#custom-skills).
-2. Add [customer-ops-workflow.ts](../examples.md#customer-ops-workflow).
-3. Add [guardrails-and-approvals.ts](../examples.md#guardrails-and-approvals) before any email or Slack writes.
-4. Add [structured-output.ts](../examples.md#structured-output) if routing metadata should feed a queue.
+1. Start with [customer-ops-workflow.ts](../examples.md#customer-ops-workflow).
+2. Add [guardrails-and-approvals.ts](../examples.md#guardrails-and-approvals) before any email or Slack writes.
+3. Add [structured-output.ts](../examples.md#structured-output) if routing metadata should feed a queue.
 
 Best when: support teams need summaries, priority routing, and customer-facing drafts with approval boundaries.
 
@@ -115,7 +108,7 @@ Best when: support teams need summaries, priority routing, and customer-facing d
 
 1. Start with [filesystem-safe-agent.ts](../examples.md#filesystem-safe-agent).
 2. Add [github-review-agent.ts](../examples.md#github-review-agent) for remote PR context.
-3. Add [adapter-skill-workflow.ts](../examples.md#adapter-skill-workflow) for `CodeReviewSkill`.
+3. Add [github-review-agent.ts](../examples.md#github-review-agent) for remote PR context with structured review output.
 4. Add [agent-team.ts](../examples.md#agent-team) only when separate reviewer roles are useful.
 
 Best when: engineering teams need repeatable review behavior with read-only defaults and clear severity ordering.
@@ -131,20 +124,18 @@ Best when: research work needs retrieval, synthesis, repeatable output structure
 
 ### Creator Operating System
 
-1. Start with [creator-pack-workflow.ts](../examples.md#creator-pack-workflow).
-2. Add [Creator Packs](../creator/packs.md) for blog, SEO, social, video, book, copy, publishing, or analytics workflows.
-3. Add [Creator Memory And Analytics](../creator/analytics.md) so brand voice, prior work, performance reports, and experiments persist across runs.
-4. Add [Caching](../persistence/agent-cache.md) before broad usage so repeated read tools do not burn unnecessary tokens or API calls.
-5. Use [Built-In Skills](../reference/built-in-skills.md), [Built-In Adapters](../reference/built-in-adapters.md), and [Built-In MCP Wrappers](../reference/built-in-mcps.md) when you need to configure the full surface directly.
+1. Add [Creator Memory And Analytics](../creator/analytics.md) so brand voice, prior work, performance reports, and experiments persist across runs.
+2. Add [Caching](../persistence/agent-cache.md) before broad usage so repeated read tools do not burn unnecessary tokens or API calls.
+3. Use [Built-In Adapters](../reference/built-in-adapters.md) and [Built-In MCP Wrappers](../reference/built-in-mcps.md) when you need to configure the full surface directly.
 
-Best when: creators or content teams need research, planning, writing, platform-specific drafting, marketing SEO, publishing readiness, performance feedback, and configurable power-user controls.
+Best when: creators or content teams need research, planning, writing, performance feedback, and configurable power-user controls.
 
 ### Production Agent Platform
 
 1. Start with [provider-routing.ts](../examples.md#provider-routing) or [agent-pool-routing.ts](../examples.md#agent-pool-routing).
 2. Add [guardrails-and-approvals.ts](../examples.md#guardrails-and-approvals).
 3. Add [observability-tracing.ts](../examples.md#observability-tracing).
-4. Add [custom-adapter.ts](../examples.md#custom-adapter) and [custom-skills.ts](../examples.md#custom-skills) for product-owned capability and behavior.
+4. Add [custom-adapter.ts](../examples.md#custom-adapter) for product-owned capability.
 5. Add [MCP Security Checklist](./mcp-security-checklist.md) before connecting external MCP servers.
 
 Best when: the package is embedded in a product with real users, budgets, tools, traces, and release gates.

@@ -6,13 +6,13 @@ Model Context Protocol (MCP) is an open standard for connecting AI models to ext
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { GitHubMcp } from "@deskcreate/agentcraft/mcp";
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
 }).use(
-  GitHubMcp.connect({
+  GitHubMCP.connect({
     token: process.env.GITHUB_PERSONAL_ACCESS_TOKEN!,
     // Restrict to specific tools for safety
     allowedTools: ["list_issues", "get_file_contents", "list_pull_requests"],
@@ -54,52 +54,50 @@ For most AgentCraft use cases, prefer a built-in MCP wrapper (which gives you ty
 
 ## Built-In MCP Wrappers
 
-AgentCraft ships 30+ pre-built wrappers that bundle server setup, typed configuration, and security defaults:
+AgentCraft ships pre-built wrappers that bundle server setup, typed configuration, and security defaults:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import {
-  GitHubMcp,
-  SlackMcp,
-  BraveSearchMcp,
-  SupabaseMcp,
-  NotionMcp,
-  PlaywrightMcp,
-  FirecrawlMcp,
-  StripeMcp,
+  GitHubMCP,
+  SlackMCP,
+  BraveSearchMCP,
+  SupabaseMCP,
+  FilesystemMCP,
+  FirecrawlMCP,
+  FetchMCP,
+  PostgresMCP,
 } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o"],
   apiKey: process.env.OPENAI_API_KEY!,
 })
-  .use(GitHubMcp.connect({ token: process.env.GITHUB_TOKEN! }))
-  .use(BraveSearchMcp.connect({ apiKey: process.env.BRAVE_API_KEY! }))
-  .use(SlackMcp.connect({ token: process.env.SLACK_BOT_TOKEN! }));
+  .use(GitHubMCP.connect({ token: process.env.GITHUB_TOKEN! }))
+  .use(BraveSearchMCP.connect({ apiKey: process.env.BRAVE_API_KEY! }))
+  .use(SlackMCP.connect({ botToken: process.env.SLACK_BOT_TOKEN!, teamId: process.env.SLACK_TEAM_ID! }));
 ```
 
 See [Built-In MCP Wrappers](./built-in.md) for the full list.
 
 ## Custom MCP Servers
 
-Connect any MCP-compatible server using `MCPAdapter`:
+Connect any MCP-compatible server using `MCP.connect()`:
 
 ### Stdio Transport
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { MCPAdapter } from "@deskcreate/agentcraft/mcp";
+import { MCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
 }).use(
-  MCPAdapter.connect({
-    transport: "stdio",
+  MCP.connect({
     // Use a pinned version to prevent surprise drift
     command: "npx",
     args: ["@modelcontextprotocol/server-filesystem@1.0.0", "/path/to/files"],
-    env: { PATH: process.env.PATH! },
     // Only expose specific tools
     allowedTools: ["read_file", "list_directory"],
   }),
@@ -110,39 +108,16 @@ const agent = Agent.create({
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { MCPAdapter } from "@deskcreate/agentcraft/mcp";
+import { MCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
 }).use(
-  MCPAdapter.connect({
-    transport: "http",
+  MCP.connect({
     url: "https://your-mcp-server.example.com/mcp",
-    headers: {
-      Authorization: `Bearer ${process.env.MCP_SERVER_TOKEN}`,
-    },
-    // Restrict tools and resources
+    auth: { type: "bearer", token: process.env.MCP_SERVER_TOKEN! },
     allowedTools: ["search", "get_document"],
-    allowedResources: ["docs://"],
-  }),
-);
-```
-
-### SSE Transport
-
-```ts
-import { Agent, Provider } from "@deskcreate/agentcraft";
-import { MCPAdapter } from "@deskcreate/agentcraft/mcp";
-
-const agent = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-}).use(
-  MCPAdapter.connect({
-    transport: "sse",
-    url: "https://your-mcp-server.example.com/sse",
-    headers: { Authorization: `Bearer ${process.env.MCP_SERVER_TOKEN}` },
   }),
 );
 ```
@@ -152,40 +127,15 @@ const agent = Agent.create({
 Always restrict exposed tools to the minimum required. Without allowlisting, every tool the server advertises is exposed:
 
 ```ts
-import { GitHubMcp } from "@deskcreate/agentcraft/mcp";
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
 // Without allowlisting — all GitHub tools exposed (~50+)
-const broad = GitHubMcp.connect({ token: process.env.GITHUB_TOKEN! });
+const broad = GitHubMCP.connect({ token: process.env.GITHUB_TOKEN! });
 
 // With allowlisting — only 3 tools exposed
-const narrow = GitHubMcp.connect({
+const narrow = GitHubMCP.connect({
   token: process.env.GITHUB_TOKEN!,
   allowedTools: ["list_issues", "get_issue", "get_file_contents"],
-});
-```
-
-## Discovery Modes
-
-Control how AgentCraft discovers tools from an MCP server:
-
-```ts
-import { MCPAdapter } from "@deskcreate/agentcraft/mcp";
-
-// "startup" (default) — discover tools once when the adapter initializes
-// Good for: stable servers where the tool list does not change
-const startup = MCPAdapter.connect({
-  transport: "stdio",
-  command: "npx",
-  args: ["my-mcp-server"],
-  discovery: "startup",
-});
-
-// "per-run" — rediscover tools before each run
-// Good for: servers with dynamic tool lists
-const perRun = MCPAdapter.connect({
-  transport: "http",
-  url: "https://dynamic-mcp.example.com",
-  discovery: "per-run",
 });
 ```
 
@@ -195,7 +145,7 @@ MCP tools go through the same policy, guardrail, and cache layers as native tool
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { NotionMcp } from "@deskcreate/agentcraft/mcp";
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -206,7 +156,10 @@ const agent = Agent.create({
     redactSecrets: true,          // strip secrets from MCP results
   },
 }).use(
-  NotionMcp.connect({ token: process.env.NOTION_TOKEN! }),
+  GitHubMCP.connect({
+    token: process.env.GITHUB_TOKEN!,
+    allowedTools: ["list_issues", "get_file_contents"],
+  }),
 );
 ```
 

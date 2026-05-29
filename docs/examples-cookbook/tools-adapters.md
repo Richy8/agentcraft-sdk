@@ -4,7 +4,7 @@ These examples combine native adapters with tool policy so you can add capabilit
 
 ## Web Search
 
-Add live search with a domain-restricted fetch adapter:
+Add live search with the Tavily search adapter:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
@@ -44,22 +44,20 @@ const response = await agent.run({
 console.log(response.content);
 ```
 
-## Read Files Locally
+## Read Local Files
 
-Read source code, markdown, or config files within a bounded directory:
+Read source code, markdown, or config files within a bounded directory using `FilesystemMCP`:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
+import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
   toolPolicy: { readOnly: true },
-}).use(FileSystemAdapter.connect({
-  rootPath: "./src",
-  readOnly: true,
-  allowedExtensions: [".ts", ".tsx"],
+}).use(FilesystemMCP.connect({
+  allowedPaths: ["./src"],
 }));
 
 const response = await agent.run({
@@ -74,18 +72,20 @@ Write files but gate every write tool call on explicit approval:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
+import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
-    requireConfirmation: ["write_file", "delete_file"],
+    onApprovalRequired: async ({ tool }) => {
+      // Approve write and create operations, deny everything else
+      return ["write_file", "create_directory"].includes(tool.name);
+    },
     maxResultBytes: 20_000,
   },
-}).use(FileSystemAdapter.connect({
-  rootPath: "./content",
-  allowedExtensions: [".md"],
+}).use(FilesystemMCP.connect({
+  allowedPaths: ["./content"],
 }));
 
 const response = await agent.run({
@@ -95,78 +95,105 @@ const response = await agent.run({
 console.log(response.content);
 ```
 
-## Search + File Read Pipeline
+## Search + Save Pipeline
 
-Combine web search and file reading for research-and-save workflows:
+Combine web search and file writing for research-and-save workflows:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import {
-  FileSystemAdapter,
-  TavilySearchAdapter,
-} from "@deskcreate/agentcraft/adapters";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
+import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
+  toolPolicy: {
+    approvedTools: ["tavily_search", "write_file"],
+    maxResultBytes: 50_000,
+  },
 })
   .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }))
-  .use(FileSystemAdapter.connect({
-    rootPath: "./research",
-    allowedExtensions: [".md"],
-  }));
+  .use(FilesystemMCP.connect({ allowedPaths: ["./research"] }));
 
 const response = await agent.run({
   prompt: `Research the top 3 TypeScript agent frameworks in 2025.
 Write a comparison markdown document to ./research/agent-frameworks.md.`,
   budget: { maxToolCalls: 8 },
-  toolPolicy: { approvedTools: ["tavily_search", "write_file"] },
 });
 console.log(response.content);
 ```
 
-## Browser Automation
+## Web Scraping With Firecrawl
 
-Use Playwright for visual verification and interaction:
+Scrape and extract structured content from any URL:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { PlaywrightAdapter } from "@deskcreate/agentcraft/adapters";
+import { FirecrawlMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o"],
   apiKey: process.env.OPENAI_API_KEY!,
-}).use(PlaywrightAdapter.connect({ headless: true }));
+}).use(FirecrawlMCP.connect({ apiKey: process.env.FIRECRAWL_API_KEY! }));
 
 const response = await agent.run({
-  prompt: `Navigate to http://localhost:3000/checkout.
-  Verify the CTA button "Start Free Trial" is visible above the fold.
-  Report any console errors or missing elements.`,
-  budget: { maxToolCalls: 5 },
+  prompt: "Scrape the pricing page at https://example.com/pricing and extract all plan names and prices as structured JSON.",
+  budget: { maxToolCalls: 3 },
 });
 console.log(response.content);
 ```
 
-## Email Send With Approval
+## Slack Message With Approval
 
-Send emails with an explicit approval gate before dispatch:
+Send messages to Slack with an explicit approval gate before dispatch:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { EmailAdapter } from "@deskcreate/agentcraft/adapters";
+import { SlackMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
-  toolPolicy: { requireConfirmation: ["send_email"] },
-}).use(EmailAdapter.connect({
-  provider: "sendgrid",
-  apiKey: process.env.SENDGRID_API_KEY!,
-  from: "agent@company.com",
+  toolPolicy: {
+    onApprovalRequired: async ({ tool }) => {
+      // Only approve the send operation — not reads
+      return tool.name === "slack_post_message";
+    },
+  },
+}).use(SlackMCP.connect({
+  botToken: process.env.SLACK_BOT_TOKEN!,
+  teamId: process.env.SLACK_TEAM_ID!,
 }));
 
 const response = await agent.run({
-  prompt: `Draft and send a follow-up email to team@company.com about the Q3 roadmap review meeting scheduled for next Tuesday at 2pm.`,
+  prompt: "Post a message to #engineering about the Q3 roadmap review meeting on Tuesday at 2pm.",
+});
+console.log(response.content);
+```
+
+## Database Query (Read-Only)
+
+Query a database safely with read-only enforcement:
+
+```ts
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { DatabaseAdapter } from "@deskcreate/agentcraft/adapters";
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  toolPolicy: {
+    readOnly: true,
+    maxResultBytes: 100_000,
+  },
+}).use(DatabaseAdapter.connect({
+  connectionString: process.env.DATABASE_URL!,
+  readOnly: true,
+  rowLimit: 100,
+}));
+
+const response = await agent.run({
+  prompt: "How many users signed up in the last 7 days? Break it down by plan tier.",
 });
 console.log(response.content);
 ```

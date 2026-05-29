@@ -1,39 +1,38 @@
-# Creator Overview
+# Creator System
 
-The creator system turns AgentCraft into a workflow engine for platform-native writing, video, newsletters, books, resumes, publishing readiness, and creator memory. Marketing SEO, ads, analytics, and campaign planning compose cleanly with creator adapters and memory stores.
+The creator-specific adapters (`CreatorResourcesAdapter`, `AnalyticsAdapter`, `PublishingAdapter`, `SeoAdapter`, `CitationManagerAdapter`, `LinkCheckerAdapter`) and memory stores (`FileSystemCreatorMemoryStore`, `FileSystemAnalyticsHistoryStore`) were removed in **v0.3.0**.
 
-## What It Includes
+For content workflows, use general-purpose primitives:
 
-| Piece            | Purpose                                               | More                                |
-| ---------------- | ----------------------------------------------------- | ----------------------------------- |
-| Creator adapters | SEO, citations, resources, publishing, analytics.     | [Creator Adapters](./adapters.md)   |
-| Memory           | Brand voice and corpus retrieval.                     | [Creator Memory](./memory.md)       |
-| Analytics        | Performance and experiment history.                   | [Creator Analytics](./analytics.md) |
-
-## Quick Start
+- **Inject brand voice** via [Skills](../skills/overview.md) — define a `Skill` with your tone guide and output contract as reference files.
+- **Persist facts across runs** via [Semantic Memory](../persistence/semantic-memory.md) — `AgentMemory` with a local, Qdrant, Pinecone, or Supabase backend.
+- **Structure outputs** via [Structured Output](../core/structured-output.md) — enforce schemas for posts, summaries, and reports.
+- **Fetch and research** via [FetchAdapter](../adapters/built-in.md#fetchadapter) and [TavilySearchAdapter](../adapters/built-in.md#tavlysearchadapter).
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import {
-  CreatorResourcesAdapter,
-  AnalyticsAdapter,
-} from "@deskcreate/agentcraft/adapters";
+import { Skill } from "@deskcreate/agentcraft/skills";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
+
+const brandVoice = Skill.define({
+  name: "brand-voice",
+  description: "Applies our tone: practical, evidence-led, no filler phrases.",
+  instructions: `
+Write in an active, confident voice. Lead with the claim, not the context.
+Avoid: "In today's world", "It is worth noting", "game-changing".
+Prefer specific numbers and named systems over vague adjectives.
+  `.trim(),
+});
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
 })
-  .use(CreatorResourcesAdapter.connect({ memoryStore: myMemoryStore }))
-  .use(AnalyticsAdapter.connect({ historyStore: myAnalyticsStore }));
+  .use(brandVoice)
+  .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
 
 const response = await agent.run({
-  prompt: "Draft a blog post about AI agents.",
+  prompt: "Research and draft a LinkedIn post about AI agent caching strategies.",
 });
 console.log(response.content);
 ```
-
-## Recommended Reading
-
-1. [Creator Adapters](./adapters.md)
-2. [Creator Memory](./memory.md)
-3. [Creator Analytics](./analytics.md)

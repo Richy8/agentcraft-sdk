@@ -63,7 +63,7 @@ const provider = new DeterministicFakeProvider([
 ]);
 
 const agent = Agent.create({ provider })
-  .use(FileSystemAdapter.connect({ rootPath: "./", readOnly: true }));
+  .use(FilesystemMCP.connect({ allowedPaths: ["./"] }));
 
 const response = await agent.run({ prompt: "Read my config file." });
 expect(response.toolCalls[0].name).toBe("read_file");

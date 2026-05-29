@@ -7,8 +7,8 @@ AgentCraft follows a tiered stability model. Public entry points (`@deskcreate/a
 | Import path | Exports | Stability | Use for |
 | --- | --- | --- | --- |
 | `@deskcreate/agentcraft` | `Agent`, `AgentWorkflow`, `AgentTeam`, `AgentPool`, `AgentWorkspace`, `AgentCache`, `AgentMemory`, all artifact stores, all error types | **Stable** | Core runtime, most applications |
-| `@deskcreate/agentcraft/adapters` | All native adapters: `TavilySearchAdapter`, `FileSystemAdapter`, `FetchAdapter`, `EmailAdapter`, `GoogleCalendarAdapter`, etc. | **Stable** | External system integration |
-| `@deskcreate/agentcraft/mcp` | `GitHubMcp`, `NotionMcp`, `MemoryMcp`, all built-in MCP adapters | **Stable** | MCP server wrappers |
+| `@deskcreate/agentcraft/adapters` | `FetchAdapter`, `TavilySearchAdapter`, `DatabaseAdapter`, `ImageGenerationAdapter`, `createAdapter`, `defineAdapter`, `tool` | **Stable** | External system integration |
+| `@deskcreate/agentcraft/mcp` | `GitHubMCP`, `SlackMCP`, `FilesystemMCP`, `PostgresMCP`, `SupabaseMCP`, `BraveSearchMCP`, `FirecrawlMCP`, `FetchMCP`, `MCP`, `MCPAdapter` | **Stable** | MCP server wrappers |
 | `@deskcreate/agentcraft/team` | `AgentTeam` | **Stable** | Multi-agent coordination |
 
 ## Stability Tiers
@@ -43,7 +43,7 @@ Always import from the public package paths, never from internal `src/` paths:
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 import { AgentTeam } from "@deskcreate/agentcraft/team";
-import { GitHubMcp } from "@deskcreate/agentcraft/mcp";
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
 // ✗ Incorrect — internal path, no stability guarantee
 import { Agent } from "@deskcreate/agentcraft/src/agent/agent";

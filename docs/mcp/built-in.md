@@ -4,20 +4,25 @@ Built-in MCP wrappers are imported from `agentcraft/mcp`. They are convenience f
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { Context7MCP } from "@deskcreate/agentcraft/mcp";
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
-}).use(Context7MCP.connect());
+}).use(
+  GitHubMCP.connect({
+    token: process.env.GITHUB_PERSONAL_ACCESS_TOKEN!,
+    allowedTools: ["get_pull_request", "get_file_contents", "list_issues"],
+  }),
+);
 
 const response = await agent.run({
-  prompt: "Fetch the latest React hooks documentation.",
+  prompt: "Review PR #42 for type safety issues.",
 });
 console.log(response.content);
 ```
 
-## Search And Web MCPs
+## Search And Web
 
 ### FetchMCP
 
@@ -32,7 +37,7 @@ Secrets: none.
 Side effects: read/external.
 
 ```ts
-agent.use(FetchMCP.connect({ packageSpec: "@yawlabs/fetch-mcp@0.3.1" }));
+agent.use(FetchMCP.connect());
 ```
 
 ### FirecrawlMCP
@@ -67,27 +72,11 @@ Side effects: read/external.
 agent.use(BraveSearchMCP.connect({ apiKey: process.env.BRAVE_API_KEY! }));
 ```
 
-### Context7MCP
-
-Use `Context7MCP` for current library documentation and API examples.
-
-Adapter name: `context7-mcp`.
-
-Transport: dual.
-
-Secrets: none.
-
-Side effects: read/external.
-
-```ts
-agent.use(Context7MCP.connect());
-```
-
-## Code And Project MCPs
+## Code And Projects
 
 ### GitHubMCP
 
-Use `GitHubMCP` for repository context and GitHub workflows when you want an MCP server instead of [`GitHubAdapter`](../adapters/built-in.md#githubadapter).
+Use `GitHubMCP` for repository context and GitHub workflows.
 
 Adapter name: `github-mcp`.
 
@@ -101,109 +90,21 @@ Side effects: read/write/external.
 agent.use(
   GitHubMCP.connect({
     token: process.env.GITHUB_PERSONAL_ACCESS_TOKEN!,
-    packageSpec: "@artificable/github-mcp-server@0.1.0",
   }),
 );
 ```
 
-### LinearMCP And JiraMCP
+## Data And Storage
 
-Use `LinearMCP` or `JiraMCP` for issue and project workflows.
+### SupabaseMCP
 
-Adapter names: `linear-mcp`, `jira-mcp`.
+Use `SupabaseMCP` for Supabase database and project workflows.
 
-Transports: `stdio`.
-
-Secrets: `LINEAR_API_KEY`; or `JIRA_EMAIL`, `JIRA_API_TOKEN`, `JIRA_BASE_URL`.
-
-Side effects: read/write/external.
-
-```ts
-agent.use(LinearMCP.connect({ apiKey: process.env.LINEAR_API_KEY! }));
-```
-
-### SentryMCP
-
-Use `SentryMCP` for event and project diagnostics.
-
-Adapter name: `sentry-mcp`.
-
-Transport: dual.
-
-Secrets: `SENTRY_AUTH_TOKEN`.
-
-Side effects: read/external.
-
-```ts
-agent.use(SentryMCP.connect({ authToken: process.env.SENTRY_AUTH_TOKEN! }));
-```
-
-## Browser And Automation MCPs
-
-### PlaywrightMCP
-
-Use `PlaywrightMCP` when you want browser automation through MCP.
-
-Adapter name: `playwright-mcp`.
+Adapter name: `supabase-mcp`.
 
 Transport: `stdio`.
 
-Secrets: none.
-
-Side effects: read/write/external.
-
-```ts
-agent.use(PlaywrightMCP.connect({ headless: true }));
-```
-
-### BrowserbaseMCP
-
-Use `BrowserbaseMCP` for cloud browser sessions.
-
-Adapter name: `browserbase-mcp`.
-
-Transport: `stdio`.
-
-Secrets: `BROWSERBASE_API_KEY`, `BROWSERBASE_PROJECT_ID`.
-
-Side effects: read/write/external.
-
-```ts
-agent.use(
-  BrowserbaseMCP.connect({
-    apiKey: process.env.BROWSERBASE_API_KEY!,
-    projectId: process.env.BROWSERBASE_PROJECT_ID!,
-  }),
-);
-```
-
-### ApifyMCP
-
-Use `ApifyMCP` for Apify actor and dataset workflows.
-
-Adapter name: `apify-mcp`.
-
-Transport: dual.
-
-Secrets: `APIFY_TOKEN`.
-
-Side effects: read/write/external.
-
-```ts
-agent.use(ApifyMCP.connect({ token: process.env.APIFY_TOKEN! }));
-```
-
-## Data And Storage MCPs
-
-### SupabaseMCP, PostgresMCP, NeonMCP
-
-Use these for database and project workflows.
-
-Adapter names: `supabase-mcp`, `postgres-mcp`, `neon-mcp`.
-
-Transports: `stdio` for Supabase/Postgres, HTTP for Neon.
-
-Secrets: `SUPABASE_URL`, `SUPABASE_API_KEY`, `DATABASE_URL`, or Neon API key.
+Secrets: `SUPABASE_URL`, `SUPABASE_API_KEY`.
 
 Side effects: read/write/external.
 
@@ -216,53 +117,28 @@ agent.use(
 );
 ```
 
-### QdrantMCP
+### PostgresMCP
 
-Use `QdrantMCP` for vector memory and retrieval.
+Use `PostgresMCP` for direct PostgreSQL access.
 
-Adapter name: `qdrant-mcp`.
-
-Transport: `stdio`.
-
-Secrets: `QDRANT_URL`, `QDRANT_API_KEY`.
-
-Side effects: read/write/external.
-
-```ts
-agent.use(
-  QdrantMCP.connect({
-    url: process.env.QDRANT_URL!,
-    apiKey: process.env.QDRANT_API_KEY!,
-  }),
-);
-```
-
-### AirtableMCP
-
-Use `AirtableMCP` for records and lightweight workflow data.
-
-Adapter name: `airtable-mcp`.
+Adapter name: `postgres-mcp`.
 
 Transport: `stdio`.
 
-Secrets: `AIRTABLE_API_KEY`, `AIRTABLE_BASE_ID`.
+Secrets: `DATABASE_URL`.
 
-Side effects: read/write/external.
+Side effects: read/write.
 
 ```ts
-agent.use(
-  AirtableMCP.connect({
-    apiKey: process.env.AIRTABLE_API_KEY!,
-    baseId: process.env.AIRTABLE_BASE_ID!,
-  }),
-);
+agent.use(PostgresMCP.connect());
+// DATABASE_URL is read from the environment by the server
 ```
 
-### Memory And Filesystem MCPs
+### FilesystemMCP
 
-Use `MemoryMCP` for graph-like memory and `FilesystemMCP` for MCP-backed file access.
+Use `FilesystemMCP` for MCP-backed file access scoped to allowed paths.
 
-Adapter names: `memory-mcp`, `filesystem-mcp`.
+Adapter name: `filesystem-mcp`.
 
 Transport: `stdio`.
 
@@ -271,112 +147,74 @@ Secrets: none.
 Side effects: read/write.
 
 ```ts
-agent
-  .use(MemoryMCP.connect())
-  .use(FilesystemMCP.connect({ allowedPaths: ["./content"] }));
-```
-
-## Communication MCPs
-
-### SlackMCP, GmailMCP, ResendMCP
-
-Use communication MCPs for messages and email workflows when MCP servers fit your environment better than native adapters.
-
-Adapter names: `slack-mcp`, `gmail-mcp`, `resend-mcp`.
-
-Secrets: `SLACK_BOT_TOKEN`, `SLACK_TEAM_ID`, `GMAIL_CREDENTIALS`, `RESEND_API_KEY`.
-
-Side effects: read/write/external.
-
-```ts
-agent.use(ResendMCP.connect({ apiKey: process.env.RESEND_API_KEY! }));
-```
-
-## Knowledge, Design, Deployment, Media, And Payments
-
-### NotionMCP And FigmaMCP
-
-Use `NotionMCP` for pages/databases and `FigmaMCP` for design context.
-
-Adapter names: `notion-mcp`, `figma-mcp`.
-
-Secrets: `NOTION_TOKEN`, `FIGMA_API_KEY`.
-
-Side effects: Notion read/write/external; Figma read/external.
-
-```ts
-agent.use(NotionMCP.connect({ token: process.env.NOTION_TOKEN! }));
-```
-
-### CloudflareMCP, RailwayMCP, RenderMCP, VercelMCP
-
-Use deployment MCPs for cloud/project/deployment operations. Keep writes approval-gated.
-
-Adapter names: `cloudflare-mcp`, `railway-mcp`, `render-mcp`, `vercel-mcp`.
-
-Secrets: provider API tokens and account/project identifiers.
-
-Side effects: read/write/external.
-
-```ts
-agent.use(VercelMCP.connect({ apiToken: process.env.VERCEL_API_TOKEN! }));
-```
-
-### ElevenLabsMCP
-
-Use `ElevenLabsMCP` for audio generation workflows through MCP.
-
-Adapter name: `elevenlabs-mcp`.
-
-Transport: `stdio`.
-
-Secrets: `ELEVENLABS_API_KEY`.
-
-Side effects: read/write/external.
-
-```ts
 agent.use(
-  ElevenLabsMCP.connect({
-    apiKey: process.env.ELEVENLABS_API_KEY!,
-    packageSpec: "@mindstone-engineering/mcp-server-elevenlabs@0.2.1",
+  FilesystemMCP.connect({
+    roots: ["./content"],
+    allowedTools: ["read_file", "list_directory"],
   }),
 );
 ```
 
-### StripeMCP
+## Communication
 
-Use `StripeMCP` for payment and customer operations. This is high-risk and should always have strict tool allowlists and approvals.
+### SlackMCP
 
-Adapter name: `stripe-mcp`.
+Use `SlackMCP` for Slack messages and channel history via MCP.
 
-Transport: dual.
+Adapter name: `slack-mcp`.
 
-Secrets: `STRIPE_SECRET_KEY`.
+Transport: `stdio`.
+
+Secrets: `SLACK_BOT_TOKEN`, `SLACK_TEAM_ID`.
 
 Side effects: read/write/external.
 
 ```ts
 agent.use(
-  StripeMCP.connect({
-    secretKey: process.env.STRIPE_SECRET_KEY!,
-    tools: ["customers.list", "products.list"],
+  SlackMCP.connect({
+    token: process.env.SLACK_BOT_TOKEN!,
+    allowedTools: ["get_channel_history", "list_channels"],
+  }),
+);
+```
+
+## Generic MCP Connection
+
+For any MCP server without a built-in wrapper, use the `MCP.connect()` factory or `MCPAdapter` directly. See [MCP Custom](./custom.md) for the full API.
+
+```ts
+import { MCP } from "@deskcreate/agentcraft/mcp";
+
+// stdio — any local MCP package
+agent.use(
+  MCP.connect({
+    command: "npx",
+    args: ["-y", "@modelcontextprotocol/server-filesystem@0.6.2", "./content"],
+    allowedTools: ["read_file", "list_directory"],
+  }),
+);
+
+// HTTP with bearer auth
+agent.use(
+  MCP.connect({
+    url: "https://mcp.internal.company.com/mcp",
+    auth: { type: "bearer", token: process.env.MCP_TOKEN! },
+    allowedTools: ["search_docs"],
   }),
 );
 ```
 
 ## Production Pattern
 
-Always narrow MCP capability before production. Wrapper helpers expose reviewed defaults; for strict `allowedTools`, `allowedResources`, and `roots`, use the generic [`MCPAdapter`](../adapters/built-in.md#mcpadapter).
+Always narrow MCP capability before production. Use `allowedTools` to limit the tool surface exposed to the model.
 
 ```ts
 agent.use(
-  MCPAdapter.connect({
-    transport: "http",
-    url: "https://mcp.example.internal/mcp",
-    allowedTools: ["search_docs"],
-    allowedResources: [],
+  GitHubMCP.connect({
+    token: process.env.GITHUB_PERSONAL_ACCESS_TOKEN!,
+    allowedTools: ["get_pull_request", "get_file_contents", "list_issues"],
   }),
 );
 ```
 
-More examples: [MCP Config](../configuration/mcp-config.md), [MCP Security](./security.md), [MCP Cookbook](../examples-cookbook/mcp.md).
+More examples: [MCP Config](../configuration/mcp-config.md), [MCP Custom](./custom.md), [MCP Security](./security.md), [MCP Cookbook](../examples-cookbook/mcp.md).

@@ -49,7 +49,7 @@ expect(r2.tokensUsed.total).toBe(300);
 Script tool calls and assert they appear in the response:
 
 ```ts
-import { FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
+import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
 
 const provider = new DeterministicFakeProvider([
   {
@@ -59,7 +59,7 @@ const provider = new DeterministicFakeProvider([
 ]);
 
 const agent = Agent.create({ provider })
-  .use(FileSystemAdapter.connect({ rootPath: "./", readOnly: true }));
+  .use(FilesystemMCP.connect({ allowedPaths: ["./"] }));
 
 const response = await agent.run({ prompt: "Read my config." });
 

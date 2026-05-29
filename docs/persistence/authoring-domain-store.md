@@ -11,7 +11,7 @@ Use a domain store when:
 - You need freshness semantics (e.g., stale-after-N-ms)
 - You want write approval gating specific to your domain
 
-Reference implementations: `FileSystemCreatorMemoryStore`, `FileSystemAnalyticsHistoryStore`.
+For pattern inspiration, see [Artifact Store](./artifact-store.md) and [Semantic Memory](./semantic-memory.md).
 
 ## Step 1 — Define Your Data Shape
 

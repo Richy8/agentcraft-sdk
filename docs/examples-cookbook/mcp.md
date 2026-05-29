@@ -1,38 +1,19 @@
 # MCP Examples
 
-MCP examples show when to use a built-in wrapper, when to use the generic adapter, and how to keep server packages reviewable and secure.
-
-## Built-In Context7 Wrapper
-
-Fetch live library documentation for any npm package:
-
-```ts
-import { Agent, Provider } from "@deskcreate/agentcraft";
-import { Context7Mcp } from "@deskcreate/agentcraft/mcp";
-
-const agent = Agent.create({
-  model: Provider.openai["gpt-4o"],
-  apiKey: process.env.OPENAI_API_KEY!,
-}).use(Context7Mcp.connect());
-
-const response = await agent.run({
-  prompt: "Look up the latest AgentCraft docs and explain how to add a custom skill.",
-});
-console.log(response.content);
-```
+MCP examples show when to use a built-in wrapper, when to use the generic `MCP.connect()` factory, and how to keep server packages reviewable and secure.
 
 ## GitHub MCP — Read-Only PR Review
 
-Use `GitHubMcp` with an explicit allowlist to restrict to safe read operations:
+Use `GitHubMCP` with an explicit allowlist to restrict to safe read operations:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { GitHubMcp } from "@deskcreate/agentcraft/mcp";
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
-}).use(GitHubMcp.connect({
+}).use(GitHubMCP.connect({
   token: process.env.GITHUB_TOKEN!,
   allowedTools: [
     "get_pull_request",
@@ -48,38 +29,84 @@ const response = await agent.run({
 console.log(response.content);
 ```
 
-## Notion MCP — Knowledge Base Search
+## Filesystem MCP — Scoped File Access
+
+Read source files from a bounded directory path:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { NotionMcp } from "@deskcreate/agentcraft/mcp";
+import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
-  model: Provider.openai["gpt-4o"],
+  model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
-}).use(NotionMcp.connect({
-  token: process.env.NOTION_TOKEN!,
-  allowedTools: ["search", "retrieve_page", "retrieve_block_children"],
+  toolPolicy: { readOnly: true },
+}).use(FilesystemMCP.connect({
+  allowedPaths: ["./src", "./docs"],
 }));
 
 const response = await agent.run({
-  prompt: "Search our Notion workspace for the Q3 roadmap page and summarize the key initiatives.",
+  prompt: "List the TypeScript source files in the src/ directory.",
+});
+console.log(response.content);
+```
+
+## Brave Search MCP
+
+Search the web with Brave's privacy-first search engine:
+
+```ts
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { BraveSearchMCP } from "@deskcreate/agentcraft/mcp";
+
+const agent = Agent.create({
+  model: Provider.anthropic["claude-sonnet-4-6"],
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+}).use(BraveSearchMCP.connect({ apiKey: process.env.BRAVE_API_KEY! }));
+
+const response = await agent.run({
+  prompt: "Search for the latest news on TypeScript 6.0 and summarize what's coming.",
+});
+console.log(response.content);
+```
+
+## Slack MCP — Post With Approval
+
+Post messages to Slack, gated on human approval:
+
+```ts
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { SlackMCP } from "@deskcreate/agentcraft/mcp";
+
+const agent = Agent.create({
+  model: Provider.anthropic["claude-sonnet-4-6"],
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+  toolPolicy: {
+    onApprovalRequired: async ({ tool }) => tool.name === "slack_post_message",
+  },
+}).use(SlackMCP.connect({
+  botToken: process.env.SLACK_BOT_TOKEN!,
+  teamId: process.env.SLACK_TEAM_ID!,
+}));
+
+const response = await agent.run({
+  prompt: "Post a message to #engineering about the Q3 roadmap review meeting on Tuesday.",
 });
 console.log(response.content);
 ```
 
 ## Generic Stdio MCP (Pinned Version)
 
-Use the generic adapter for any MCP server. Always pin the version:
+Use `MCP.connect()` for any MCP server. Always pin the npm package version:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { McpAdapter } from "@deskcreate/agentcraft/mcp";
+import { MCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
-}).use(McpAdapter.stdio({
+}).use(MCP.connect({
   command: "npx",
   args: [
     "-y",
@@ -97,20 +124,19 @@ console.log(response.content);
 
 ## Generic HTTP MCP
 
-Connect to an internal MCP server over HTTP:
+Connect to an internal MCP server over HTTP using bearer auth:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { McpAdapter } from "@deskcreate/agentcraft/mcp";
+import { MCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
-}).use(McpAdapter.http({
+}).use(MCP.connect({
   url: "https://mcp.internal.company.com/mcp",
-  headers: { Authorization: `Bearer ${process.env.INTERNAL_MCP_TOKEN}` },
+  auth: { type: "bearer", token: process.env.INTERNAL_MCP_TOKEN! },
   allowedTools: ["search_docs", "get_runbook", "list_services"],
-  discoveryMode: "startup",
 }));
 
 const response = await agent.run({
@@ -121,19 +147,19 @@ console.log(response.content);
 
 ## Combined MCP + Native Adapter
 
-Use MCP for structured data and a native adapter for web search:
+Use MCP for repository access and a native adapter for web search:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
-import { GitHubMcp } from "@deskcreate/agentcraft/mcp";
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
 })
   .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }))
-  .use(GitHubMcp.connect({
+  .use(GitHubMCP.connect({
     token: process.env.GITHUB_TOKEN!,
     allowedTools: ["get_pull_request", "get_file_contents"],
   }));

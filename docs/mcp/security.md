@@ -45,8 +45,8 @@ Before attaching any MCP server to a production agent:
 | Allowlist resources | Set `allowedResources` for resource-reading servers |
 | Set roots | Set `roots` for filesystem-scoped servers |
 | Apply tool policy | Use `toolPolicy.readOnly`, `maxResultBytes`, `redactSecrets` |
-| Add guardrails | Enable `PromptInjectionGuardrail` for servers that fetch external content |
-| Require approval | Set `requiresConfirmation: true` or `sideEffectPolicy.write: "queue"` for write tools |
+| Add guardrails | Enable `blockPromptInjectionGuardrail` for servers that fetch external content |
+| Require approval | Use `onApprovalRequired` callback in `toolPolicy` for write tools |
 | Review trust level | Set `trustLevel` based on how much you trust the server's output |
 
 ## Safe Patterns
@@ -57,7 +57,7 @@ Block all writes at the policy level, cap result size, and strip secrets:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { GitHubMcp } from "@deskcreate/agentcraft/mcp";
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -68,7 +68,7 @@ const agent = Agent.create({
     redactSecrets: true,     // strip tokens from results
   },
 }).use(
-  GitHubMcp.connect({
+  GitHubMCP.connect({
     token: process.env.GITHUB_PERSONAL_ACCESS_TOKEN!,
     // Only expose read tools
     allowedTools: [
@@ -87,19 +87,19 @@ When an MCP server fetches user-controlled or external content, enable guardrail
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { FetchMcp } from "@deskcreate/agentcraft/mcp";
-import { PromptInjectionGuardrail } from "@deskcreate/agentcraft/adapters";
+import { blockPromptInjectionGuardrail } from "@deskcreate/agentcraft";
+import { FetchMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
     // Block tool results that contain prompt injection attempts
-    outputGuardrails: [PromptInjectionGuardrail.create({ mode: "block" })],
+    outputGuardrails: [blockPromptInjectionGuardrail],
     maxResultBytes: 500_000,
   },
 }).use(
-  FetchMcp.connect({
+  FetchMCP.connect({
     // Only fetch from known-safe domains
     allowedDomains: ["docs.example.com", "api.example.com"],
   }),
@@ -112,20 +112,17 @@ Prevent supply chain drift by pinning the exact package version:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { MCPAdapter } from "@deskcreate/agentcraft/mcp";
+import { MCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
 }).use(
-  MCPAdapter.connect({
-    transport: "stdio",
+  MCP.connect({
     command: "npx",
     // Always pin the version — never use "latest"
     args: ["@modelcontextprotocol/server-filesystem@1.0.2", "/workspace/docs"],
     allowedTools: ["read_file", "list_directory"],
-    // Restrict to a specific directory
-    roots: [{ uri: "file:///workspace/docs", name: "docs" }],
   }),
 );
 ```
@@ -136,24 +133,21 @@ Require human approval before any MCP write tool executes:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { GitHubMcp } from "@deskcreate/agentcraft/mcp";
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
-    sideEffectPolicy: {
-      write: "queue",    // queue write tools for approval
-      external: "allow", // allow reads through immediately
-    },
-    onApprovalRequest: async ({ toolName, args }) => {
-      console.log(`Approve ${toolName}?`, JSON.stringify(args, null, 2));
+    onApprovalRequired: async ({ tool }) => {
+      // Approve write tools after human review
+      console.log(`Approve ${tool.name}?`);
       const input = await promptUser("Approve? (y/n): ");
-      return input.trim() === "y" ? "approved" : "denied";
+      return input.trim() === "y";
     },
   },
 }).use(
-  GitHubMcp.connect({
+  GitHubMCP.connect({
     token: process.env.GITHUB_PERSONAL_ACCESS_TOKEN!,
     allowedTools: ["list_issues", "create_issue", "create_pull_request"],
   }),
@@ -165,19 +159,12 @@ const agent = Agent.create({
 For servers that read documents or files, scope their access to specific paths:
 
 ```ts
-import { MCPAdapter } from "@deskcreate/agentcraft/mcp";
+import { MCP } from "@deskcreate/agentcraft/mcp";
 
-const filesystemMcp = MCPAdapter.connect({
-  transport: "stdio",
+const filesystemMcp = MCP.connect({
   command: "npx",
   args: ["@modelcontextprotocol/server-filesystem@1.0.2", "/data"],
-  // Only allow these URI prefixes (resources)
-  allowedResources: ["file:///data/reports/", "file:///data/exports/"],
-  // Declare filesystem roots
-  roots: [
-    { uri: "file:///data/reports", name: "reports" },
-    { uri: "file:///data/exports", name: "exports" },
-  ],
+  allowedTools: ["read_file", "list_directory"],
 });
 ```
 
@@ -186,12 +173,11 @@ const filesystemMcp = MCPAdapter.connect({
 For fully trusted internal MCP servers (e.g. your own), you can relax restrictions — but still cap result sizes:
 
 ```ts
-import { MCPAdapter } from "@deskcreate/agentcraft/mcp";
+import { MCP } from "@deskcreate/agentcraft/mcp";
 
-const internalMcp = MCPAdapter.connect({
-  transport: "http",
+const internalMcp = MCP.connect({
   url: "https://internal-mcp.yourcompany.com",
-  headers: { Authorization: `Bearer ${process.env.INTERNAL_MCP_TOKEN}` },
+  auth: { type: "bearer", token: process.env.INTERNAL_MCP_TOKEN! },
   // No tool allowlist — trust all tools from this internal server
   // But still cap result sizes to prevent context overflow
 });

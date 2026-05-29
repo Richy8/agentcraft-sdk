@@ -22,12 +22,20 @@ Benchmark comparison showed native LLM skills (Anthropic and OpenAI) are 25× mo
 
 ### Added / Retained
 
-- `createAdapter()` and `tool()` from `@deskcreate/agentcraft/adapters` — compose any capability as a typed adapter.
-- All built-in adapters retained: `FetchAdapter`, `FilesystemAdapter`, `GitHubAdapter`, `DatabaseAdapter`, `PlaywrightAdapter`, `SeoAdapter`, `TavilyAdapter`, `ElevenLabsAdapter`, `SlackAdapter`, `NotionAdapter`, `ImageGenerationAdapter`, `GoogleCalendarAdapter`, `GoogleSheetsAdapter`, `EmailAdapter`, `CitationManagerAdapter`, `AnalyticsAdapter`, `PublishingAdapter`, `ApifyAdapter`, `FirecrawlAdapter`, `RedisAdapter`, `StorageAdapter`, `PineconeAdapter`, `SupabaseAdapter`, `CreatorResourcesAdapter`.
+- `createAdapter()` and `tool()` from `@deskcreate/agentcraft/adapters` — compose any capability as a typed adapter. `tool(name, spec)` takes a flat spec with `sideEffect`, `scopes`, and `requiresConfirmation` at the top level.
+- Native adapters retained: `FetchAdapter`, `TavilySearchAdapter`, `DatabaseAdapter`, `ImageGenerationAdapter`.
+- MCP wrappers retained: `GitHubMCP`, `SlackMCP`, `FilesystemMCP`, `PostgresMCP`, `SupabaseMCP`, `BraveSearchMCP`, `FirecrawlMCP`, `FetchMCP`, `MCP` (generic factory).
 - `response.costReport` for run-level cost reporting.
 - `RunBudget.mode` with `fail-closed`, `prefer-cache`, `downgrade-model`, and `request-approval`.
 - `createPricingStalenessReport()` for model-pricing metadata checks.
-- All previously-unreleased additions from the prior `Unreleased` block that are not skill/pack-specific: artifact-store schema validation, `ArtifactStore.updateByType()` / `listLinks()` / `capabilities()`, creator memory freshness, `AgentEval`, `AgentReports`, distributed cache drivers, `ApprovalQueue`, `AgentMemory`, and runtime hardening.
+- All previously-unreleased additions from the prior `Unreleased` block that are not skill/pack-specific: artifact-store schema validation, `ArtifactStore.updateByType()` / `listLinks()` / `capabilities()`, `AgentEval`, `AgentReports`, distributed cache drivers, `ApprovalQueue`, `AgentMemory`, and runtime hardening.
+
+### Also Removed (in addition to skills/packs/traits)
+
+- Adapter-layer classes that duplicated MCP server capabilities: `FileSystemAdapter`, `GitHubAdapter`, `SlackAdapter`, `EmailAdapter`, `GoogleCalendarAdapter`, `GoogleSheetsAdapter`, `ElevenLabsAdapter`, `PlaywrightAdapter`, `FirecrawlAdapter`, `SeoAdapter`, `NotionAdapter`, `ApifyAdapter`, `RedisAdapter`, `StorageAdapter`, `PineconeAdapter`, `SupabaseAdapter`.
+- Creator-workflow adapters: `CitationManagerAdapter`, `LinkCheckerAdapter`, `AnalyticsAdapter`, `PublishingAdapter`, `CreatorResourcesAdapter`.
+- Creator persistence stores: `FileSystemCreatorMemoryStore`, `FileSystemAnalyticsHistoryStore`.
+- Use MCP wrappers (`FilesystemMCP`, `GitHubMCP`, `SlackMCP`, etc.) or general-purpose adapters (`FetchAdapter`, `DatabaseAdapter`) as replacements. See [Adapters Overview](docs/adapters/overview.md).
 
 ### Migration
 

@@ -30,7 +30,7 @@ Block all write and side-effectful tools.
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
+import { FetchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -38,10 +38,10 @@ const agent = Agent.create({
   toolPolicy: {
     readOnly: true, // blocks all write and confirmation-gated tools
   },
-}).use(FileSystemAdapter.connect({ rootPath: "./docs", readOnly: true }));
+}).use(FetchAdapter.connect({ allowedDomains: ["docs.example.com"] }));
 
 const response = await agent.run({
-  prompt: "List all markdown files in docs.",
+  prompt: "Fetch the latest changelog from docs.example.com.",
 });
 console.log(response.content);
 ```

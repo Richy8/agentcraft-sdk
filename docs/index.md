@@ -33,7 +33,7 @@ console.log(`Tokens: ${response.tokensUsed.total}`);
 | --- | --- | --- |
 | Run a prompt against any LLM | `Agent.create()` + `agent.run()` | [Quickstart](./start/quickstart.md) |
 | Switch between OpenAI, Anthropic, Gemini, and 15+ more | `Provider` catalog | [Models & Providers](./core/models-and-providers.md) |
-| Give the agent external tools to call | `ToolDefinition`, `FetchAdapter`, `FileSystemAdapter` | [Tools](./tools/tools.md) |
+| Give the agent external tools to call | `ToolDefinition`, `FetchAdapter`, `TavilySearchAdapter` | [Tools](./tools/tools.md) |
 | Connect to MCP servers | Built-in MCP wrappers | [MCP](./mcp/overview.md) |
 | Stream tokens as they arrive | `agent.stream()` | [Streaming](./core/streaming.md) |
 | Return typed structured data | `responseSchema` with Zod | [Structured Output](./core/structured-output.md) |
@@ -49,16 +49,16 @@ AgentCraft ships focused import paths. Use only what you need.
 
 ```ts
 import { Agent, AgentPool, AgentCache } from "@deskcreate/agentcraft";
-import { FetchAdapter, FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
+import { FetchAdapter, TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 import { AgentTeam, AgentWorkflow, AgentWorkspace } from "@deskcreate/agentcraft/team";
-import { BraveSearchMcp, GitHubMcp } from "@deskcreate/agentcraft/mcp";
+import { BraveSearchMCP, GitHubMCP } from "@deskcreate/agentcraft/mcp";
 ```
 
 ## A More Complete Example
 
 ```ts
 import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
-import { FetchAdapter, FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
+import { FetchAdapter, TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -74,11 +74,11 @@ const agent = Agent.create({
 })
   // Give the agent web fetch capability
   .use(FetchAdapter.connect({ allowedDomains: ["api.github.com"] }))
-  // Give it filesystem read access
-  .use(FileSystemAdapter.connect({ root: "./docs", readOnly: true }));
+  // Give it web search capability
+  .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
 
 const response = await agent.run({
-  prompt: "Fetch the latest TypeScript release from GitHub and write a 3-bullet summary.",
+  prompt: "Search for the latest TypeScript release notes and write a 3-bullet summary.",
   budget: { maxCostUsd: 0.05 },
 });
 

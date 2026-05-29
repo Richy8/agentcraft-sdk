@@ -22,10 +22,8 @@ import {
   FileArtifactStore,
   Provider,
 } from "@deskcreate/agentcraft";
-import {
-  FileSystemAdapter,
-  TavilySearchAdapter,
-} from "@deskcreate/agentcraft/adapters";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
+import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
 import { AgentTeam } from "@deskcreate/agentcraft/team";
 
 const openaiKey = process.env.OPENAI_API_KEY ?? "";
@@ -35,8 +33,10 @@ const workspace = AgentWorkspace.create({
   cache: AgentCache.file(".cache", { strategy: "auto", namespace: "acme" }),
   store: FileArtifactStore({ root: ".artifacts" }),
   adapters: [
-    FileSystemAdapter.connect({ rootPath: "./content", readOnly: true }),
     TavilySearchAdapter.connect({ apiKey: tavilyKey }),
+  ],
+  mcps: [
+    FilesystemMCP.connect({ allowedPaths: ["./content"] }),
   ],
   toolPolicy: { readOnly: true, redactSecrets: true },
   budget: { maxCost: 5, maxToolCalls: 20 },

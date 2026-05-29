@@ -253,25 +253,20 @@ await AgentReports.writeMarkdown(response, "reports/memory-run.md", {
 Use schema validation, artifact links, capabilities, and memory approvals when a workflow writes durable state.
 
 ```ts
-import {
-  FileArtifactStore,
-  FileSystemCreatorMemoryStore,
-} from "@deskcreate/agentcraft";
+import { FileArtifactStore, AgentMemory } from "@deskcreate/agentcraft";
 
 const store = FileArtifactStore({
   root: "./.agentcraft/artifacts",
   validateSchemas: true,
 });
 
-const memory = new FileSystemCreatorMemoryStore({
-  root: "./.agentcraft/memory",
-  requireWriteApproval: true,
-  approveWrite: async () => true,
-  redactSensitive: true,
+const memory = AgentMemory.create({
+  backend: "local",
+  scope: "session",
 });
 
 console.log(store.capabilities());
-console.log(await memory.summarizeContext({ query: "brand voice" }));
+console.log(await memory.search({ query: "brand voice", topK: 5 }));
 ```
 
 ## Replay Test

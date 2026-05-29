@@ -46,7 +46,7 @@ console.log(result.trace);
 - Provider-portable calls across OpenAI-compatible, Anthropic, Google, Bedrock, and Cohere protocols.
 - Secure tool lifecycle with approvals, dry-run/read-only modes, guardrails, redaction, timeouts, and audits.
 - MCP runtime for stdio, HTTP JSON-RPC, and SSE transports.
-- Built-in adapters for filesystem, fetch, GitHub, database, browser, SaaS, storage, vector, voice, and image workflows.
+- Built-in adapters for fetch, web search, database, and image generation. MCP wrappers for GitHub, Slack, filesystem, Postgres, Supabase, Brave Search, Firecrawl, and more.
 - Structured output with JSON Schema, Zod-like schemas, native JSON mode, retry repair, and tool fallback.
 - Streaming events for model deltas, tool calls, tool results, and finals.
 - Run budgets, cost reports, pricing staleness checks, fallback routing, and AgentTeam orchestration.
@@ -55,7 +55,6 @@ console.log(result.trace);
 - `AgentWorkspace` for shared runtime context wiring cache, adapters, tool policy, budget, events, and artifact stores once for teams and workflows.
 - `ArtifactStore` for typed durable persistence with validation, history, link traversal, capabilities, and memory/file/SQLite backends.
 - `ArtifactRegistry` for 19 built-in creator artifact schemas with custom extension support.
-- Creator memory with freshness metadata, write approvals, secret blocking, corpus search, and compact memory summaries.
 - `AgentEval`, `AgentReports`, distributed cache, governance queues, and semantic memory for production readiness.
 
 ## What You Can Build
@@ -86,10 +85,9 @@ const mathAdapter = createAdapter({
   name: "math",
   metadata: { kind: "custom", auth: "none", sideEffects: ["none"], readOnly: true },
   tools: [
-    tool({
-      name: "compound_interest",
+    tool("compound_interest", {
       description: "Calculate compound interest: principal × (1 + rate)^years.",
-      security: { sideEffect: "none" },
+      sideEffect: "none",
       params: {
         principal: { type: "number", description: "Starting amount." },
         rate:      { type: "number", description: "Annual rate as decimal." },
@@ -227,25 +225,20 @@ import {
   AgentMemory,
   AgentWorkspace,
   FileArtifactStore,
-  FileSystemCreatorMemoryStore,
 } from "@deskcreate/agentcraft";
 
-const store = FileArtifactStore({ root: ".agentcraft/artifacts", validateSchemas: true });
+const store = new FileArtifactStore({ root: ".agentcraft/artifacts" });
 
-const semanticMemory = AgentMemory.local({
-  root: ".agentcraft/semantic-memory",
-  namespace: "prod",
-  maxContextChars: 1200,
-  writes: { requireApproval: true, approveWrite: async () => true },
+const memory = AgentMemory.create({
+  backend: "local",
+  scope: "session",
 });
 
-await semanticMemory.add({
-  scope: "brand",
-  text: "Voice: specific, practical, no motivational filler.",
-  source: "brand-workshop",
-});
+await memory.store({ content: "Voice: specific, practical, no motivational filler." });
 
-const workspace = AgentWorkspace.create({ store, memory: semanticMemory });
+const results = await memory.search({ query: "brand voice", topK: 3 });
+
+const workspace = AgentWorkspace.create({ store });
 console.log(workspace.store?.capabilities());
 ```
 

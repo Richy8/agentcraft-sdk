@@ -74,11 +74,17 @@ export default defineConfig({
         ],
       },
       {
+        text: 'Skills',
+        items: [
+          { text: 'Overview', link: '/skills/overview' },
+          { text: 'API Reference', link: '/skills/api' },
+        ],
+      },
+      {
         text: 'Adapters',
         items: [
           { text: 'Overview', link: '/adapters/overview' },
           { text: 'Built-In Adapters', link: '/adapters/built-in' },
-          { text: 'Specialized Adapters', link: '/adapters/specialized-adapters' },
           { text: 'Custom Adapters', link: '/adapters/custom' },
           { text: 'Adapter Safety', link: '/adapters/safety' },
         ],
@@ -90,15 +96,6 @@ export default defineConfig({
           { text: 'Built-In MCP Wrappers', link: '/mcp/built-in' },
           { text: 'Custom MCP', link: '/mcp/custom' },
           { text: 'MCP Security', link: '/mcp/security' },
-        ],
-      },
-      {
-        text: 'Creator System',
-        items: [
-          { text: 'Overview', link: '/creator/overview' },
-          { text: 'Creator Adapters', link: '/creator/adapters' },
-          { text: 'Creator Memory', link: '/creator/memory' },
-          { text: 'Creator Analytics', link: '/creator/analytics' },
         ],
       },
       {
@@ -136,9 +133,6 @@ export default defineConfig({
           { text: 'Semantic Memory', link: '/persistence/semantic-memory' },
           { text: 'Artifact Store', link: '/persistence/artifact-store' },
           { text: 'Artifact Registry', link: '/persistence/artifact-registry' },
-          { text: 'Citation Store', link: '/persistence/citation-store' },
-          { text: 'Creator Memory Store', link: '/persistence/creator-memory-store' },
-          { text: 'Analytics History Store', link: '/persistence/analytics-history-store' },
           { text: 'Authoring a Domain Store', link: '/persistence/authoring-domain-store' },
         ],
       },

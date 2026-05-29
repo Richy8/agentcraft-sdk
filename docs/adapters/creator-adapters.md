@@ -1,14 +1,16 @@
 # Creator Adapters
 
-Creator workflows add focused read-first adapters:
+The creator-specific adapters (`CitationManagerAdapter`, `LinkCheckerAdapter`, `SeoAdapter`, `CreatorResourcesAdapter`, `PublishingAdapter`, `AnalyticsAdapter`) were removed in **v0.3.0**.
 
-- `CitationManagerAdapter` stores source notes and claim provenance in the filesystem.
-- `LinkCheckerAdapter` validates HTTPS links without mutating external systems.
-- `SeoAdapter` defines provider-neutral SERP and keyword metric contracts.
-- `CreatorResourcesAdapter` provides fixture-backed brand memory, content corpus, and asset-library reads.
-- `PublishingAdapter` exposes confirmation-gated draft and publish tools.
-- `AnalyticsAdapter` reads fixture or provider-backed content metrics.
+Use the general-purpose primitives instead:
 
-SEO metric fields are represented as available or unavailable. AgentCraft must not invent volume, difficulty, CPC, or ranking data when a provider does not supply it.
+| Former adapter            | Current alternative                                                        |
+| ------------------------- | -------------------------------------------------------------------------- |
+| `CreatorResourcesAdapter` | [Skills](../skills/overview.md) with tone/brand reference files            |
+| `SeoAdapter`              | [TavilySearchAdapter](./built-in.md#tavlysearchadapter) for real SERP data |
+| `LinkCheckerAdapter`      | [FetchAdapter](./built-in.md#fetchadapter) for guarded URL reads           |
+| `PublishingAdapter`       | Custom tool via [`tool()`](../tools/tool-authoring.md) with approval gate  |
+| `CitationManagerAdapter`  | [ArtifactStore](../persistence/artifact-store.md) for typed storage        |
+| `AnalyticsAdapter`        | [ArtifactStore](../persistence/artifact-store.md) + structured output      |
 
-Publishing tools are write-capable and require confirmation. Zero-config publishing packs prepare and QA assets; they do not publish silently.
+See [Built-In Adapters](./built-in.md) for the current adapter list.

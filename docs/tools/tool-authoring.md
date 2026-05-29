@@ -9,8 +9,8 @@ Good tools are small, typed, scoped, and honest about side effects. This page co
 | Name         | Use stable `snake_case`.                        | Models and tests depend on the name — don't change it. |
 | Params       | Validate every input with `type` and `options`. | Prevents malformed tool calls from reaching your code. |
 | Results      | Return small structured objects, not raw HTML.  | Easier to cache, trace, audit, and reason about.       |
-| Security     | Always set `sideEffect` and `scopes`.           | Enables policy enforcement and tool caching.           |
-| Side effects | Use `requiresConfirmation: true` for writes.    | Forces approval before the tool executes.              |
+| Side effects | Always set `sideEffect`.                        | Enables policy enforcement and tool caching.           |
+| Writes       | Use `requiresConfirmation: true` for writes.    | Forces approval before the tool executes.              |
 
 ## Basic Read Tool
 
@@ -18,13 +18,10 @@ Good tools are small, typed, scoped, and honest about side effects. This page co
 import { tool } from "@deskcreate/agentcraft/adapters";
 
 // A simple read tool — cacheable, no approval needed
-const getUser = tool({
-  name: "get_user",
+const getUser = tool("get_user", {
   description: "Fetch a user profile by ID.",
-  security: {
-    sideEffect: "read", // safe to cache
-    scopes: ["users:read"], // logical scope for audit logs
-  },
+  sideEffect: "read",
+  scopes: ["users:read"],
   params: {
     userId: {
       type: "string",
@@ -44,10 +41,10 @@ const getUser = tool({
 ```ts
 import { tool } from "@deskcreate/agentcraft/adapters";
 
-const listOrders = tool({
-  name: "list_orders",
+const listOrders = tool("list_orders", {
   description: "List recent orders for a customer.",
-  security: { sideEffect: "read", scopes: ["orders:read"] },
+  sideEffect: "read",
+  scopes: ["orders:read"],
   params: {
     customerId: {
       type: "string",
@@ -56,7 +53,7 @@ const listOrders = tool({
     status: {
       type: "string",
       description: "Filter by status.",
-      required: false, // model may omit this — defaults to all statuses
+      required: false,
       options: ["pending", "shipped", "delivered", "cancelled"],
     },
     limit: {
@@ -79,14 +76,11 @@ Tools that change state should use `sideEffect: "write"` and `requiresConfirmati
 ```ts
 import { tool } from "@deskcreate/agentcraft/adapters";
 
-const cancelOrder = tool({
-  name: "cancel_order",
+const cancelOrder = tool("cancel_order", {
   description: "Cancel a customer order by ID.",
-  security: {
-    sideEffect: "write",
-    requiresConfirmation: true, // blocked unless explicitly approved
-    scopes: ["orders:write"],
-  },
+  sideEffect: "write",
+  requiresConfirmation: true,
+  scopes: ["orders:write"],
   params: {
     orderId: {
       type: "string",
@@ -112,14 +106,11 @@ Tools that call third-party APIs should use `sideEffect: "external"`. These are 
 ```ts
 import { tool } from "@deskcreate/agentcraft/adapters";
 
-const sendSlackMessage = tool({
-  name: "send_slack_message",
+const sendSlackMessage = tool("send_slack_message", {
   description: "Send a message to a Slack channel.",
-  security: {
-    sideEffect: "external", // not cacheable — external side effect
-    requiresConfirmation: true, // require approval before sending
-    scopes: ["slack:post"],
-  },
+  sideEffect: "external",
+  requiresConfirmation: true,
+  scopes: ["slack:post"],
   params: {
     channel: {
       type: "string",
@@ -144,22 +135,19 @@ Group related tools into a reusable adapter with `createAdapter()`. Adapters are
 ```ts
 import { createAdapter, tool } from "@deskcreate/agentcraft/adapters";
 
-const getOrder = tool({
-  name: "get_order",
+const getOrder = tool("get_order", {
   description: "Fetch an order by ID.",
-  security: { sideEffect: "read", scopes: ["orders:read"] },
+  sideEffect: "read",
+  scopes: ["orders:read"],
   params: { orderId: { type: "string", description: "Order ID." } },
   run: async ({ orderId }) => orders.get(orderId),
 });
 
-const updateOrderStatus = tool({
-  name: "update_order_status",
+const updateOrderStatus = tool("update_order_status", {
   description: "Update the status of an order.",
-  security: {
-    sideEffect: "write",
-    requiresConfirmation: true,
-    scopes: ["orders:write"],
-  },
+  sideEffect: "write",
+  requiresConfirmation: true,
+  scopes: ["orders:write"],
   params: {
     orderId: { type: "string", description: "Order ID." },
     status: {

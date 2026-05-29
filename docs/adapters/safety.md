@@ -1,6 +1,6 @@
 # Adapter Safety
 
-Adapters expose real-world capabilities to the model — file writes, API calls, database queries. Unsafe adapters can exfiltrate data, corrupt state, or make irreversible changes at model direction. This page covers how to scope, constrain, and monitor adapter behavior.
+Adapters expose real-world capabilities to the model — web fetches, API calls, database queries. Unsafe adapters can exfiltrate data, corrupt state, or make irreversible changes at model direction. This page covers how to scope, constrain, and monitor adapter behavior.
 
 ## Security Checklist
 
@@ -12,7 +12,6 @@ Before attaching any adapter to a production agent:
 - Enable `redactSecrets: true` to strip credentials from tool results before they reach the model
 - Mark write tools with `requiresConfirmation: true` to require approval before execution
 - Set `allowedDomains` on `FetchAdapter` to prevent SSRF
-- Set `rootPath` and `allowedExtensions` on `FileSystemAdapter` to prevent directory traversal
 - Treat external data as untrusted — enable guardrails for prompt injection defense
 
 ## Metadata Fields
@@ -55,7 +54,8 @@ Enforce that no adapter can make writes, regardless of the adapter's own configu
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { FileSystemAdapter, GitHubAdapter } from "@deskcreate/agentcraft/adapters";
+import { FetchAdapter } from "@deskcreate/agentcraft/adapters";
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -68,14 +68,13 @@ const agent = Agent.create({
   },
 })
   .use(
-    FileSystemAdapter.connect({
-      rootPath: "./docs",
-      readOnly: true,               // adapter-level constraint
-      allowedExtensions: [".md"],   // extension allowlist
+    FetchAdapter.connect({
+      allowedDomains: ["api.github.com", "raw.githubusercontent.com"],
+      allowedProtocols: ["https:"],
     }),
   )
   .use(
-    GitHubAdapter.connect({
+    GitHubMCP.connect({
       token: process.env.GITHUB_TOKEN!,
     }),
   );
@@ -95,14 +94,10 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
-    // Require approval for all write-level tool calls
-    sideEffectPolicy: {
-      write: "queue", // queue for human review
-    },
-    // Handle approval decisions
-    onApprovalRequest: async ({ toolName, args }) => {
-      const approved = await humanReviewSystem.requestApproval({ toolName, args });
-      return approved ? "approved" : "denied";
+    // Return true to approve, false to deny
+    onApprovalRequired: async ({ tool }) => {
+      const approved = await humanReviewSystem.requestApproval({ toolName: tool.name });
+      return approved;
     },
   },
 }).use(
@@ -132,7 +127,7 @@ const agent = Agent.create({
       "registry.npmjs.org",
     ],
     // Limit response size to prevent context overflow
-    maxBytes: 500_000,
+    maxResponseBytes: 500_000,
     // Timeout per request
     timeoutMs: 10_000,
   }),
@@ -140,29 +135,6 @@ const agent = Agent.create({
 ```
 
 Attempts to fetch from unlisted domains are blocked at the adapter level before execution, with an error returned to the model.
-
-### Filesystem Boundary (FileSystemAdapter)
-
-Restrict the filesystem adapter to a specific directory with an extension allowlist:
-
-```ts
-import { Agent, Provider } from "@deskcreate/agentcraft";
-import { FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
-
-const agent = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-}).use(
-  FileSystemAdapter.connect({
-    rootPath: "./content",            // all reads/writes scoped to this directory
-    readOnly: true,                   // no writes permitted
-    allowedExtensions: [".md", ".txt"], // block access to .env, .ts, etc.
-    maxFileSizeBytes: 1_000_000,     // 1MB limit per file read
-  }),
-);
-```
-
-Directory traversal attempts (e.g. `../../etc/passwd`) are blocked — the adapter enforces the boundary before any filesystem call.
 
 ### Secret Redaction
 
@@ -194,16 +166,15 @@ Redaction happens after `execute()` returns but before the result is appended to
 Data fetched from external sources (web pages, user-provided files, API responses) may contain prompt injection attempts. Enable guardrails to detect and strip injected instructions:
 
 ```ts
-import { Agent, Provider } from "@deskcreate/agentcraft";
+import { Agent, Provider, blockPromptInjectionGuardrail } from "@deskcreate/agentcraft";
 import { FetchAdapter } from "@deskcreate/agentcraft/adapters";
-import { PromptInjectionGuardrail } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
     // Block results containing prompt injection patterns
-    outputGuardrails: [PromptInjectionGuardrail.create({ mode: "block" })],
+    outputGuardrails: [blockPromptInjectionGuardrail],
   },
 }).use(
   FetchAdapter.connect({
@@ -263,17 +234,17 @@ When an adapter declares that it `dependsOn` another adapter, the attachment man
 
 ```ts
 import { createAdapter } from "@deskcreate/agentcraft/adapters";
-import { SupabaseAdapter } from "@deskcreate/agentcraft/adapters";
+import { FetchAdapter } from "@deskcreate/agentcraft/adapters";
+import { AdapterRequirementError } from "@deskcreate/agentcraft";
 
-// This adapter requires SupabaseAdapter to also be attached
-const myVectorSearch = createAdapter({
-  name: "vector-search",
-  dependsOn: [SupabaseAdapter],
+// This adapter requires FetchAdapter to also be attached
+const myWebSummary = createAdapter({
+  name: "web-summary",
+  dependsOn: [{ adapterName: "fetch" }],
   tools: [/* ... */],
 });
 
-// If SupabaseAdapter is not attached, AdapterRequirementError is thrown
-import { AdapterRequirementError } from "@deskcreate/agentcraft";
+// If FetchAdapter is not attached, AdapterRequirementError is thrown
 ```
 
 ## Live Testing Rules

@@ -1,12 +1,12 @@
 # Adapters
 
-Adapters are tool bundles — they package a set of related model-callable functions with lifecycle hooks, dependency declarations, and security metadata into a single `.use()` call. Where a standalone tool is a single function, an adapter is a coherent capability: a GitHub adapter gives the model read and write access to repositories; a filesystem adapter scopes reads to a directory; a fetch adapter restricts URLs to an allowlist.
+Adapters are tool bundles — they package a set of related model-callable functions with lifecycle hooks, dependency declarations, and security metadata into a single `.use()` call. Where a standalone tool is a single function, an adapter is a coherent capability: a fetch adapter restricts URLs to an allowlist; a database adapter enforces read-only access; a search adapter returns structured results.
 
 ## Quick Start
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { FetchAdapter, FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
+import { FetchAdapter, TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -19,21 +19,19 @@ const agent = Agent.create({
     }),
   )
   .use(
-    FileSystemAdapter.connect({
-      rootPath: "./docs",
-      readOnly: true,
-      allowedExtensions: [".md"],
+    TavilySearchAdapter.connect({
+      apiKey: process.env.TAVILY_API_KEY!,
     }),
   );
 
 const response = await agent.run({
-  prompt: "Fetch the TypeScript 5.5 release notes from GitHub.",
+  prompt: "Search for and fetch the TypeScript 5.5 release notes.",
 });
 
 console.log(response.content);
 // Which tools were called?
 console.log(response.toolCalls?.map((t) => t.name));
-// → ["fetch"]
+// → ["tavily_search", "fetch"]
 ```
 
 ## Adapter Anatomy
@@ -80,17 +78,17 @@ Tools from agent-level adapters are available for every run on that agent:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { GitHubAdapter, SlackAdapter } from "@deskcreate/agentcraft/adapters";
+import { TavilySearchAdapter, DatabaseAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
 })
-  .use(GitHubAdapter.connect({ token: process.env.GITHUB_TOKEN! }))
-  .use(SlackAdapter.connect({ token: process.env.SLACK_BOT_TOKEN! }));
+  .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }))
+  .use(DatabaseAdapter.connect({ connectionString: process.env.DATABASE_URL!, readOnly: true }));
 
-// GitHub and Slack tools are available on every run
-const response = await agent.run({ prompt: "Post a summary of open PRs to #engineering." });
+// Search and database tools are available on every run
+const response = await agent.run({ prompt: "Search for competitors and compare to our user count." });
 ```
 
 ### Per-Run (Scoped)
@@ -118,57 +116,20 @@ const response = await agent.run({
 });
 ```
 
-## Adapter Categories
+## Built-In Adapters
 
-### Web and Fetch
+The following adapters ship with AgentCraft and are importable from `@deskcreate/agentcraft/adapters`:
 
-| Adapter | Import | Purpose |
-| --- | --- | --- |
-| `FetchAdapter` | `@deskcreate/agentcraft/adapters` | HTTP GET/POST with domain allowlisting |
-| `FirecrawlAdapter` | `@deskcreate/agentcraft/adapters` | Deep web crawling and content extraction |
-| `TavilySearchAdapter` | `@deskcreate/agentcraft/adapters` | AI-optimized web search results |
-| `PlaywrightAdapter` | `@deskcreate/agentcraft/adapters` | Browser automation and screenshot capture |
-| `LinkCheckerAdapter` | `@deskcreate/agentcraft/adapters` | URL validity and redirect checking |
+| Adapter | Purpose |
+| --- | --- |
+| `FetchAdapter` | HTTP GET/POST with domain allowlisting and SSRF protection |
+| `TavilySearchAdapter` | AI-optimized web search results |
+| `DatabaseAdapter` | SQL query execution (PostgreSQL, MySQL, SQLite) |
+| `ImageGenerationAdapter` | Generate images via DALL-E or compatible APIs |
 
-### Local and Data
+For capabilities not covered by native adapters — GitHub, Slack, Filesystem, Supabase, Postgres, Brave Search, Firecrawl — use the [built-in MCP wrappers](../mcp/built-in.md) from `@deskcreate/agentcraft/mcp`. They attach to agents with the same `.use()` pattern.
 
-| Adapter | Import | Purpose |
-| --- | --- | --- |
-| `FileSystemAdapter` | `@deskcreate/agentcraft/adapters` | Scoped file read/write with extension filtering |
-| `DatabaseAdapter` | `@deskcreate/agentcraft/adapters` | SQL query execution (PostgreSQL, SQLite) |
-| `GoogleSheetsAdapter` | `@deskcreate/agentcraft/adapters` | Spreadsheet read/write |
-| `SupabaseAdapter` | `@deskcreate/agentcraft/adapters` | Supabase database and storage operations |
-| `RedisAdapter` | `@deskcreate/agentcraft/adapters` | Redis key-value get/set |
-| `PineconeAdapter` | `@deskcreate/agentcraft/adapters` | Pinecone vector search |
-| `StorageAdapter` | `@deskcreate/agentcraft/adapters` | Cloud storage (S3-compatible) get/put |
-
-### Productivity and Collaboration
-
-| Adapter | Import | Purpose |
-| --- | --- | --- |
-| `GitHubAdapter` | `@deskcreate/agentcraft/adapters` | PR, issue, repo, and file operations |
-| `NotionAdapter` | `@deskcreate/agentcraft/adapters` | Page and database read/write |
-| `SlackAdapter` | `@deskcreate/agentcraft/adapters` | Post messages and read channels |
-| `EmailAdapter` | `@deskcreate/agentcraft/adapters` | Send and read emails |
-| `GoogleCalendarAdapter` | `@deskcreate/agentcraft/adapters` | Calendar event read/write |
-
-### Content and Publishing
-
-| Adapter | Import | Purpose |
-| --- | --- | --- |
-| `ImageGenerationAdapter` | `@deskcreate/agentcraft/adapters` | Generate images via DALL-E or similar |
-| `ElevenLabsAdapter` | `@deskcreate/agentcraft/adapters` | Text-to-speech audio generation |
-| `PublishingAdapter` | `@deskcreate/agentcraft/adapters` | Publish content to CMS platforms |
-| `SeoAdapter` | `@deskcreate/agentcraft/adapters` | SEO analysis and keyword research |
-| `AnalyticsAdapter` | `@deskcreate/agentcraft/adapters` | Content analytics and performance data |
-| `CitationManagerAdapter` | `@deskcreate/agentcraft/adapters` | Source tracking and citation management |
-
-### Automation
-
-| Adapter | Import | Purpose |
-| --- | --- | --- |
-| `ApifyAdapter` | `@deskcreate/agentcraft/adapters` | Run Apify web scraping actors |
-| `MCPAdapter` | `@deskcreate/agentcraft/mcp` | Attach any MCP server as an adapter |
+For custom tools and adapters, see [Custom Adapters](./custom.md).
 
 ## Adapter Lifecycle
 
@@ -223,10 +184,10 @@ try {
 After a run, inspect which tools were actually exposed to the model:
 
 ```ts
-const response = await agent.run({ prompt: "Summarize the top GitHub issues." });
+const response = await agent.run({ prompt: "Search for the latest AI research." });
 
 console.log("Exposed tools:", response.selection?.exposedTools);
-// → ["github_list_issues", "github_get_issue"]
+// → ["tavily_search"]
 
 console.log("Tool calls made:", response.toolCalls?.length);
 // → 1
@@ -239,4 +200,5 @@ console.log("Tool calls made:", response.toolCalls?.length);
 - [Adapter Safety](./safety.md)
 - [Tool Policy](../tools/tool-policy.md)
 - [Adapter Config](../configuration/adapter-config.md)
+- [MCP Overview](../mcp/overview.md)
 - [Examples & Cookbook: Tools & Adapters](../examples-cookbook/tools-adapters.md)

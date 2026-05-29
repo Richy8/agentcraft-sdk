@@ -19,16 +19,10 @@ AgentCraft reads credentials and feature flags from environment variables. Unit 
 | ------------------------------ | ---------------------- | ---------------------------------------------------------- |
 | `GITHUB_PERSONAL_ACCESS_TOKEN` | GitHub adapter/MCP     | Repo reads/writes — scope to minimum required permissions. |
 | `TAVILY_API_KEY`               | TavilySearchAdapter    | Web search and page content extraction.                    |
-| `FIRECRAWL_API_KEY`            | FirecrawlAdapter/MCP   | Scrape, crawl, search, structured extraction.              |
-| `APIFY_TOKEN`                  | ApifyAdapter/MCP       | Actors and datasets.                                       |
-| `SLACK_BOT_TOKEN`              | SlackAdapter/MCP       | Send and read Slack messages.                              |
-| `SLACK_TEAM_ID`                | SlackMcp               | Required by the Slack MCP server.                          |
-| `SENDGRID_API_KEY`             | EmailAdapter (SendGrid)| Email send via SendGrid.                                   |
-| `RESEND_API_KEY`               | EmailAdapter (Resend)  | Email send via Resend.                                     |
-| `GOOGLE_ACCESS_TOKEN`          | Google Calendar/Sheets | OAuth2 access token for Google workspace adapters.         |
-| `NOTION_TOKEN`                 | NotionAdapter/MCP      | Notion integration token.                                  |
-| `ELEVENLABS_API_KEY`           | ElevenLabsAdapter/MCP  | Text-to-speech and voice tools.                            |
-| `BRAVE_API_KEY`                | BraveSearchMcp         | Brave Search MCP server.                                   |
+| `FIRECRAWL_API_KEY`            | FirecrawlMCP           | Scrape, crawl, search, structured extraction.              |
+| `SLACK_BOT_TOKEN`              | SlackMCP               | Send and read Slack messages.                              |
+| `SLACK_TEAM_ID`                | SlackMCP               | Required by the Slack MCP server.                          |
+| `BRAVE_API_KEY`                | BraveSearchMCP         | Brave Search MCP server.                                   |
 
 ## Storage And Memory Credentials
 

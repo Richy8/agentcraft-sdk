@@ -121,12 +121,12 @@ const response = await agent.run({
 ### Per-Run Adapter Attachment
 
 ```ts
-import { FirecrawlAdapter } from "@deskcreate/agentcraft/adapters";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const response = await agent.run({
   prompt: "Research this topic and draft a blog post.",
   use: [
-    FirecrawlAdapter.connect({ apiKey: process.env.FIRECRAWL_API_KEY! }),
+    TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }),
   ],
   budget: { maxToolCalls: 5, maxCost: 0.1 },
 });

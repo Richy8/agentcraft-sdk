@@ -1,48 +1,43 @@
 # MCP Config
 
-MCP config connects external Model Context Protocol servers through built-in wrapper helpers (`GitHubMcp`, `Context7Mcp`, etc.) or the generic `McpAdapter`. Wrappers provide pinned package metadata, default transport, required secret names, and side-effect labels. You always decide which tools and resources the agent can see.
+MCP config connects external Model Context Protocol servers through built-in wrapper helpers (`GitHubMCP`, `SlackMCP`, etc.) or the generic `MCP.connect()` factory. Wrappers provide pinned package metadata, default transport, required secret names, and side-effect labels. You always decide which tools the agent can see.
 
 ## Attach Pattern
 
-| Step           | Action                                          | Required?               | Related page                              |
-| -------------- | ----------------------------------------------- | ----------------------- | ----------------------------------------- |
-| Choose wrapper | `GitHubMcp`, `Context7Mcp`, etc.                | No — use McpAdapter     | [Built-In MCPs](../reference/built-in-mcps.md)|
-| Configure      | Pass credentials, `allowedTools`, `roots`       | Credentials: yes        | See per-wrapper tables below              |
-| Attach         | `agent.use(wrapper.connect(config))`            | Yes                     | [Agents](../core/agents.md)               |
-| Govern         | `toolPolicy`, approval callbacks                | Recommended             | [Tool Policy Config](./tool-policy-config.md)|
+1. **Choose a wrapper** — use a built-in wrapper for known servers, or `MCP.connect()` for custom ones. See [Built-In MCPs](../reference/built-in-mcps.md).
+2. **Configure** — pass credentials, `allowedTools`, and other options.
+3. **Attach** — call `agent.use(wrapper.connect(config))`. See [Agents](../core/agents.md).
+4. **Govern** — apply `toolPolicy` and approval callbacks. See [Tool Policy Config](./tool-policy-config.md).
 
 ## Transport Types
 
-| Transport | Use case                                              | Config key              |
-| --------- | ----------------------------------------------------- | ----------------------- |
-| `stdio`   | Local npm package spawned as a child process          | `McpAdapter.stdio(...)` |
-| `http`    | Remote MCP server over HTTP/SSE                       | `McpAdapter.http(...)`  |
-| `dual`    | Wrapper picks transport based on environment context  | Handled by wrapper      |
+| Transport | Use case | How to connect |
+| --------- | -------- | -------------- |
+| stdio | Local npm package spawned as child process | `MCP.connect({ command, args })` |
+| http | Remote MCP server over HTTP/SSE | `MCP.connect({ url, auth? })` |
+| package | Auto-install and run an npm package | `MCP.connect({ package })` |
 
 ## Built-In Wrappers — Shared Config
 
-All built-in wrappers accept these options in addition to their required credentials:
+All built-in wrappers accept these options:
 
-| Option             | Required | Default                 | Purpose                                                               |
-| ------------------ | -------- | ----------------------- | --------------------------------------------------------------------- |
-| `allowedTools`     | No       | All server tools        | Array of tool names to expose. Unlisted tools are hidden from model.  |
-| `allowedResources` | No       | All resources           | Array of resource URIs to allow. For resource-capable servers.        |
-| `roots`            | No       | Unrestricted            | Filesystem/workspace root paths for servers that support scoping.     |
-| `metadata`         | No       | Wrapper defaults        | Extra trust, package, and side-effect labels.                         |
-| `onTrace`          | No       | No-op                   | Callback receiving lifecycle trace events.                            |
+| Option            | Required | Default          | Purpose                                                               |
+| ----------------- | -------- | ---------------- | --------------------------------------------------------------------- |
+| `allowedTools`    | No       | All server tools | Tool names to expose. Unlisted tools are hidden from the model.       |
+| `requireApproval` | No       | never            | never, always, or array of tool names that require human approval.    |
 
-## GitHubMcp
+## GitHubMCP
 
 Read and write GitHub repos, issues, PRs, and files.
 
-| Option    | Required | Default | Purpose                                          |
-| --------- | -------- | ------- | ------------------------------------------------ |
-| `token`   | Yes      | None    | GitHub personal access token or fine-grained PAT.|
+| Option  | Required | Default | Purpose                                           |
+| ------- | -------- | ------- | ------------------------------------------------- |
+| `token` | Yes      | None    | GitHub personal access token or fine-grained PAT. |
 
 ```ts
-import { GitHubMcp } from "@deskcreate/agentcraft/mcp";
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
-agent.use(GitHubMcp.connect({
+agent.use(GitHubMCP.connect({
   token: process.env.GITHUB_TOKEN!,
   allowedTools: [
     "get_pull_request",
@@ -53,77 +48,88 @@ agent.use(GitHubMcp.connect({
 }));
 ```
 
-Read-only config — safe for code review agents. Remove `get_file_contents` from `allowedTools` to restrict further, or add `create_issue` for write access.
+Read-only config — safe for code review agents. Add `create_issue` to `allowedTools` to enable write access.
 
-## Context7Mcp
+## SlackMCP
 
-Fetch live documentation for npm packages and open-source libraries.
+Read channel history and post messages via the Slack MCP server.
 
-| Option | Required | Default | Purpose                                                         |
-| ------ | -------- | ------- | --------------------------------------------------------------- |
-| None   | —        | —       | No credentials needed. Fetches from the Context7 public index.  |
+| Option      | Required | Default | Purpose                                                    |
+| ----------- | -------- | ------- | ---------------------------------------------------------- |
+| `botToken`  | Yes      | None    | Slack bot token (xoxb-...).                                |
+| `teamId`    | Yes      | None    | Slack workspace team ID.                                   |
 
 ```ts
-import { Context7Mcp } from "@deskcreate/agentcraft/mcp";
+import { SlackMCP } from "@deskcreate/agentcraft/mcp";
 
-agent.use(Context7Mcp.connect());
-// or restrict to specific operations:
-agent.use(Context7Mcp.connect({
-  allowedTools: ["resolve-library-id", "get-library-docs"],
+agent.use(SlackMCP.connect({
+  botToken: process.env.SLACK_BOT_TOKEN!,
+  teamId: process.env.SLACK_TEAM_ID!,
+  allowedTools: ["list_channels", "get_channel_history"],
 }));
 ```
 
-Useful when the agent needs to look up library APIs or migration guides at runtime rather than relying on training-time knowledge.
+## FilesystemMCP
 
-## NotionMcp
+Read and write files within scoped directory paths.
 
-Search, read, and write Notion pages and databases.
-
-| Option  | Required | Default | Purpose              |
-| ------- | -------- | ------- | -------------------- |
-| `token` | Yes      | None    | Notion integration token. |
+| Option         | Required | Default | Purpose                                                 |
+| -------------- | -------- | ------- | ------------------------------------------------------- |
+| `allowedPaths` | Yes      | None    | Array of absolute or relative directory paths to allow. |
 
 ```ts
-import { NotionMcp } from "@deskcreate/agentcraft/mcp";
+import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
 
-agent.use(NotionMcp.connect({
-  token: process.env.NOTION_TOKEN!,
-  allowedTools: ["search", "retrieve_page", "retrieve_block_children"],
+agent.use(FilesystemMCP.connect({
+  allowedPaths: ["./src", "./docs"],
 }));
 ```
 
-## SlackMcp
+## PostgresMCP / SupabaseMCP
 
-Read channel history and send messages via Slack MCP server.
-
-| Option       | Required | Default | Purpose              |
-| ------------ | -------- | ------- | -------------------- |
-| `token`      | Yes      | None    | Slack bot token.     |
+Connect to PostgreSQL or Supabase databases.
 
 ```ts
-import { SlackMcp } from "@deskcreate/agentcraft/mcp";
+import { PostgresMCP, SupabaseMCP } from "@deskcreate/agentcraft/mcp";
 
-agent.use(SlackMcp.connect({
-  token: process.env.SLACK_BOT_TOKEN!,
-  allowedTools: ["get_channel_history", "send_message"],
+// PostgreSQL
+agent.use(PostgresMCP.connect({
+  connectionString: process.env.DATABASE_URL!,
+}));
+
+// Supabase
+agent.use(SupabaseMCP.connect({
+  supabaseUrl: process.env.SUPABASE_URL!,
+  supabaseKey: process.env.SUPABASE_SERVICE_KEY!,
 }));
 ```
 
-## Generic Stdio MCP
+## BraveSearchMCP / FirecrawlMCP
 
-Use `McpAdapter.stdio()` for any MCP server installed as an npm package. Always pin the version.
-
-| Option         | Required | Default | Purpose                                                                  |
-| -------------- | -------- | ------- | ------------------------------------------------------------------------ |
-| `command`      | Yes      | None    | The executable. Almost always `"npx"`.                                   |
-| `args`         | Yes      | None    | Args array. The second element should be the pinned `package@version`.   |
-| `allowedTools` | No       | All     | Restrict which tools the server exposes.                                 |
-| `env`          | No       | `{}`    | Extra environment variables passed to the child process.                 |
+Web search and web scraping.
 
 ```ts
-import { McpAdapter } from "@deskcreate/agentcraft/mcp";
+import { BraveSearchMCP, FirecrawlMCP } from "@deskcreate/agentcraft/mcp";
 
-agent.use(McpAdapter.stdio({
+agent.use(BraveSearchMCP.connect({ apiKey: process.env.BRAVE_API_KEY! }));
+agent.use(FirecrawlMCP.connect({ apiKey: process.env.FIRECRAWL_API_KEY! }));
+```
+
+## Generic MCP — Stdio
+
+Use `MCP.connect({ command, args })` for any MCP server installed as an npm package. Always pin the version.
+
+| Option         | Required | Default | Purpose                                                             |
+| -------------- | -------- | ------- | ------------------------------------------------------------------- |
+| `command`      | Yes      | None    | The executable. Almost always npx.                                  |
+| `args`         | Yes      | None    | Args array. Second element must be a pinned package version.        |
+| `allowedTools` | No       | All     | Restrict which tools the server exposes.                            |
+| `env`          | No       | None    | Extra environment variables passed to the child process.            |
+
+```ts
+import { MCP } from "@deskcreate/agentcraft/mcp";
+
+agent.use(MCP.connect({
   command: "npx",
   args: [
     "-y",
@@ -136,25 +142,24 @@ agent.use(McpAdapter.stdio({
 
 **Security:** Unpinned MCP packages can silently update and gain new tools or behaviors. Always pin the version in production.
 
-## Generic HTTP MCP
+## Generic MCP — HTTP
 
-Use `McpAdapter.http()` for remote MCP servers over HTTP or SSE.
+Use `MCP.connect({ url })` for remote MCP servers over HTTP or SSE.
 
-| Option          | Required | Default     | Purpose                                                             |
-| --------------- | -------- | ----------- | ------------------------------------------------------------------- |
-| `url`           | Yes      | None        | Full URL of the MCP server endpoint.                                |
-| `headers`       | No       | `{}`        | HTTP headers, typically `{ Authorization: \`Bearer ${token}\` }`.  |
-| `allowedTools`  | No       | All         | Restrict which server tools the agent can call.                     |
-| `discoveryMode` | No       | `'startup'` | `'startup'` discovers tools once; `'lazy'` defers until first call.|
+| Option         | Required | Default | Purpose                                                |
+| -------------- | -------- | ------- | ------------------------------------------------------ |
+| `url`          | Yes      | None    | Full URL of the MCP server endpoint.                   |
+| `auth`         | No       | None    | Bearer, API key, or basic auth object.                 |
+| `allowedTools` | No       | All     | Restrict which server tools the agent can call.        |
+| `headers`      | No       | None    | Additional HTTP headers.                               |
 
 ```ts
-import { McpAdapter } from "@deskcreate/agentcraft/mcp";
+import { MCP } from "@deskcreate/agentcraft/mcp";
 
-agent.use(McpAdapter.http({
+agent.use(MCP.connect({
   url: "https://mcp.internal.company.com/mcp",
-  headers: { Authorization: `Bearer ${process.env.INTERNAL_MCP_TOKEN}` },
+  auth: { type: "bearer", token: process.env.INTERNAL_MCP_TOKEN! },
   allowedTools: ["search_docs", "get_runbook", "list_services"],
-  discoveryMode: "startup",
 }));
 ```
 
@@ -162,14 +167,14 @@ agent.use(McpAdapter.http({
 
 1. **Always use `allowedTools`** — never expose the full tool surface of a server you didn't write.
 2. **Pin stdio package versions** — use `package@x.y.z`, not `package@latest`.
-3. **Treat MCP output as untrusted** — the server response should be considered external input.
-4. **Add `toolPolicy.readOnly: true`** for read-only operations, or `requireConfirmation` for write-capable servers.
-5. **Use `roots`** for filesystem/resource servers to scope the server's access.
-6. **Rotate secrets** — MCP server credentials are environment variables; rotate them on the same schedule as API keys.
+3. **Treat MCP output as untrusted** — server responses are external input; enable `outputGuardrails`.
+4. **Use `toolPolicy.readOnly: true`** for read-only operations.
+5. **Use `onApprovalRequired`** to gate write-capable tools on human approval.
+6. **Rotate secrets** — MCP server credentials are environment variables; rotate them like API keys.
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { GitHubMcp } from "@deskcreate/agentcraft/mcp";
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
 // Production-safe MCP pattern
 const agent = Agent.create({
@@ -180,7 +185,7 @@ const agent = Agent.create({
     maxResultBytes: 40_000,   // prevent large MCP payloads
     redactSecrets: true,
   },
-}).use(GitHubMcp.connect({
+}).use(GitHubMCP.connect({
   token: process.env.GITHUB_TOKEN!,
   allowedTools: [             // explicit allowlist — no surprises
     "get_pull_request",
@@ -196,23 +201,24 @@ Chain `.use()` calls for each server:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { GitHubMcp, NotionMcp, Context7Mcp } from "@deskcreate/agentcraft/mcp";
+import { GitHubMCP, SlackMCP, BraveSearchMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
 })
-  .use(Context7Mcp.connect())
-  .use(GitHubMcp.connect({
+  .use(BraveSearchMCP.connect({ apiKey: process.env.BRAVE_API_KEY! }))
+  .use(GitHubMCP.connect({
     token: process.env.GITHUB_TOKEN!,
     allowedTools: ["get_pull_request", "get_file_contents"],
   }))
-  .use(NotionMcp.connect({
-    token: process.env.NOTION_TOKEN!,
-    allowedTools: ["search", "retrieve_page"],
+  .use(SlackMCP.connect({
+    botToken: process.env.SLACK_BOT_TOKEN!,
+    teamId: process.env.SLACK_TEAM_ID!,
+    allowedTools: ["list_channels", "get_channel_history"],
   }));
 ```
 
 For the full wrapper catalog, see [Built-In MCP Wrappers Reference](../reference/built-in-mcps.md).
 
-More patterns: [MCP cookbook](../examples-cookbook/mcp.md) and [MCP Security](../production/security-model.md).
+More patterns: [MCP cookbook](../examples-cookbook/mcp.md) and [MCP Security](../mcp/security.md).

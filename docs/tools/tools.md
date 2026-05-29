@@ -9,10 +9,10 @@ import { Agent, Provider } from "@deskcreate/agentcraft";
 import { tool } from "@deskcreate/agentcraft/adapters";
 
 // Define a typed tool
-const lookupOrder = tool({
-  name: "lookup_order",
+const lookupOrder = tool("lookup_order", {
   description: "Look up a customer order by ID.",
-  security: { sideEffect: "read", scopes: ["orders:read"] },
+  sideEffect: "read",
+  scopes: ["orders:read"],
   params: {
     orderId: { type: "string", description: "The order ID to look up." },
   },
@@ -44,19 +44,16 @@ console.log(response.content);
 ```ts
 import { tool } from "@deskcreate/agentcraft/adapters";
 
-const myTool = tool({
-  name: "lookup_customer", // stable snake_case identifier
+const myTool = tool("lookup_customer", {
   description: "Look up a customer profile by ID.",
+  sideEffect: "read",
+  requiresConfirmation: false,
+  scopes: ["customers:read"],
   params: {
     customerId: {
       type: "string",
       description: "The customer ID to inspect.",
     },
-  },
-  security: {
-    sideEffect: "read",
-    requiresConfirmation: false,
-    scopes: ["customers:read"],
   },
   run: async ({ customerId }) => ({
     customerId,
@@ -77,12 +74,11 @@ Each entry in `params` defines one argument:
 | `options`     | `string[]`                                                 | No       | None    | Restricts to a fixed set of values (enum). |
 | `default`     | `unknown`                                                  | No       | None    | Default value hint (informational only).   |
 
-## Security Fields
-
-The `security` object classifies what a tool does so that policy and caching can apply correctly.
+## Tool Spec Fields
 
 | Field                  | Values                                      | Purpose                                                                                                |
 | ---------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `description`          | `string`                                    | Shown to the model to describe what the tool does.                                                     |
 | `sideEffect`           | `"none" \| "read" \| "write" \| "external"` | Classifies the tool's impact. `"none"` and `"read"` are cacheable. `"write"` and `"external"` are not. |
 | `requiresConfirmation` | `boolean`                                   | `true` — the tool is blocked unless explicitly approved via `toolPolicy`.                              |
 | `scopes`               | `string[]`                                  | Logical permission scopes — useful for audit logging.                                                  |
@@ -95,10 +91,10 @@ The `security` object classifies what a tool does so that policy and caching can
 import { tool } from "@deskcreate/agentcraft/adapters";
 
 // sideEffect: "read" — results are safe to cache
-const getArticle = tool({
-  name: "get_article",
+const getArticle = tool("get_article", {
   description: "Fetch a published article by slug.",
-  security: { sideEffect: "read", scopes: ["content:read"] },
+  sideEffect: "read",
+  scopes: ["content:read"],
   params: {
     slug: { type: "string", description: "Article slug." },
   },
@@ -114,16 +110,15 @@ const getArticle = tool({
 ```ts
 import { tool } from "@deskcreate/agentcraft/adapters";
 
-const searchProducts = tool({
-  name: "search_products",
+const searchProducts = tool("search_products", {
   description: "Search the product catalog.",
-  security: { sideEffect: "read" },
+  sideEffect: "read",
   params: {
     query: { type: "string", description: "Search query." },
     category: {
       type: "string",
       description: "Filter by category.",
-      required: false, // optional — model may omit this
+      required: false,
     },
     limit: {
       type: "number",
@@ -143,20 +138,17 @@ const searchProducts = tool({
 ```ts
 import { tool } from "@deskcreate/agentcraft/adapters";
 
-const setTicketPriority = tool({
-  name: "set_ticket_priority",
+const setTicketPriority = tool("set_ticket_priority", {
   description: "Set the priority level of a support ticket.",
-  security: {
-    sideEffect: "write",
-    requiresConfirmation: true,
-    scopes: ["tickets:write"],
-  },
+  sideEffect: "write",
+  requiresConfirmation: true,
+  scopes: ["tickets:write"],
   params: {
     ticketId: { type: "string", description: "Ticket ID." },
     priority: {
       type: "string",
       description: "Priority level.",
-      options: ["p0", "p1", "p2", "p3"], // model must pick from this list
+      options: ["p0", "p1", "p2", "p3"],
     },
   },
   run: async ({ ticketId, priority }) => {
@@ -172,14 +164,11 @@ const setTicketPriority = tool({
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { tool } from "@deskcreate/agentcraft/adapters";
 
-const deleteRecord = tool({
-  name: "delete_record",
+const deleteRecord = tool("delete_record", {
   description: "Permanently delete a database record.",
-  security: {
-    sideEffect: "write",
-    requiresConfirmation: true, // blocked by default — requires explicit approval
-    scopes: ["db:delete"],
-  },
+  sideEffect: "write",
+  requiresConfirmation: true,
+  scopes: ["db:delete"],
   params: {
     recordId: { type: "string", description: "Record ID to delete." },
   },
@@ -215,13 +204,13 @@ import { tool } from "@deskcreate/agentcraft/adapters";
 const agentWithTool = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
-  tools: [lookupOrder], // always available
+  tools: [lookupOrder],
 });
 
 // Per-run: only for this specific run
 const response = await agentWithTool.run({
   prompt: "Look up order B456 and check the product catalog for similar items.",
-  tools: [searchProducts], // merged with agent-level tools for this run only
+  tools: [searchProducts],
 });
 console.log(response.content);
 ```
@@ -230,7 +219,6 @@ console.log(response.content);
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { tool } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -242,10 +230,9 @@ const response = await agent.run({
   tools: [lookupOrder],
 });
 
-// See which tools the model had access to and how many it called
-console.log(response.selection?.exposedTools); // → ["lookup_order"]
+console.log(response.selection?.exposedTools);    // → ["lookup_order"]
 console.log(response.selection?.executedToolCalls); // → 1
-console.log(response.toolCalls); // full tool call log
+console.log(response.toolCalls);                  // full tool call log
 ```
 
 ## Raw `ToolDefinition` (Without the Helper)

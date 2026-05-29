@@ -7,7 +7,7 @@ AgentCraft treats all external input as untrusted by default: prompt content, ad
 | Threat | Attack vector | Mitigation |
 | --- | --- | --- |
 | Prompt injection | Scraped content, MCP tool output, user messages | Directive injection prevention in code blocks; guardrails; tool policy |
-| Path traversal | FileSystemAdapter with relative paths | `rootPath` boundary enforcement; `readOnly: true` default |
+| Path traversal | Filesystem MCP with relative paths | `allowedPaths` boundary enforcement; `readOnly: true` default |
 | SSRF / domain abuse | FetchAdapter with arbitrary URLs | `allowedDomains` allowlist; domain-level restriction |
 | Over-permissioned tools | MCP servers exposing write tools | `allowedTools` MCP allowlisting; tool policy read-only mode |
 | Secret leakage | Tool results containing API keys | `redactSecrets: true`; `maxResultBytes` truncation |
@@ -22,13 +22,12 @@ AgentCraft treats all external input as untrusted by default: prompt content, ad
 Every adapter restricts what the agent can reach. Scoping is enforced at the adapter level — the agent cannot bypass it by rewriting the tool call.
 
 ```ts
-import { FileSystemAdapter, FetchAdapter } from "@deskcreate/agentcraft/adapters";
+import { FetchAdapter } from "@deskcreate/agentcraft/adapters";
+import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
 
-// Filesystem: read-only, bounded to a directory
-FileSystemAdapter.connect({
-  rootPath: "./content",
-  readOnly: true,           // blocks write_file, delete_file, create_dir
-  allowedExtensions: [".md", ".txt"],
+// Filesystem: read-only, bounded to allowed paths
+FilesystemMCP.connect({
+  allowedPaths: ["./content"],
 })
 
 // Fetch: allowlisted domains only
@@ -52,7 +51,7 @@ const agent = Agent.create({
     readOnly: true,                // blocks all write-side-effect tools
     maxResultBytes: 20_000,        // truncates large tool results
     redactSecrets: true,           // redacts secret-like patterns from results
-    requireConfirmation: ["publish_draft", "send_email"], // explicit approval gate
+    onApprovalRequired: async ({ tool }) => ["publish_draft", "send_email"].includes(tool.name),
   },
 });
 ```
@@ -96,7 +95,7 @@ Write tools can require explicit approval before execution. Use `ApprovalQueue` 
 
 ```ts
 import { Agent, ApprovalQueue, Provider } from "@deskcreate/agentcraft";
-import { EmailAdapter } from "@deskcreate/agentcraft/adapters";
+import { SlackMCP } from "@deskcreate/agentcraft/mcp";
 
 const queue = ApprovalQueue.create();
 
@@ -104,13 +103,13 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
-    requireConfirmation: ["send_email"],
+    approvalQueue: queue,
+    onApprovalRequired: async ({ tool }) => tool.name === "slack_post_message",
   },
 })
-  .use(EmailAdapter.connect({
-    provider: "sendgrid",
-    apiKey: process.env.SENDGRID_API_KEY!,
-    from: "agent@yourcompany.com",
+  .use(SlackMCP.connect({
+    botToken: process.env.SLACK_BOT_TOKEN!,
+    teamId: process.env.SLACK_TEAM_ID!,
   }));
 
 // Approve programmatically
@@ -125,16 +124,16 @@ queue.onRequest(async ({ toolName, args }) => {
 MCP servers must have their tools explicitly allowlisted. Never mount an MCP server without specifying `allowedTools`:
 
 ```ts
-import { GitHubMcp } from "@deskcreate/agentcraft/mcp";
+import { GitHubMCP, MCP } from "@deskcreate/agentcraft/mcp";
 
 // ✓ Allowlisted — agent can only read PRs and files
-GitHubMcp.connect({
+GitHubMCP.connect({
   token: process.env.GITHUB_TOKEN!,
   allowedTools: ["list_pull_requests", "get_pull_request", "get_file_contents"],
 })
 
 // ✗ No allowlist — agent has access to all GitHub tools (create, delete, push)
-GitHubMcp.connect({
+GitHubMCP.connect({
   token: process.env.GITHUB_TOKEN!,
 })
 ```
@@ -142,17 +141,17 @@ GitHubMcp.connect({
 For stdio MCP packages, always pin the version:
 
 ```ts
-import { McpAdapter } from "@deskcreate/agentcraft/mcp";
+import { MCP } from "@deskcreate/agentcraft/mcp";
 
 // ✓ Pinned version — supply chain safe
-McpAdapter.stdio({
+MCP.connect({
   command: "npx",
   args: ["-y", "@modelcontextprotocol/server-filesystem@1.2.3", "/path/to/root"],
   allowedTools: ["read_file", "list_directory"],
 })
 
 // ✗ Unpinned — can silently pull malicious updates
-McpAdapter.stdio({
+MCP.connect({
   command: "npx",
   args: ["@modelcontextprotocol/server-filesystem", "/path/to/root"],
 })
@@ -164,7 +163,8 @@ The minimum security configuration for a production agent:
 
 ```ts
 import { Agent, AgentWorkspace, AgentCache, Provider } from "@deskcreate/agentcraft";
-import { FileSystemAdapter, TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
+import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
 
 const workspace = AgentWorkspace.create({
   toolPolicy: {
@@ -175,7 +175,7 @@ const workspace = AgentWorkspace.create({
   budget: { maxCost: 1.00, maxToolCalls: 20 },
   cache: AgentCache.file(".cache", { strategy: "conservative" }),
   adapters: [
-    FileSystemAdapter.connect({ rootPath: "./content", readOnly: true }),
+    FilesystemMCP.connect({ allowedPaths: ["./content"] }),
     TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }),
   ],
 });
@@ -192,11 +192,11 @@ const agent = Agent.create({
 | --- | --- |
 | Adapters | Scope every adapter (domain, path, channel, or project) |
 | Adapters | Set `readOnly: true` on all adapters unless writes are required |
-| Adapters | Set `allowedExtensions` on `FileSystemAdapter` when possible |
+| Adapters | Set `allowedPaths` on `FilesystemMCP` to restrict directory access |
 | Adapters | Set `allowedDomains` on `FetchAdapter` |
 | Tool policy | Set `readOnly: true` at workspace or agent level |
 | Tool policy | Set `redactSecrets: true` |
-| Tool policy | Gate write tools with `requireConfirmation` |
+| Tool policy | Gate write tools with `onApprovalRequired` callback |
 | MCP | Specify `allowedTools` for every MCP server |
 | MCP | Pin stdio MCP packages with exact versions |
 | Budget | Set `maxCost` and `maxToolCalls` on every production run |
@@ -211,19 +211,18 @@ Test that your tool policy and adapter scoping are enforced:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
+import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
 import { DeterministicFakeProvider } from "@deskcreate/agentcraft/testing";
 
-test("agent cannot read outside rootPath", async () => {
+test("agent cannot read outside allowedPaths", async () => {
   const agent = Agent.create({
     model: Provider.openai["gpt-4o-mini"],
     apiKey: "test",
     provider: DeterministicFakeProvider.create({
       responses: [{ content: "I will try to read /etc/passwd" }],
     }),
-  }).use(FileSystemAdapter.connect({
-    rootPath: "./content",
-    readOnly: true,
+  }).use(FilesystemMCP.connect({
+    allowedPaths: ["./content"],
   }));
 
   const response = await agent.run({ prompt: "Read /etc/passwd" });

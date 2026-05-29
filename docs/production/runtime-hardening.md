@@ -130,7 +130,7 @@ INTEGRATION_TESTS=true npm run benchmark:live:light  # Cost and cache benchmarks
 The hardened runtime enforces several implicit security properties:
 
 - **Cache eligibility is centralized**: Write tools, confirmation-gated tools, and tools with `sensitive: true` metadata are unconditionally excluded from cache — this logic lives in `cache-eligibility.ts` and cannot be bypassed per-call
-- **Adapter scoping is non-negotiable**: `FileSystemAdapter` enforces `rootPath` at the tool execution layer, not in the prompt
+- **Adapter scoping is non-negotiable**: `FilesystemMCP` enforces `allowedPaths` at the tool execution layer, not in the prompt
 - **Memory and cache events redact secrets**: The event emitter strips URL credentials, connection strings, and patterns matching `AGENTCRAFT_SECRET_PATTERN` before emitting
 
 ## Adding a New Runtime Module

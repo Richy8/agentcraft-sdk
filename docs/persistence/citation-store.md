@@ -85,7 +85,6 @@ import { Agent, Provider } from "@deskcreate/agentcraft";
 import {
   CitationManagerAdapter,
   FetchAdapter,
-  FirecrawlAdapter,
   LinkCheckerAdapter,
 } from "@deskcreate/agentcraft/adapters";
 

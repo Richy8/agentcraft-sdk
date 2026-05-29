@@ -162,14 +162,14 @@ AgentPool (request distribution)
 // Main — Agent, AgentPool, AgentCache, ArtifactStore, AgentWorkflow, Provider, ...
 import { Agent, AgentCache, PromptAssembler } from "@deskcreate/agentcraft";
 
-// Adapters — all built-in and specialized adapters
-import { FetchAdapter, FileSystemAdapter, EmailAdapter } from "@deskcreate/agentcraft/adapters";
+// Adapters — built-in native adapters
+import { FetchAdapter, TavilySearchAdapter, DatabaseAdapter, ImageGenerationAdapter } from "@deskcreate/agentcraft/adapters";
 
 // Team — AgentTeam, AgentWorkflow, AgentWorkspace
 import { AgentTeam, AgentWorkflow, AgentWorkspace } from "@deskcreate/agentcraft/team";
 
-// MCP — built-in MCP wrappers and MCPAdapter
-import { GitHubMcp, SlackMcp, MCPAdapter } from "@deskcreate/agentcraft/mcp";
+// MCP — built-in MCP wrappers and generic MCP.connect()
+import { GitHubMCP, SlackMCP, FilesystemMCP, MCP, MCPAdapter } from "@deskcreate/agentcraft/mcp";
 ```
 
 ## Related

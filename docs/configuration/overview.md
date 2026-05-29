@@ -65,7 +65,7 @@ const agent = Agent.create({
   cache: AgentCache.file("./.agentcraft/cache", { strategy: "auto" }),
   toolPolicy: {
     readOnly: false,
-    requireConfirmation: ["write_file", "send_email", "publish_content"],
+    onApprovalRequired: async ({ tool }) => ["write_file", "send_email"].includes(tool.name),
     maxResultBytes: 20_000,
     redactSecrets: true,
   },
@@ -150,6 +150,6 @@ See [Workspace Config](./workspace-config.md) for the full config table and fact
 | Mistake | Fix |
 | ------- | ---- |
 | Passing `apiKey` directly in code | Use `process.env.YOUR_KEY!` and add the key to `.env` |
-| Using `readOnly: true` but expecting file writes | Set `readOnly: false` and add the write tool to `requireConfirmation` |
+| Using `readOnly: true` but expecting file writes | Set `readOnly: false` and gate write tools via `onApprovalRequired` |
 | Omitting `budget` in production | Always set `maxCost` or `maxToolCalls` for long agentic pipelines |
 | Forgetting to `await agent.run(...)` | `agent.run()` is async; always await the result |

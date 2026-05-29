@@ -87,46 +87,8 @@ const store = new SQLiteArtifactStore({
 | `path` | `string` | Required | Path to the SQLite `.db` file. Created if it doesn't exist. |
 | `tableName` | `string` | `'artifacts'` | Table name for artifact storage. |
 
-## `FileSystemCreatorMemoryStore` Options
-
-```ts
-import { FileSystemCreatorMemoryStore } from "@deskcreate/agentcraft";
-
-const store = new FileSystemCreatorMemoryStore({
-  root: ".agentcraft/creator-memory",   // required
-  staleAfterMs: 86_400_000,             // optional: 24 hours
-  requireWriteApproval: false,          // optional: gate writes behind callback
-  approveWrite: async (id) => true,     // optional: approval callback
-  redactSensitive: true,                // optional: strip secrets before storing
-});
-```
-
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `root` | `string` | Required | Directory for brand voice and corpus files. |
-| `staleAfterMs` | `number` | `86400000` | When stored data is considered stale. |
-| `requireWriteApproval` | `boolean` | `false` | Gate all writes behind `approveWrite`. |
-| `approveWrite` | `(id: string) => Promise<boolean>` | Always approve | Write approval callback. |
-| `redactSensitive` | `boolean` | `false` | Strip detected secrets before storage. |
-
-## `FileSystemAnalyticsHistoryStore` Options
-
-```ts
-import { FileSystemAnalyticsHistoryStore } from "@deskcreate/agentcraft";
-
-const store = new FileSystemAnalyticsHistoryStore({
-  root: ".agentcraft/analytics",  // required
-});
-```
-
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `root` | `string` | Required | Directory for performance reports and experiment records. |
-
 ## Related
 
 - [Semantic Memory](../persistence/semantic-memory.md)
 - [Artifact Store](../persistence/artifact-store.md)
-- [Creator Memory Store](../persistence/creator-memory-store.md)
-- [Analytics History Store](../persistence/analytics-history-store.md)
 - [Authoring a Domain Store](../persistence/authoring-domain-store.md)

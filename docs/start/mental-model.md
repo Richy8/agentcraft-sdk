@@ -30,7 +30,7 @@ const agent = Agent.create({
   model,
   toolPolicy,
   cache,
-  systemMessage: "You are a precise technical analyst. Show your work.",
+  system: "You are a precise technical analyst. Show your work.",
 })
   .use(FetchAdapter.connect({ allowedDomains: ["docs.example.com"] }))
   .use(LinkCheckerAdapter.connect());
@@ -38,7 +38,7 @@ const agent = Agent.create({
 
 This setup means:
 
-- `systemMessage` shapes how the model reasons and writes
+- `system` shapes how the model reasons and writes
 - adapters expose concrete tools the model can call
 - `ToolPolicy` decides whether tools can execute
 - cache may reuse safe read results

@@ -104,10 +104,9 @@ const response = await agent.run({
 ```ts
 import { tool } from "@deskcreate/agentcraft/adapters";
 
-const lookupInventory = tool({
-  name: "lookup_inventory",
+const lookupInventory = tool("lookup_inventory", {
   description: "Check inventory for a product SKU.",
-  security: { sideEffect: "read" },
+  sideEffect: "read",
   params: { sku: { type: "string", description: "Product SKU." } },
   run: async ({ sku }) => ({ sku, inStock: true, quantity: 42 }),
 });

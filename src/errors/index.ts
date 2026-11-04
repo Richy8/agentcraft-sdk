@@ -245,6 +245,19 @@ export class UnsupportedCapabilityError extends AgentCraftError {
   }
 }
 
+export class UnsupportedReasoningError extends AgentCraftError {
+  readonly code = 'UNSUPPORTED_REASONING';
+  readonly retryable = false;
+
+  constructor(model: string, effort?: string, validLevels?: readonly string[]) {
+    const message = effort && validLevels
+      ? `Model '${model}' does not support reasoning effort '${effort}'. Valid levels: ${validLevels.join(', ')}.`
+      : `Model '${model}' does not support reasoning effort control. ` +
+        `Use a reasoning-capable model such as openai:o3, openai:gpt-5.4, openai:o4-mini, or anthropic:claude-sonnet-4-6.`;
+    super(message, { model, ...(effort !== undefined && { effort }), ...(validLevels !== undefined && { validLevels }) });
+  }
+}
+
 export function isRetryableError(err: unknown): boolean {
   if (!(err instanceof AgentCraftError)) return false;
   return err.retryable;

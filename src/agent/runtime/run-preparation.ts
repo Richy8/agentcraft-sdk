@@ -1,4 +1,5 @@
 import type { ToolDefinition } from "../../protocols/types.js";
+import { UnsupportedReasoningError, UnsupportedCapabilityError } from "../../errors/index.js";
 import { applyMemoryContext } from "../memory/context-injector.js";
 import { enforcePreflight } from "../budgets.js";
 import type { RunAdapterScope } from "../adapters/run-scope.js";
@@ -51,6 +52,26 @@ export async function prepareRuntimeInvocation(
       context.provider,
       resolvedParams.budget,
     );
+  }
+  const caps = context.getCapabilities();
+  if (resolvedParams.reasoning && resolvedParams.reasoning !== 'none') {
+    if (!caps.supportsReasoning) {
+      throw new UnsupportedReasoningError(context.model);
+    }
+    if (caps.reasoningEffortLevels && !caps.reasoningEffortLevels.includes(resolvedParams.reasoning)) {
+      throw new UnsupportedReasoningError(context.model, resolvedParams.reasoning, caps.reasoningEffortLevels);
+    }
+  }
+  const allAdapters = [...context.attachedAdapters, ...runScope.runOnlyAdapters];
+  for (const adapter of allAdapters) {
+    if (adapter.metadata?.kind !== 'native-provider') continue;
+    const toolType = adapter.metadata.nativeToolType;
+    if (toolType === 'web_search' && !caps.supportsNativeWebSearch) {
+      throw new UnsupportedCapabilityError('webSearch', context.provider, context.model);
+    }
+    if (toolType === 'file_search' && !caps.supportsNativeFileSearch) {
+      throw new UnsupportedCapabilityError('fileSearch', context.provider, context.model);
+    }
   }
   await context.ensureAttachedAdaptersInitialized();
   await context.initRunAdapters(runScope.runOnlyAdapters);

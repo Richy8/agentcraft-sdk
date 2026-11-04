@@ -94,23 +94,20 @@ In-flight deduplication is process-local. Repeated calls for the same safe tool 
 
 Runtime semantics:
 
-- `conservative` caches `sideEffect: "none"` tools and read tools with explicit `security.cache.safe` or `security.cache.deterministic` metadata.
+- `conservative` caches `sideEffect: "none"` tools and read tools with explicit `cache.safe` or `cache.deterministic` metadata.
 - `auto` caches safe `none` and `read` tools unless they are marked sensitive or require confirmation.
 - `aggressive` may cache `external` tool results too, but still refuses writes, confirmation-gated tools, and sensitive results.
 
 ```ts
 import { tool } from "@deskcreate/agentcraft/adapters";
 
-const readDocs = tool({
-  name: "read_docs_page",
+const readDocs = tool("read_docs_page", {
   description: "Read a deterministic docs page.",
-  security: {
-    sideEffect: "read",
-    cache: {
-      safe: true,
-      deterministic: true,
-      ttlMs: 60 * 60 * 1000,
-    },
+  sideEffect: "read",
+  cache: {
+    safe: true,
+    deterministic: true,
+    ttlMs: 60 * 60 * 1000,
   },
   params: {
     slug: { type: "string", description: "Docs page slug." },

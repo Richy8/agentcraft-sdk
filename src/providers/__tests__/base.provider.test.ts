@@ -67,6 +67,34 @@ class FailingProvider extends ToolLoopProvider {
   }
 }
 
+class AbortedProvider extends BaseLLMProvider {
+  calls = 0;
+
+  constructor() {
+    super(config, logger, { ...DEFAULT_RETRY_STRATEGY, maxAttempts: 3 });
+  }
+
+  protected async callAPI(params: LLMCallParams): Promise<LLMResponse> {
+    this.calls++;
+    if (params.signal && !params.signal.aborted) {
+      (params.signal as AbortSignal & { abort?: () => void }).abort?.();
+    }
+    throw new Error('Request was aborted.');
+  }
+
+  protected async callAPIWithTools(params: LLMCallParams): Promise<LLMResponse> {
+    return this.callAPI(params);
+  }
+
+  protected buildFollowUpParams(original: LLMCallParams): LLMCallParams {
+    return original;
+  }
+
+  protected async *streamAPI(): AsyncGenerator<StreamChunk> {
+    yield { delta: '' };
+  }
+}
+
 describe('BaseLLMProvider', () => {
   it('executes dynamic tools and maps ToolResult arguments for follow-up state', async () => {
     const provider = new ToolLoopProvider();
@@ -115,6 +143,15 @@ describe('BaseLLMProvider', () => {
 
   it('throws RetryExhaustedError after call attempts are spent', async () => {
     await expect(new FailingProvider().call({ prompt: 'hi' })).rejects.toBeInstanceOf(RetryExhaustedError);
+  });
+
+  it('does not retry once the caller abort signal is already aborted', async () => {
+    const provider = new AbortedProvider();
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(provider.call({ prompt: 'hi', signal: controller.signal })).rejects.toThrow('Request was aborted.');
+    expect(provider.calls).toBe(1);
   });
 
   it('streams final content after completing the tool loop', async () => {

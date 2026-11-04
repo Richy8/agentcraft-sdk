@@ -1,24 +1,28 @@
 # Budget Config
 
-`RunBudget` and `BudgetMode` type reference.
+`RunBudget` and `BudgetMode` type reference for `agent.run({ budget })`.
 
 ## `RunBudget` Fields
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `maxCostUsd` | `number` | Unlimited | Maximum cost in USD for this run. |
-| `maxTotalTokens` | `number` | Unlimited | Maximum total tokens (prompt + completion). |
-| `maxPromptTokens` | `number` | Unlimited | Maximum prompt tokens. |
-| `maxCompletionTokens` | `number` | Unlimited | Maximum completion tokens. |
-| `mode` | `BudgetMode` | `'hard'` | Whether to warn (`'soft'`) or throw (`'hard'`) on breach. |
+| `maxCost` | `number` | Unlimited | Maximum estimated or actual model cost in USD for this run. |
+| `maxTokens` | `number` | Unlimited | Maximum total tokens (prompt + completion). |
+| `maxInputTokens` | `number` | Unlimited | Maximum estimated prompt/input tokens. |
+| `maxOutputTokens` | `number` | Unlimited | Maximum estimated completion/output tokens. |
 | `maxToolCalls` | `number` | Unlimited | Maximum number of tool calls in this run. |
+| `costOptions` | `CostOptions` | None | Cost-estimation modifiers such as region, batch, priority, flex, tool calls, and searches. |
+| `cachePolicy.requireCachedFor` | `string[]` | None | Tool names that must resolve from cache instead of executing live. |
+| `mode` | `BudgetMode` | `'fail-closed'` | Budget posture: `'fail-closed'`, `'prefer-cache'`, `'downgrade-model'`, or `'request-approval'`. |
 
 ## `BudgetMode`
 
 | Mode | Behavior |
 | --- | --- |
-| `'hard'` | Throws `QuotaExceededError` when the budget is exceeded. Default. |
-| `'soft'` | Logs a warning but continues the run. |
+| `'fail-closed'` | Throws `QuotaExceededError` when the budget is exceeded. Default. |
+| `'prefer-cache'` | Signals that cached results should be preferred; pair with `cachePolicy.requireCachedFor` for strict cache-only tools. |
+| `'downgrade-model'` | Signals routing layers such as `AgentPool` to prefer cheaper models under pressure. |
+| `'request-approval'` | Signals that expensive work should go through an application approval path. |
 
 ## Usage
 
@@ -27,7 +31,7 @@
 ```ts
 const response = await agent.run({
   prompt: "Write a comprehensive guide.",
-  budget: { maxCostUsd: 0.05 },
+  budget: { maxCost: 0.05 },
 });
 ```
 
@@ -37,9 +41,9 @@ const response = await agent.run({
 const response = await agent.run({
   prompt: "Summarize this document.",
   budget: {
-    maxTotalTokens: 4000,
-    maxPromptTokens: 2000,
-    maxCompletionTokens: 2000,
+    maxTokens: 4000,
+    maxInputTokens: 2000,
+    maxOutputTokens: 2000,
   },
 });
 ```
@@ -53,27 +57,28 @@ const response = await agent.run({
 });
 ```
 
-### Soft Mode
+### Budget Mode
 
 ```ts
 const response = await agent.run({
   prompt: "...",
   budget: {
-    maxCostUsd: 0.01,
-    mode: "soft", // logs warning instead of throwing
+    maxCost: 0.01,
+    mode: "prefer-cache",
+    cachePolicy: { requireCachedFor: ["fetch"] },
   },
 });
 ```
 
 ## Pre-Flight Estimation
 
-The runtime estimates cost before making the LLM call and checks against `maxCostUsd`. Estimation uses `MODEL_CATALOG` pricing metadata. If the estimated cost exceeds the budget, `QuotaExceededError` is thrown before the API call is made.
+The runtime estimates cost before making the LLM call and checks against `maxCost`. Estimation uses `MODEL_CATALOG` pricing metadata. If the estimated cost exceeds the budget in `fail-closed` mode, `QuotaExceededError` is thrown before the API call is made.
 
 ```ts
 try {
   const response = await agent.run({
     prompt: "A very long prompt...",
-    budget: { maxCostUsd: 0.0001 },
+    budget: { maxCost: 0.0001 },
   });
 } catch (err) {
   if (err instanceof QuotaExceededError) {
@@ -106,12 +111,12 @@ console.log(response.model);
 A single budget can be shared across all agents in a team or workflow:
 
 ```ts
-import { AgentWorkspace } from "@deskcreate/agentcraft/team";
+import { AgentWorkspace } from "@deskcreate/agentcraft";
 
-const workspace = AgentWorkspace.memory({
+const workspace = AgentWorkspace.create({
   budget: {
-    maxCostUsd: 0.50,  // shared across all agents in the workspace
-    mode: "hard",
+    maxCost: 0.50,  // shared across all agents in the workspace
+    mode: "fail-closed",
   },
 });
 ```

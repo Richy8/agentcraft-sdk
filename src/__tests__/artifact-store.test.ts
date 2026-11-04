@@ -1,13 +1,26 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { z } from 'zod';
+import { ArtifactRegistry } from '../artifact-registry/registry.js';
 import { FileArtifactStore } from '../artifact-store/file.js';
 import { createArtifactTypeHelper } from '../artifact-store/helpers.js';
 import { MemoryArtifactStore } from '../artifact-store/memory.js';
 import { SQLiteArtifactStore } from '../artifact-store/sqlite.js';
 import { AgentWorkspace } from '../agent/workspace.js';
 import { AgentWorkflow, CustomStep } from '../agent/workflow/index.js';
+
+const DraftSchema = z.object({
+  type: z.literal('Draft'),
+  id: z.string(),
+  createdAt: z.string(),
+  sourceSkill: z.string(),
+  body: z.string(),
+  status: z.string().optional(),
+});
+ArtifactRegistry.register('Draft', DraftSchema);
+afterAll(() => { ArtifactRegistry.deregister('Draft'); });
 
 describe('MemoryArtifactStore', () => {
   let store: ReturnType<typeof MemoryArtifactStore>;

@@ -40,7 +40,7 @@ console.log(`Tokens: ${response.tokensUsed.total}`);
 | Coordinate multiple agents | `AgentTeam`, `AgentPool`, `AgentWorkflow` | [Orchestration](./orchestration/agent-workflow.md) |
 | Cache tool results to reduce spend | `AgentCache` | [Persistence & Memory](./persistence/agent-cache.md) |
 | Enforce token and cost budgets | `RunBudget`, `BudgetMode` | [Budgets & Cost](./core/budgets-cost.md) |
-| Capture traces and replay runs | `RunTracer`, `traceCollector` | [Observability](./core/observability-replay.md) |
+| Capture traces and replay runs | `TraceSink`, `AgentReports.traceCollector()` | [Observability](./core/observability-replay.md) |
 | Assert quality in CI | `AgentEval` | [AgentEval](./production/agent-eval.md) |
 
 ## Entry Points
@@ -50,7 +50,8 @@ AgentCraft ships focused import paths. Use only what you need.
 ```ts
 import { Agent, AgentPool, AgentCache } from "@deskcreate/agentcraft";
 import { FetchAdapter, TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
-import { AgentTeam, AgentWorkflow, AgentWorkspace } from "@deskcreate/agentcraft/team";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
+import { AgentWorkflow, AgentWorkspace } from "@deskcreate/agentcraft";
 import { BraveSearchMCP, GitHubMCP } from "@deskcreate/agentcraft/mcp";
 ```
 
@@ -69,8 +70,8 @@ const agent = Agent.create({
   retry: { maxAttempts: 3, backoff: "exponential", initialDelay: 500, maxDelay: 15_000 },
   // Cache safe read-tool results to disk
   cache: AgentCache.file(".agentcraft/cache", { strategy: "auto" }),
-  // Shape agent behavior via systemMessage
-  systemMessage: "You are a concise technical writer. Lead with the most important finding.",
+  // Shape agent behavior with a default system prompt
+  system: "You are a concise technical writer. Lead with the most important finding.",
 })
   // Give the agent web fetch capability
   .use(FetchAdapter.connect({ allowedDomains: ["api.github.com"] }))
@@ -79,7 +80,7 @@ const agent = Agent.create({
 
 const response = await agent.run({
   prompt: "Search for the latest TypeScript release notes and write a 3-bullet summary.",
-  budget: { maxCostUsd: 0.05 },
+  budget: { maxCost: 0.05 },
 });
 
 console.log(response.content);

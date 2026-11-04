@@ -1,142 +1,58 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { ArtifactRegistry } from "../artifact-registry/registry.js";
-import {
-  BrandVoiceProfileSchema,
-  ContentPillarsSchema,
-  CreatorArtifactUnionSchema,
-  MediaBriefSchema,
-  PersonaProfileSchema,
-  PublishingStatusSchema,
-} from "../agent/creator/types.js";
 
-const baseArtifact = {
-  id: "artifact-1",
-  createdAt: "2026-05-14T00:00:00.000Z",
-  sourceSkill: "test-skill",
-  provenance: [{ kind: "user" as const, ref: "prompt" }],
-  inputs: ["prompt"],
-  status: "draft" as const,
-};
+const TestSchema = z.object({
+  type: z.literal("TestArtifact"),
+  value: z.string(),
+});
 
 describe("ArtifactRegistry", () => {
   afterEach(() => {
     ArtifactRegistry.deregister("TestArtifact");
   });
 
-  it("lists all built-in schemas", () => {
-    expect(ArtifactRegistry.list().length).toBeGreaterThanOrEqual(19);
+  it("starts empty — no built-in schemas", () => {
+    expect(ArtifactRegistry.list()).toHaveLength(0);
   });
 
-  it("starts with exactly the 19 built-in schemas", () => {
-    expect(ArtifactRegistry.list()).toHaveLength(19);
-  });
-
-  it("looks up built-in schema by name", () => {
-    expect(ArtifactRegistry.lookup("Draft")).toBeDefined();
+  it("returns undefined for unknown schema names", () => {
+    expect(ArtifactRegistry.lookup("NonExistent")).toBeUndefined();
   });
 
   it("registers and looks up a custom schema", () => {
-    const TestSchema = z.object({
-      type: z.literal("TestArtifact"),
-      value: z.string(),
-    });
     ArtifactRegistry.register("TestArtifact", TestSchema);
     expect(ArtifactRegistry.lookup("TestArtifact")).toBe(TestSchema);
   });
 
   it("throws on duplicate registration", () => {
-    expect(() => ArtifactRegistry.register("Draft", z.any())).toThrow(
+    ArtifactRegistry.register("TestArtifact", TestSchema);
+    expect(() => ArtifactRegistry.register("TestArtifact", z.any())).toThrow(
       /already registered/,
     );
   });
 
-  it("protects built-in schemas from deregistration", () => {
-    expect(ArtifactRegistry.deregister("Draft")).toBe(false);
+  it("lists only registered schemas", () => {
+    ArtifactRegistry.register("TestArtifact", TestSchema);
+    expect(ArtifactRegistry.list()).toContain("TestArtifact");
+    expect(ArtifactRegistry.list()).toHaveLength(1);
   });
 
-  it("parses the new living-system artifact schemas", () => {
-    expect(
-      BrandVoiceProfileSchema.parse({
-        ...baseArtifact,
-        type: "BrandVoiceProfile",
-      }).tone,
-    ).toEqual([]);
-    expect(
-      ContentPillarsSchema.parse({
-        ...baseArtifact,
-        type: "ContentPillars",
-        pillars: [{ name: "Trust", description: "Trust-building content" }],
-      }).pillars[0]?.themes,
-    ).toEqual([]);
-    expect(
-      PersonaProfileSchema.parse({
-        ...baseArtifact,
-        type: "PersonaProfile",
-      }).decisionDrivers,
-    ).toEqual([]);
-    expect(
-      MediaBriefSchema.parse({
-        ...baseArtifact,
-        type: "MediaBrief",
-      }).format,
-    ).toBe("other");
-    expect(
-      PublishingStatusSchema.parse({
-        ...baseArtifact,
-        type: "PublishingStatus",
-        artifactRef: "draft-1",
-        channel: "linkedin",
-      }).stage,
-    ).toBe("planned");
+  it("deregisters a custom schema", () => {
+    ArtifactRegistry.register("TestArtifact", TestSchema);
+    expect(ArtifactRegistry.deregister("TestArtifact")).toBe(true);
+    expect(ArtifactRegistry.lookup("TestArtifact")).toBeUndefined();
   });
 
-  it("discriminates all built-in artifact union types", () => {
-    const artifacts = [
-      { ...baseArtifact, type: "AudienceProfile" },
-      { ...baseArtifact, type: "PositioningBrief" },
-      { ...baseArtifact, type: "ContentBrief" },
-      {
-        ...baseArtifact,
-        type: "SourceNote",
-        retrievedAt: baseArtifact.createdAt,
-      },
-      { ...baseArtifact, type: "ClaimMap" },
-      { ...baseArtifact, type: "Draft" },
-      { ...baseArtifact, type: "EditorialReview" },
-      { ...baseArtifact, type: "SeoPlan" },
-      { ...baseArtifact, type: "SerpBrief" },
-      { ...baseArtifact, type: "RepurposingPack" },
-      { ...baseArtifact, type: "PublishPackage" },
-      { ...baseArtifact, type: "ContentCalendar" },
-      { ...baseArtifact, type: "PerformanceReport" },
-      { ...baseArtifact, type: "ExperimentPlan" },
-      { ...baseArtifact, type: "BrandVoiceProfile" },
-      { ...baseArtifact, type: "ContentPillars" },
-      { ...baseArtifact, type: "PersonaProfile" },
-      { ...baseArtifact, type: "MediaBrief" },
-      {
-        ...baseArtifact,
-        type: "PublishingStatus",
-        artifactRef: "draft-1",
-        channel: "linkedin",
-      },
-    ];
-
-    for (const artifact of artifacts) {
-      expect(ArtifactRegistry.lookup(artifact.type)?.parse(artifact).type).toBe(
-        artifact.type,
-      );
-      expect(CreatorArtifactUnionSchema.parse(artifact).type).toBe(
-        artifact.type,
-      );
-    }
+  it("deregister returns false for unknown schema", () => {
+    expect(ArtifactRegistry.deregister("NeverRegistered")).toBe(false);
   });
 
-  it("can use a registry schema as a responseSchema source", () => {
-    const schema = ArtifactRegistry.lookup("Draft");
-    expect(schema?.parse({ ...baseArtifact, type: "Draft" }).type).toBe(
-      "Draft",
+  it("can use a registered schema as a responseSchema source", () => {
+    ArtifactRegistry.register("TestArtifact", TestSchema);
+    const schema = ArtifactRegistry.lookup("TestArtifact");
+    expect(schema?.parse({ type: "TestArtifact", value: "hello" }).type).toBe(
+      "TestArtifact",
     );
   });
 });

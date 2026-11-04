@@ -80,10 +80,13 @@ export function createStructuredOutputTool(
       parameters: toStructuredToolParameters(params.responseSchema),
       security: { sideEffect: 'none' },
       execute: async (args) => {
-        const payload =
-          isPlainJsonSchema(params.responseSchema!) && params.responseSchema.type !== 'object'
-            ? args.value
-            : args;
+        // Plain JSON object schemas expose their fields directly as tool parameters,
+        // so args IS the payload. All other schemas (Zod, or non-object plain JSON)
+        // use a generic { value: {...} } wrapper, so we must unwrap args.value.
+        const isObjectSchema =
+          isPlainJsonSchema(params.responseSchema!) &&
+          (params.responseSchema.type === 'object' || Boolean(params.responseSchema.properties));
+        const payload = isObjectSchema ? args : (args as Record<string, unknown>).value ?? args;
         const parsed = parseAndValidateStructuredOutput(
           JSON.stringify(payload),
           params.responseSchema!
@@ -100,20 +103,7 @@ function toStructuredToolParameters(
   schema: AgentRunParams['responseSchema']
 ): ToolDefinition['parameters'] {
   if (schema && isPlainJsonSchema(schema) && (schema.type === 'object' || schema.properties)) {
-    return {
-      type: 'object',
-      properties: Object.fromEntries(
-        Object.entries(schema.properties ?? {}).map(([key, child]) => [
-          key,
-          {
-            type: toToolParamType(child.type),
-            description: `Structured response field '${key}'`,
-            ...(child.enum !== undefined && { enum: child.enum.map(String) }),
-          },
-        ])
-      ),
-      required: schema.required ?? [],
-    };
+    return buildObjectToolParam(schema) as ToolDefinition['parameters'];
   }
   return {
     type: 'object',
@@ -122,6 +112,30 @@ function toStructuredToolParameters(
     },
     required: ['value'],
   };
+}
+
+function buildObjectToolParam(schema: JsonSchema): Record<string, unknown> {
+  return {
+    type: 'object',
+    properties: Object.fromEntries(
+      Object.entries(schema.properties ?? {}).map(([key, child]) => [key, buildToolParam(child)])
+    ),
+    required: schema.required ?? [],
+  };
+}
+
+function buildToolParam(schema: JsonSchema): Record<string, unknown> {
+  if (schema.type === 'object' || schema.properties) {
+    return buildObjectToolParam(schema);
+  }
+  if (schema.type === 'array') {
+    const base: Record<string, unknown> = { type: 'array' };
+    if (schema.items) base['items'] = buildToolParam(schema.items);
+    return base;
+  }
+  const result: Record<string, unknown> = { type: toToolParamType(schema.type) };
+  if (schema.enum !== undefined) result['enum'] = schema.enum.map(String);
+  return result;
 }
 
 function isPlainJsonSchema(

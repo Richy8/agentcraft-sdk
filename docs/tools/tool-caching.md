@@ -71,27 +71,20 @@ These always prevent caching regardless of strategy:
 Control per-tool caching behavior through the `security.cache` field on your `ToolDefinition`:
 
 ```ts
-import { tool } from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
-const readReferenceDoc = tool({
-  name: "read_reference",
+const readReferenceDoc = tool("read_reference", {
   description: "Read a stable reference document from the corpus.",
-  security: {
-    sideEffect: "read",
-    cache: {
-      safe: true,          // explicitly mark as cache-safe
-      deterministic: true, // same inputs always produce same output
-      ttlMs: 10 * 60_000, // override TTL to 10 minutes for this tool
-    },
+  sideEffect: "read",
+  cache: {
+    safe: true,          // explicitly mark as cache-safe
+    deterministic: true, // same inputs always produce same output
+    ttlMs: 10 * 60_000, // override TTL to 10 minutes for this tool
   },
-  parameters: {
-    type: "object",
-    properties: {
-      docId: { type: "string", description: "Document identifier" },
-    },
-    required: ["docId"],
+  params: {
+    docId: { type: "string", description: "Document identifier" },
   },
-  execute: async ({ docId }) => {
+  run: async ({ docId }) => {
     const content = await corpus.read(docId);
     return { content };
   },
@@ -227,48 +220,38 @@ console.log(`Served from cache: ${userResponse.cache?.hits === 1}`); // → true
 Give short-lived external data a shorter TTL while keeping stable corpus reads cached longer:
 
 ```ts
-import { tool } from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
 // Market data — cache for 1 minute
-const getStockPrice = tool({
-  name: "get_stock_price",
+const getStockPrice = tool("get_stock_price", {
   description: "Fetch current stock price.",
-  security: {
-    sideEffect: "external",
-    cache: {
-      safe: true,
-      ttlMs: 60_000, // 1 minute
-    },
+  sideEffect: "external",
+  cache: {
+    safe: true,
+    ttlMs: 60_000, // 1 minute
   },
-  parameters: {
-    type: "object",
-    properties: { ticker: { type: "string" } },
-    required: ["ticker"],
+  params: {
+    ticker: { type: "string", description: "Ticker symbol." },
   },
-  execute: async ({ ticker }) => {
+  run: async ({ ticker }) => {
     const price = await marketApi.getPrice(ticker);
     return { ticker, price };
   },
 });
 
 // Reference data — cache for 24 hours
-const getCompanyProfile = tool({
-  name: "get_company_profile",
+const getCompanyProfile = tool("get_company_profile", {
   description: "Fetch a stable company profile.",
-  security: {
-    sideEffect: "read",
-    cache: {
-      safe: true,
-      deterministic: true,
-      ttlMs: 24 * 60 * 60_000, // 24 hours
-    },
+  sideEffect: "read",
+  cache: {
+    safe: true,
+    deterministic: true,
+    ttlMs: 24 * 60 * 60_000, // 24 hours
   },
-  parameters: {
-    type: "object",
-    properties: { ticker: { type: "string" } },
-    required: ["ticker"],
+  params: {
+    ticker: { type: "string", description: "Ticker symbol." },
   },
-  execute: async ({ ticker }) => {
+  run: async ({ ticker }) => {
     return companyDb.getProfile(ticker);
   },
 });
@@ -279,23 +262,18 @@ const getCompanyProfile = tool({
 Mark tool results as sensitive to prevent them from ever being written to cache:
 
 ```ts
-import { tool } from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
-const getUserSecret = tool({
-  name: "get_user_secret",
+const getUserSecret = tool("get_user_secret", {
   description: "Retrieve a user's encrypted secret.",
-  security: {
-    sideEffect: "read",
-    cache: {
-      sensitive: true, // never cache — contains PII or credentials
-    },
+  sideEffect: "read",
+  cache: {
+    sensitive: true, // never cache — contains PII or credentials
   },
-  parameters: {
-    type: "object",
-    properties: { userId: { type: "string" } },
-    required: ["userId"],
+  params: {
+    userId: { type: "string", description: "User ID." },
   },
-  execute: async ({ userId }) => {
+  run: async ({ userId }) => {
     return vault.getSecret(userId);
   },
 });
@@ -308,7 +286,7 @@ Monitor cache performance in real time using workspace events:
 ```ts
 import { AgentWorkspace, Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
 
-const workspace = AgentWorkspace.memory({
+const workspace = AgentWorkspace.create({
   cache: AgentCache.file(".agentcraft/cache", { strategy: "auto" }),
 });
 

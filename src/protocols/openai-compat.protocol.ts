@@ -36,7 +36,7 @@ export class OpenAICompatProtocol implements ProviderProtocol {
     const apiKey = definition.noAuth ? 'no-key' : 'apiKey' in config ? config.apiKey : 'no-key';
     const headers = { ...definition.defaultHeaders };
 
-    return new OpenAI({ apiKey, baseURL, defaultHeaders: headers });
+    return new OpenAI({ apiKey, baseURL, defaultHeaders: headers, timeout: config.timeout });
   }
 
   formatRequest(params: LLMCallParams, config: ModelConfig): ChatCompletionCreateParamsNonStreaming | TaggedOpenAIRequest {
@@ -50,10 +50,12 @@ export class OpenAICompatProtocol implements ProviderProtocol {
 
   private formatChatRequest(params: LLMCallParams, config: ModelConfig): ChatCompletionCreateParamsNonStreaming {
     const state = params._providerState as OAIState | undefined;
+    // When state.messages already contains the full conversation history (tool-use follow-ups),
+    // do not re-append the user prompt — it was already inserted in formatFollowUp.
     const messages: ChatCompletionMessageParam[] = [
       ...(params.systemMessage ? [{ role: 'system' as const, content: params.systemMessage }] : []),
       ...(state?.messages ?? []),
-      { role: 'user' as const, content: params.prompt },
+      ...(!state?.messages?.length ? [{ role: 'user' as const, content: params.prompt }] : []),
     ];
 
     const request: ChatCompletionCreateParamsNonStreaming = {
@@ -68,6 +70,7 @@ export class OpenAICompatProtocol implements ProviderProtocol {
     if (params.presencePenalty !== undefined) request.presence_penalty = params.presencePenalty;
     if (params.stopSequences !== undefined) request.stop = params.stopSequences;
     if (params.responseFormat?.type === 'json_object') request.response_format = { type: 'json_object' };
+    if (params.reasoning !== undefined) (request as unknown as Record<string, unknown>).reasoning_effort = params.reasoning;
 
     return request;
   }
@@ -91,6 +94,7 @@ export class OpenAICompatProtocol implements ProviderProtocol {
       request.temperature = params.temperature;
     }
     if (params.responseFormat?.type === 'json_object') request.text = { format: { type: 'json_object' } };
+    if (params.reasoning !== undefined) (request as unknown as Record<string, unknown>).reasoning = { effort: params.reasoning };
 
     return request;
   }
@@ -107,21 +111,26 @@ export class OpenAICompatProtocol implements ProviderProtocol {
       };
     }
 
+    const chatTools = (nativeTools as ChatCompletionTool[]).filter((t) => t.type === 'function');
     return {
       ...this.formatChatRequest(params, config),
-      tools: nativeTools as ChatCompletionTool[],
+      ...(chatTools.length > 0 && { tools: chatTools }),
     };
   }
 
-  async callRaw(client: unknown, nativeRequest: unknown): Promise<unknown> {
+  async callRaw(client: unknown, nativeRequest: unknown, params: LLMCallParams): Promise<unknown> {
+    const requestOptions = {
+      ...(params.signal !== undefined && { signal: params.signal }),
+    };
+
     if (isTaggedRequest(nativeRequest)) {
       if (nativeRequest.api === 'responses') {
-        return (client as OpenAI).responses.create(nativeRequest.request);
+        return (client as OpenAI).responses.create(nativeRequest.request, requestOptions);
       }
-      return (client as OpenAI).chat.completions.create(nativeRequest.request);
+      return (client as OpenAI).chat.completions.create(nativeRequest.request, requestOptions);
     }
 
-    return (client as OpenAI).chat.completions.create(nativeRequest as ChatCompletionCreateParamsNonStreaming);
+    return (client as OpenAI).chat.completions.create(nativeRequest as ChatCompletionCreateParamsNonStreaming, requestOptions);
   }
 
   extractResponse(raw: unknown): LLMResponse {
@@ -129,6 +138,8 @@ export class OpenAICompatProtocol implements ProviderProtocol {
 
     const response = raw as ChatCompletion;
     const choice = response.choices[0];
+    const reasoningTokens = (response.usage as unknown as Record<string, unknown> | undefined)
+      ?.completion_tokens_details as Record<string, unknown> | undefined;
     return {
       success: true,
       content: choice?.message.content ?? '',
@@ -136,6 +147,7 @@ export class OpenAICompatProtocol implements ProviderProtocol {
         prompt: response.usage?.prompt_tokens ?? 0,
         completion: response.usage?.completion_tokens ?? 0,
         total: response.usage?.total_tokens ?? 0,
+        ...(typeof reasoningTokens?.reasoning_tokens === 'number' && { reasoning: reasoningTokens.reasoning_tokens }),
       },
       finishReason: mapOpenAIFinishReason(choice?.finish_reason),
       toolCalls: this.extractToolCalls(raw),
@@ -146,6 +158,8 @@ export class OpenAICompatProtocol implements ProviderProtocol {
   private extractResponsesResponse(response: Response): LLMResponse {
     const prompt = response.usage?.input_tokens ?? 0;
     const completion = response.usage?.output_tokens ?? 0;
+    const outputDetails = (response.usage as unknown as Record<string, unknown> | undefined)
+      ?.output_tokens_details as Record<string, unknown> | undefined;
     return {
       success: response.status !== 'failed',
       content: response.output_text ?? '',
@@ -153,6 +167,7 @@ export class OpenAICompatProtocol implements ProviderProtocol {
         prompt,
         completion,
         total: response.usage?.total_tokens ?? prompt + completion,
+        ...(typeof outputDetails?.reasoning_tokens === 'number' && { reasoning: outputDetails.reasoning_tokens }),
       },
       finishReason: mapResponsesFinishReason(response),
       toolCalls: this.extractToolCalls(response),
@@ -161,18 +176,27 @@ export class OpenAICompatProtocol implements ProviderProtocol {
   }
 
   formatTools(tools: ToolDefinition[]): ChatCompletionTool[] | FunctionTool[] {
-    return tools.map((tool) => ({
-      type: 'function',
-      function: {
-        name: tool.name,
-        description: tool.description,
-        parameters: {
-          type: 'object',
-          properties: tool.parameters.properties,
-          required: tool.parameters.required,
+    const result: (ChatCompletionTool | Record<string, unknown>)[] = [];
+    for (const tool of tools) {
+      if (tool.nativeSpec) {
+        // Native-provider tools (web_search, file_search) pass through as-is for Responses API
+        result.push({ ...tool.nativeSpec });
+        continue;
+      }
+      result.push({
+        type: 'function',
+        function: {
+          name: tool.name,
+          description: tool.description,
+          parameters: {
+            type: 'object',
+            properties: tool.parameters.properties,
+            required: tool.parameters.required,
+          },
         },
-      },
-    })) as ChatCompletionTool[];
+      });
+    }
+    return result as ChatCompletionTool[];
   }
 
   extractToolCalls(raw: unknown): ToolCall[] {
@@ -221,10 +245,19 @@ export class OpenAICompatProtocol implements ProviderProtocol {
       content: result.result,
     }));
 
+    // On the first follow-up the history is empty. Insert the original user message
+    // BEFORE the assistant turn so the conversation reads: user → assistant(tools) → tool_results.
+    // Without this, formatChatRequest would append the user prompt AFTER tool results, making
+    // the model think a new request arrived and causing it to loop on the same tool calls.
+    const userTurn: ChatCompletionMessageParam[] =
+      state.messages.length === 0
+        ? [{ role: 'user' as const, content: original.prompt }]
+        : [];
+
     return {
       ...original,
       _providerState: {
-        messages: [...state.messages, ...(assistantMsg ? [assistantMsg] : []), ...toolMsgs],
+        messages: [...state.messages, ...userTurn, ...(assistantMsg ? [assistantMsg] : []), ...toolMsgs],
       } satisfies OAIState,
     };
   }

@@ -7,14 +7,24 @@ describe('PROVIDER_REGISTRY', () => {
   it('contains all provider definitions needed by the ProviderType union', () => {
     expect(Object.keys(PROVIDER_REGISTRY).sort()).toEqual([
       'anthropic',
+      'anyscale',
+      'azure',
       'bedrock',
+      'cohere',
       'deepseek',
+      'fireworks',
       'gemini',
       'groq',
+      'lmstudio',
+      'localai',
       'mistral',
+      'novita',
       'ollama',
       'openai',
+      'openrouter',
+      'together',
       'vertexai',
+      'vllm',
       'xai',
     ]);
   });

@@ -20,10 +20,13 @@ import type {
   StructuredOutputSchema,
 } from "./structured-output.js";
 
+export type ReasoningEffort = 'none' | 'low' | 'medium' | 'high' | 'xhigh';
+
 export interface TokenUsage {
   prompt: number;
   completion: number;
   total: number;
+  reasoning?: number;
 }
 
 export interface RetryConfig {
@@ -200,6 +203,7 @@ export interface AgentRunParams {
   audio?: AgentAudio[];
   video?: AgentVideo[];
   files?: AgentFile[];
+  reasoning?: ReasoningEffort;
   responseFormat?: ResponseFormat;
   responseSchema?: StructuredOutputSchema;
   structuredOutput?: StructuredOutputOptions;
@@ -246,6 +250,12 @@ export interface ModelInfo {
     tools: boolean;
     streaming: boolean;
     jsonMode: boolean;
+    reasoning: boolean;
+    reasoningEffortLevels?: ReadonlyArray<'none' | 'low' | 'medium' | 'high' | 'xhigh'>;
+    structuredOutput: boolean;
+    parallelToolCalls: boolean;
+    supportsNativeWebSearch: boolean;
+    supportsNativeFileSearch: boolean;
   };
   pricing: {
     inputPerM: number;

@@ -13,13 +13,21 @@ const baseProviderSchema = z.object({
 });
 
 const openaiCompatCloudSchema = baseProviderSchema.extend({
-  provider: z.enum(['openai', 'groq', 'mistral', 'xai']),
+  provider: z.enum(['openai', 'groq', 'mistral', 'xai', 'cohere', 'together', 'fireworks', 'anyscale', 'novita', 'openrouter']),
   apiKey: z.string().min(1),
   baseUrl: z.string().url().optional(),
 });
 
+const azureSchema = baseProviderSchema.extend({
+  provider: z.literal('azure'),
+  apiKey: z.string().min(1),
+  baseUrl: z.string().url(),
+  deployment: z.string().optional(),
+  apiVersion: z.string().optional(),
+});
+
 const localSchema = baseProviderSchema.extend({
-  provider: z.literal('ollama'),
+  provider: z.enum(['ollama', 'lmstudio', 'vllm', 'localai']),
   baseUrl: z.string().url().optional(),
 });
 
@@ -54,6 +62,7 @@ const vertexaiSchema = baseProviderSchema.extend({
 
 export const ProviderConfigSchema = z.discriminatedUnion('provider', [
   openaiCompatCloudSchema,
+  azureSchema,
   localSchema,
   deepseekSchema,
   anthropicSchema,

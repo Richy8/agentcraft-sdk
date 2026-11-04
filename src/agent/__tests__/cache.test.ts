@@ -7,7 +7,8 @@ import { describe, expect, it, vi } from "vitest";
 import { AgentCache, createCacheKey, summarizeCacheStats } from "../cache/index.js";
 import { Agent } from "../agent.js";
 import { Provider } from "../provider-catalog.js";
-import { createAdapter, tool } from "../adapters/index.js";
+import { createAdapter } from "../adapters/types.js";
+import { tool } from "../adapters/index.js";
 import { AgentWorkflow, AgentStep } from "../workflow/index.js";
 import { AgentWorkspace } from "../workspace.js";
 import type { LLMResponse } from "../../types/provider.types.js";
@@ -98,17 +99,15 @@ describe("AgentCache", () => {
     const adapter = createAdapter({
       name: "cache-fixture",
       tools: [
-        tool({
-          name: "read_fixture",
+        tool("read_fixture", {
           description: "Read fixture.",
-          security: { sideEffect: "read" },
+          sideEffect: "read",
           params: {},
           run: async () => ({ calls: ++readCalls }),
         }),
-        tool({
-          name: "write_fixture",
+        tool("write_fixture", {
           description: "Write fixture.",
-          security: { sideEffect: "write" },
+          sideEffect: "write",
           params: {},
           run: async () => ({ calls: ++writeCalls }),
         }),
@@ -147,27 +146,22 @@ describe("AgentCache", () => {
     const adapter = createAdapter({
       name: "strategy-fixture",
       tools: [
-        tool({
-          name: "read_strategy_fixture",
+        tool("read_strategy_fixture", {
           description: "Read fixture.",
-          security: { sideEffect: "read" },
+          sideEffect: "read",
           params: {},
           run: async () => ({ calls: ++readCalls }),
         }),
-        tool({
-          name: "safe_read_strategy_fixture",
+        tool("safe_read_strategy_fixture", {
           description: "Safe deterministic read fixture.",
-          security: {
-            sideEffect: "read",
-            cache: { safe: true, deterministic: true },
-          },
+          sideEffect: "read",
+          cache: { safe: true, deterministic: true },
           params: {},
           run: async () => ({ calls: ++readCalls }),
         }),
-        tool({
-          name: "external_strategy_fixture",
+        tool("external_strategy_fixture", {
           description: "External fixture.",
-          security: { sideEffect: "external" },
+          sideEffect: "external",
           params: {},
           run: async () => ({ calls: ++externalCalls }),
         }),
@@ -385,10 +379,9 @@ describe("AgentCache", () => {
     const adapter = createAdapter({
       name: "dedupe-fixture",
       tools: [
-        tool({
-          name: "read_dedupe_fixture",
+        tool("read_dedupe_fixture", {
           description: "Read fixture.",
-          security: { sideEffect: "read" },
+          sideEffect: "read",
           params: {},
           run: async () => {
             calls += 1;
@@ -429,10 +422,9 @@ describe("AgentCache", () => {
     const adapter = createAdapter({
       name: "bypass-fixture",
       tools: [
-        tool({
-          name: "read_bypass_fixture",
+        tool("read_bypass_fixture", {
           description: "Read fixture.",
-          security: { sideEffect: "read" },
+          sideEffect: "read",
           params: {},
           run: async () => ({ calls: ++calls }),
         }),
@@ -470,13 +462,10 @@ describe("AgentCache", () => {
     const adapter = createAdapter({
       name: "cache-key-fixture",
       tools: [
-        tool({
-          name: "read_cache_key_fixture",
+        tool("read_cache_key_fixture", {
           description: "Read fixture.",
-          security: {
-            sideEffect: "read",
-            cache: { safe: true, deterministic: true },
-          },
+          sideEffect: "read",
+          cache: { safe: true, deterministic: true },
           params: {
             value: { type: "string", description: "Cache key value." },
           },
@@ -541,10 +530,9 @@ describe("AgentCache", () => {
     const adapter = createAdapter({
       name: "required-cache-fixture",
       tools: [
-        tool({
-          name: "read_required_cache_fixture",
+        tool("read_required_cache_fixture", {
           description: "Read fixture.",
-          security: { sideEffect: "read" },
+          sideEffect: "read",
           params: {
             value: { type: "string", description: "Cache key value." },
           },
@@ -612,13 +600,10 @@ describe("AgentCache", () => {
     const adapter = createAdapter({
       name: "run-scoped-cache-fixture",
       tools: [
-        tool({
-          name: "read_run_scoped_cache_fixture",
+        tool("read_run_scoped_cache_fixture", {
           description: "Read run-scoped fixture.",
-          security: {
-            sideEffect: "read",
-            cache: { safe: true, deterministic: true },
-          },
+          sideEffect: "read",
+          cache: { safe: true, deterministic: true },
           params: {
             value: { type: "string", description: "Cache key value." },
           },
@@ -678,13 +663,10 @@ describe("AgentCache", () => {
     const adapter = createAdapter({
       name: "workflow-cache-fixture",
       tools: [
-        tool({
-          name: "read_workflow_cache_fixture",
+        tool("read_workflow_cache_fixture", {
           description: "Read workflow fixture.",
-          security: {
-            sideEffect: "read",
-            cache: { safe: true, deterministic: true },
-          },
+          sideEffect: "read",
+          cache: { safe: true, deterministic: true },
           params: {},
           run: async () => ({ calls: ++calls }),
         }),
@@ -739,17 +721,15 @@ describe("AgentCache", () => {
       }
     ).unifiedProvider;
     const tools = [
-      tool({
-        name: "read_response_cache_fixture",
+      tool("read_response_cache_fixture", {
         description: "Read fixture.",
-        security: { sideEffect: "read" },
+        sideEffect: "read",
         params: {},
         run: async () => ({ calls: ++readCalls }),
       }),
-      tool({
-        name: "write_response_cache_fixture",
+      tool("write_response_cache_fixture", {
         description: "Write fixture.",
-        security: { sideEffect: "write" },
+        sideEffect: "write",
         params: {},
         run: async () => ({ calls: ++writeCalls }),
       }),
@@ -778,17 +758,15 @@ describe("AgentCache", () => {
     const adapter = createAdapter({
       name: "external-write-policy-fixture",
       tools: [
-        tool({
-          name: "external_policy_fixture",
+        tool("external_policy_fixture", {
           description: "External fixture.",
-          security: { sideEffect: "external" },
+          sideEffect: "external",
           params: {},
           run: async () => ({ calls: ++externalCalls }),
         }),
-        tool({
-          name: "write_policy_fixture",
+        tool("write_policy_fixture", {
           description: "Write fixture.",
-          security: { sideEffect: "write" },
+          sideEffect: "write",
           params: {},
           run: async () => ({ calls: ++writeCalls }),
         }),

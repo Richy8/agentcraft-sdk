@@ -197,7 +197,7 @@ console.log(result.content);
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { AgentTeam } from "@deskcreate/agentcraft/team";
-import type { TeamTrace } from "@deskcreate/agentcraft";
+import type { TeamTrace } from "@deskcreate/agentcraft/team";
 
 const root = Agent.create({
   model: Provider.openai["gpt-4o-mini"],

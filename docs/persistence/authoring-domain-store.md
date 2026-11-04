@@ -131,7 +131,12 @@ freshness(profile: CustomerProfile): MemoryFreshness {
 Prevent credentials from being stored:
 
 ```ts
-import { assertStoreSafe } from "@deskcreate/agentcraft";
+function assertStoreSafe(value: unknown): void {
+  const serialized = JSON.stringify(value);
+  if (/sk-[A-Za-z0-9_-]{20,}|api[_-]?key/i.test(serialized)) {
+    throw new Error("Refusing to persist likely secret material");
+  }
+}
 
 async put(profile: CustomerProfile): Promise<void> {
   assertStoreSafe(profile); // throws if secrets detected
@@ -144,14 +149,14 @@ async put(profile: CustomerProfile): Promise<void> {
 Expose the store to agents via workspace:
 
 ```ts
-import { AgentWorkspace } from "@deskcreate/agentcraft/team";
+import { AgentWorkspace } from "@deskcreate/agentcraft";
 
 const store = new FileCustomerStore({
   root: ".agentcraft/customers",
   staleAfterMs: 3_600_000,
 });
 
-const workspace = AgentWorkspace.memory({ store });
+const workspace = AgentWorkspace.create({ store });
 
 // Agents access store via workspace.store
 const workflow = AgentWorkflow.create({ workspace, steps: [...] });

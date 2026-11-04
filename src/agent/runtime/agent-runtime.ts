@@ -100,7 +100,7 @@ export async function runAgentRuntime(
     } = promptState;
 
     const structuredTool = createStructuredOutputToolForRun(params, context.getCapabilities());
-    const modelTools: ToolDefinition[] = structuredTool
+    const rawModelTools: ToolDefinition[] = structuredTool
       ? [
           ...allTools,
           wrapToolExecutionBudget(structuredTool.tool, executionBudget, context.provider),
@@ -108,19 +108,23 @@ export async function runAgentRuntime(
       : [...allTools];
     const runParams = await applyBeforeRunAdapters(params, runScope, tracer, agentSpan);
 
+    // Span wrapping is deferred until after the model span is started below,
+    // so we hold the raw list here and wrap once we have modelSpan.spanId.
+
     const llmParams = context.toLLMParams(runParams);
+    const modelSpan = tracer.start(
+      "model",
+      "model.call",
+      { tools: rawModelTools.length },
+      agentSpan.spanId,
+    );
+    const modelTools = wrapToolsWithSpans(rawModelTools, tracer, modelSpan.spanId);
     const measurement = measureRunPrompt(
       llmParams,
       allTools.length,
       modelTools.length,
       Boolean(params.assembly?.minify),
       promptCompression,
-    );
-    const modelSpan = tracer.start(
-      "model",
-      "model.call",
-      { tools: modelTools.length },
-      agentSpan.spanId,
     );
     const { raw, structuredResponse } = await context.callModelWithStructuredOutput(
       llmParams,
@@ -342,6 +346,37 @@ function promptProvenance(
         params.prompt ?? "",
       ),
   };
+}
+
+/**
+ * Wrap each tool's `execute` so the tracer emits a `tool` span around every
+ * real tool call the model makes during a run. Skips internal bookkeeping
+ * tools (submit_structured_response) to keep the trace clean.
+ */
+function wrapToolsWithSpans(
+  tools: ToolDefinition[],
+  tracer: RunTracer,
+  parentSpanId: string,
+): ToolDefinition[] {
+  return tools.map((tool) => {
+    if (tool.name === "submit_structured_response" || tool.name === "load_skill_instructions") {
+      return tool;
+    }
+    return {
+      ...tool,
+      execute: async (args: Record<string, unknown>) => {
+        const span = tracer.start("tool", `tool.${tool.name}`, { tool: tool.name }, parentSpanId);
+        try {
+          const result = await tool.execute(args);
+          tracer.end(span);
+          return result;
+        } catch (err) {
+          tracer.end(span, err);
+          throw err;
+        }
+      },
+    };
+  });
 }
 
 function measureRunPrompt(

@@ -2,15 +2,9 @@ import type { AgentAdapter } from '../adapters/types.js';
 
 const nativeCapabilities: Record<string, string[]> = {
   fetch: ['web.fetch'],
-  firecrawl: ['web.scrape'],
   tavily: ['web.search'],
-  filesystem: ['filesystem.read', 'filesystem.write'],
-  'citation-manager': ['source.save', 'source.mapClaim'],
-  'link-checker': ['link.check', 'web.fetch'],
-  seo: ['seo.serp', 'seo.keywordMetrics'],
-  'creator-resources': ['brand.memory', 'content.corpus', 'asset.library'],
-  publishing: ['publish.draft', 'publish.publish'],
-  analytics: ['analytics.read'],
+  database: ['db.query', 'db.write'],
+  'image-generation': ['image.generate'],
 };
 
 const mcpCapabilities: Record<string, string[]> = {

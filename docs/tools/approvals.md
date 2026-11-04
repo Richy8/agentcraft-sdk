@@ -4,7 +4,7 @@ Approvals make write-capable tools safe for production. A tool that declares `re
 
 ## How It Works
 
-1. A tool is defined with `security: { requiresConfirmation: true }`.
+1. A tool is defined with `requiresConfirmation: true`.
 2. When the model calls that tool, AgentCraft checks `ToolPolicy`:
    - If the tool name is in `approvedTools` — approved.
    - If `allowSideEffects: true` — approved globally.
@@ -21,14 +21,11 @@ import { Agent, Provider } from "@deskcreate/agentcraft";
 import { tool } from "@deskcreate/agentcraft/adapters";
 
 // Tool that requires explicit approval before executing
-const sendEmail = tool({
-  name: "send_email",
+const sendEmail = tool("send_email", {
   description: "Send an email to a customer.",
-  security: {
-    sideEffect: "write",
-    requiresConfirmation: true, // blocked by default
-    scopes: ["email:send"],
-  },
+  sideEffect: "write",
+  requiresConfirmation: true, // blocked by default
+  scopes: ["email:send"],
   params: {
     to: { type: "string", description: "Recipient email address." },
     subject: { type: "string", description: "Email subject." },
@@ -220,10 +217,10 @@ const agent = Agent.create({
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { tool } from "@deskcreate/agentcraft/adapters";
 
-const deleteDraft = tool({
-  name: "delete_draft",
+const deleteDraft = tool("delete_draft", {
   description: "Permanently delete a draft.",
-  security: { sideEffect: "write", requiresConfirmation: true },
+  sideEffect: "write",
+  requiresConfirmation: true,
   params: { draftId: { type: "string", description: "Draft ID." } },
   run: async ({ draftId }) => drafts.delete(draftId),
 });

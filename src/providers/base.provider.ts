@@ -49,6 +49,7 @@ export abstract class BaseLLMProvider {
         return { ...response, latency: Date.now() - startTime };
       } catch (error) {
         lastError = error as Error;
+        if (params.signal?.aborted) throw lastError;
         if (!isRetryableError(lastError) || attempt >= this.retryStrategy.maxAttempts) break;
         await sleep(this.calcBackoff(attempt, lastError));
       }
@@ -70,6 +71,7 @@ export abstract class BaseLLMProvider {
         return { ...response, latency: Date.now() - startTime };
       } catch (error) {
         lastError = error as Error;
+        if (params.signal?.aborted) throw lastError;
         if (!isRetryableError(lastError) || attempt >= this.retryStrategy.maxAttempts) break;
         await sleep(this.calcBackoff(attempt, lastError));
       }
@@ -112,6 +114,8 @@ export abstract class BaseLLMProvider {
   ): AsyncGenerator<StreamChunk, LLMResponse, unknown> {
     let loopCount = 0;
     let current = await this.callAPIWithTools(params, tools);
+    // Thread accumulated conversation state forward so each follow-up sees the full history.
+    let accumulatedParams = params;
 
     while (current.toolCalls && current.toolCalls.length > 0 && loopCount < MAX_TOOL_LOOPS) {
       loopCount++;
@@ -156,8 +160,8 @@ export abstract class BaseLLMProvider {
         arguments: current.toolCalls![index]!.arguments,
       }));
 
-      const followUp = this.buildFollowUpParams(params, current._raw ?? current, toolResults);
-      current = await this.callAPIWithTools(followUp, tools);
+      accumulatedParams = this.buildFollowUpParams(accumulatedParams, current._raw ?? current, toolResults);
+      current = await this.callAPIWithTools(accumulatedParams, tools);
     }
 
     return current;
@@ -181,6 +185,8 @@ export abstract class BaseLLMProvider {
   ): Promise<LLMResponse> {
     let loopCount = 0;
     let current = await this.callAPIWithTools(params, tools);
+    // Thread accumulated conversation state forward so each follow-up sees the full history.
+    let accumulatedParams = params;
 
     while (current.toolCalls && current.toolCalls.length > 0 && loopCount < MAX_TOOL_LOOPS) {
       loopCount++;
@@ -223,8 +229,8 @@ export abstract class BaseLLMProvider {
         arguments: current.toolCalls![index]!.arguments,
       }));
 
-      const followUp = this.buildFollowUpParams(params, current._raw ?? current, toolResults);
-      current = await this.callAPIWithTools(followUp, tools);
+      accumulatedParams = this.buildFollowUpParams(accumulatedParams, current._raw ?? current, toolResults);
+      current = await this.callAPIWithTools(accumulatedParams, tools);
     }
 
     return current;

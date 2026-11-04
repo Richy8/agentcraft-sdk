@@ -250,19 +250,27 @@ console.log(`~${brief.estimatedWordCount} words`);
 
 ### With ArtifactRegistry
 
-`ArtifactRegistry` provides pre-built schemas for content workflows (drafts, briefs, SEO plans, etc.).
+`ArtifactRegistry` lets your application register reusable Zod schemas for structured output and artifact validation.
 
 ```ts
 import { Agent, ArtifactRegistry, Provider } from "@deskcreate/agentcraft";
+import { z } from "zod";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-// Look up a built-in creator schema — returns a Zod schema
-const DraftSchema = ArtifactRegistry.lookup("Draft");
-if (!DraftSchema) throw new Error("Draft schema not found");
+ArtifactRegistry.register(
+  "Draft",
+  z.object({
+    title: z.string(),
+    body: z.string(),
+    status: z.enum(["draft", "ready"]),
+  }),
+);
+
+const DraftSchema = ArtifactRegistry.lookup("Draft")!;
 
 const response = await agent.run({
   prompt:
@@ -271,11 +279,10 @@ const response = await agent.run({
 });
 
 console.log(response.structuredResponse);
-// → { title: "...", body: "...", ... }
+// → { title: "...", body: "...", status: "draft" }
 
-// See all available built-in schemas
 console.log(ArtifactRegistry.list());
-// → ["AudienceProfile", "ContentBrief", "Draft", "SeoPlan", ...]
+// → ["Draft"]
 ```
 
 ### Tool Fallback Mode

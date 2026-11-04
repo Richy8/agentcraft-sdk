@@ -67,7 +67,7 @@ Full inventory of every AgentCraft feature. Use this as a navigation index — e
 | **Distributed Cache** | Redis and Postgres backends for multi-instance deployments | [Distributed Cache](../persistence/distributed-cache.md) | [Cache Config](../configuration/cache-config.md) | [Persistence & Caching](../examples-cookbook/persistence.md) |
 | **Semantic Memory** | Long-term vector memory with Qdrant, Pinecone, Supabase backends | [Semantic Memory](../persistence/semantic-memory.md) | [Memory & Store Config](../configuration/memory-store-config.md) | [Semantic Memory](../examples-cookbook/semantic-memory.md) |
 | **Artifact Store** | Durable typed persistence for agent outputs (Memory, File, SQLite) | [Artifact Store](../persistence/artifact-store.md) | [Memory & Store Config](../configuration/memory-store-config.md) | [Persistence & Caching](../examples-cookbook/persistence.md) |
-| **Artifact Registry** | Schema registry for 19 built-in artifact types + custom types | [Artifact Registry](../persistence/artifact-registry.md) | — | — |
+| **Artifact Registry** | Runtime schema registry for project-owned artifact types | [Artifact Registry](../persistence/artifact-registry.md) | — | — |
 | **Citation Store** | Source and citation tracking during research runs | [Citation Store](../persistence/citation-store.md) | — | — |
 | **Creator Memory Store** | Brand voice profiles and content corpus with similarity search | [Creator Memory Store](../persistence/creator-memory-store.md) | [Memory & Store Config](../configuration/memory-store-config.md) | — |
 | **Analytics History Store** | Content performance reports and A/B experiment tracking | [Analytics History Store](../persistence/analytics-history-store.md) | — | — |

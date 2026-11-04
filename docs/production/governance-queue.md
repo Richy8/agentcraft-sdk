@@ -21,13 +21,10 @@ const approvals = ApprovalQueue.memory({
   requireReason: true,
 });
 
-const createDraft = tool({
-  name: "create_draft",
+const createDraft = tool("create_draft", {
   description: "Create a draft in the CMS.",
-  security: {
-    sideEffect: "write",
-    requiresConfirmation: true,
-  },
+  sideEffect: "write",
+  requiresConfirmation: true,
   params: {
     title: { type: "string", description: "Draft title." },
   },
@@ -228,10 +225,10 @@ import {
 import { tool } from "@deskcreate/agentcraft/adapters";
 
 const workspace = AgentWorkspace.create();
-const createDraft = tool({
-  name: "create_draft",
+const createDraft = tool("create_draft", {
   description: "Prepare a draft for reviewer approval.",
-  security: { sideEffect: "write", requiresConfirmation: true },
+  sideEffect: "write",
+  requiresConfirmation: true,
   params: {
     title: { type: "string", description: "Draft title." },
   },

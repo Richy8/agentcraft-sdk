@@ -113,7 +113,7 @@ it("throws QuotaExceededError on budget breach", async () => {
   });
 
   await expect(
-    agent.run({ prompt: "...", budget: { maxTotalTokens: 100 } }),
+    agent.run({ prompt: "...", budget: { maxTokens: 100 } }),
   ).rejects.toThrow();
 });
 ```

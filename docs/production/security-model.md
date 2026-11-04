@@ -72,20 +72,24 @@ const response = await agent.run({
 
 ### 4. Guardrails
 
-Guardrails block unsafe prompt content, injection patterns, PII, and disallowed topics before they reach the model:
+Guardrails inspect tool inputs and outputs before they cross a tool boundary:
 
 ```ts
-import { Agent, Guardrails, Provider } from "@deskcreate/agentcraft";
+import {
+  Agent,
+  Provider,
+  blockPiiGuardrail,
+  blockPromptInjectionGuardrail,
+} from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
-  guardrails: Guardrails.create({
-    blockTopics: ["competitor-names", "pricing-disclosure"],
-    blockPii: true,
-    blockInjectionPatterns: true,
-    maxPromptLength: 10_000,
-  }),
+  toolPolicy: {
+    inputGuardrails: [blockPromptInjectionGuardrail],
+    outputGuardrails: [blockPiiGuardrail, blockPromptInjectionGuardrail],
+    guardrailMode: "enforce",
+  },
 });
 ```
 

@@ -78,7 +78,7 @@ console.log(response.content);
 
 **Available OpenAI models:**
 
-- `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.4-nano`
+- `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`
 - `gpt-4o`, `gpt-4o-mini`
 - `o1`, `o3`, `o4-mini`
 - `o3-deep-research`, `o4-mini-deep-research`
@@ -125,7 +125,7 @@ import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.gemini["gemini-2.5-pro"],
-  apiKey: process.env.GEMINI_API_KEY!,
+  apiKey: process.env.GOOGLE_API_KEY!,
 });
 
 const response = await agent.run({
@@ -217,23 +217,6 @@ const agent = Agent.create({
   model: Provider.cohere["command-r-plus-08-2024"],
   apiKey: process.env.COHERE_API_KEY!,
 });
-```
-
-### Perplexity (Web-grounded)
-
-```ts
-import { Agent, Provider } from "@deskcreate/agentcraft";
-
-// Perplexity Sonar has built-in web search — no additional adapter needed
-const agent = Agent.create({
-  model: Provider.perplexity["sonar-pro"],
-  apiKey: process.env.PERPLEXITY_API_KEY!,
-});
-
-const response = await agent.run({
-  prompt: "What are the latest TypeScript 5.x features released in 2025?",
-});
-console.log(response.content); // grounded in live web search
 ```
 
 ### AWS Bedrock
@@ -350,12 +333,6 @@ const openrouter = Agent.create({
   apiKey: process.env.OPENROUTER_API_KEY!,
 });
 
-// Cerebras (chip-accelerated inference)
-const cerebras = Agent.create({
-  model: Provider.cerebras["llama3.1-70b"],
-  apiKey: process.env.CEREBRAS_API_KEY!,
-});
-
 // Custom OpenAI-compatible endpoint
 const custom = Agent.create({
   model: "openai-compatible:my-fine-tuned-model",
@@ -377,19 +354,18 @@ const info = Agent.inspect(Provider.openai["gpt-4o"]);
 console.log(info.capabilities.vision);     // → true
 console.log(info.capabilities.streaming);  // → true
 console.log(info.capabilities.tools);      // → true
-console.log(info.capabilities.json);       // → true
+console.log(info.capabilities.jsonMode);   // → true
 
 // Pricing (per 1M tokens)
 console.log(`Input: $${info.pricing.inputPerM}`);
 console.log(`Output: $${info.pricing.outputPerM}`);
 
-// Quality scores (0–100)
+// Quality and speed scores (1–10)
 console.log(`Quality: ${info.scores.quality}`);
 console.log(`Speed: ${info.scores.speed}`);
-console.log(`Cost: ${info.scores.cost}`);
 
 // What this model is optimized for
-console.log(info.optimizedFor); // → ["reasoning", "coding", "analysis"]
+console.log(info.optimizedFor); // → ["quality"]
 ```
 
 ### `Agent.supports(model, capability)` — Quick Capability Check
@@ -427,7 +403,7 @@ const visionModels = Agent.catalog({ provider: "openai", vision: true });
 visionModels.forEach((m) => console.log(`${m.model} — $${m.pricing.inputPerM}/M input`));
 
 // High-quality streaming models, sorted by quality score
-const highQuality = Agent.catalog({ minQuality: 80, streaming: true });
+const highQuality = Agent.catalog({ minQuality: 8, streaming: true });
 highQuality.forEach((m) => console.log(`${m.provider}/${m.model} — quality: ${m.scores.quality}`));
 
 // Local-only models (no API key required)
@@ -462,14 +438,12 @@ for (const config of providers) {
 | --- | --- | --- |
 | OpenAI | `OPENAI_API_KEY` | Required for all OpenAI models |
 | Anthropic | `ANTHROPIC_API_KEY` | Required for all Claude models |
-| Google Gemini | `GEMINI_API_KEY` | Or use service account JSON |
+| Google Gemini | `GOOGLE_API_KEY` | `GEMINI_API_KEY` is also accepted by some integrations |
 | Groq | `GROQ_API_KEY` | |
 | DeepSeek | `DEEPSEEK_API_KEY` | |
 | xAI | `XAI_API_KEY` | |
 | Mistral | `MISTRAL_API_KEY` | |
 | Cohere | `COHERE_API_KEY` | |
-| Perplexity | `PERPLEXITY_API_KEY` | |
-| Cerebras | `CEREBRAS_API_KEY` | |
 | Together | `TOGETHER_API_KEY` | |
 | Fireworks | `FIREWORKS_API_KEY` | |
 | OpenRouter | `OPENROUTER_API_KEY` | |

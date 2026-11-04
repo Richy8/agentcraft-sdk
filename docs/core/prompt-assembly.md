@@ -148,8 +148,6 @@ All prompt assembly options live on `agent.run()`. There is no agent-level defau
 Enable `strict` to make unresolved `&#123;&#123;variables&#125;&#125;` an error instead of leaving the raw placeholder in the prompt:
 
 ```ts
-import { PromptAssemblyError } from "@deskcreate/agentcraft";
-
 try {
   const response = await agent.run({
     promptFile: "prompts/report.prompt",
@@ -157,7 +155,7 @@ try {
     assembly: { strict: true },
   });
 } catch (err) {
-  if (err instanceof PromptAssemblyError) {
+  if (err instanceof Error && "code" in err && err.code === "PROMPT_ASSEMBLY_ERROR") {
     // → "Unresolved variable: {{author}} at line 3"
     console.error(err.message);
   }
@@ -343,7 +341,7 @@ When using `PromptAssembler` directly, `result.stats` contains:
 Pre-validate all prompt files in your CI pipeline before deploying:
 
 ```ts
-import { PromptAssembler, FileLoader, PromptAssemblyError } from "@deskcreate/agentcraft";
+import { PromptAssembler, FileLoader } from "@deskcreate/agentcraft";
 import { glob } from "glob";
 
 const assembler = new PromptAssembler(new FileLoader());
@@ -360,7 +358,7 @@ for (const file of entryFiles) {
     });
     console.log(`✓ ${file}`);
   } catch (err) {
-    if (err instanceof PromptAssemblyError) {
+    if (err instanceof Error && "code" in err && err.code === "PROMPT_ASSEMBLY_ERROR") {
       console.error(`✗ ${file}: ${err.message}`);
       failures++;
     }

@@ -1,36 +1,15 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { ConfigurationError } from "../../../errors/index.js";
 import {
-  AirtableMCP,
-  ApifyMCP,
   BraveSearchMCP,
-  BrowserbaseMCP,
-  CloudflareMCP,
-  Context7MCP,
-  ElevenLabsMCP,
   FetchMCP,
-  FigmaMCP,
   FilesystemMCP,
   FirecrawlMCP,
   GitHubMCP,
-  GmailMCP,
-  JiraMCP,
-  LinearMCP,
-  MCP_WRAPPER_REGISTRY,
-  MemoryMCP,
-  NeonMCP,
-  NotionMCP,
-  PlaywrightMCP,
+  MCP,
   PostgresMCP,
-  QdrantMCP,
-  RailwayMCP,
-  RenderMCP,
-  ResendMCP,
-  SentryMCP,
   SlackMCP,
-  StripeMCP,
   SupabaseMCP,
-  VercelMCP,
 } from "../index.js";
 
 const warningSpy = vi
@@ -47,160 +26,58 @@ describe("MCP server wrappers", () => {
     warningSpy.mockRestore();
   });
 
-  it("creates stdio wrappers with dynamic tool discovery", () => {
-    expect(LinearMCP.connect({ apiKey: "key" }).name).toBe("linear-mcp");
-    expect(
-      FilesystemMCP.connect({ allowedPaths: ["/tmp/workspace"] })
-        .declaredToolNames,
-    ).toBeUndefined();
+  it("creates all 8 kept wrappers", () => {
+    expect(GitHubMCP.connect({ token: "token", packageSpec: "@artificable/github-mcp-server@0.1.0" }).name).toBe("github-mcp");
+    expect(SlackMCP.connect({ botToken: "token", teamId: "T1" }).name).toBe("slack-mcp");
+    expect(PostgresMCP.connect({ connectionString: "postgres://user:pass@localhost/db" }).name).toBe("postgres-mcp");
+    expect(SupabaseMCP.connect({ url: "https://supabase.example.test", apiKey: "key" }).name).toBe("supabase-mcp");
+    expect(FilesystemMCP.connect({ allowedPaths: ["/tmp/workspace"] }).name).toBe("filesystem-mcp");
+    expect(BraveSearchMCP.connect({ apiKey: "key" }).name).toBe("brave-search-mcp");
+    expect(FirecrawlMCP.connect({ apiKey: "key" }).name).toBe("firecrawl-mcp");
+    expect(FetchMCP.connect({ packageSpec: "@yawlabs/fetch-mcp@0.3.1" }).name).toBe("fetch-mcp");
   });
 
-  it("creates hosted HTTP wrappers", () => {
-    expect(NeonMCP.connect({ apiKey: "key" }).name).toBe("neon-mcp");
-    expect(VercelMCP.connect({ apiToken: "token" }).name).toBe("vercel-mcp");
-  });
-
-  it("supports discriminated dual-transport wrappers", () => {
-    expect(
-      SentryMCP.connect({ transport: "http", authToken: "token" }).name,
-    ).toBe("sentry-mcp");
-    expect(
-      StripeMCP.connect({ transport: "stdio", secretKey: "sk_test" }).name,
-    ).toBe("stripe-mcp");
-  });
-
-  it("provides metadata for every built-in MCP wrapper", () => {
-    expect(Object.keys(MCP_WRAPPER_REGISTRY).length).toBeGreaterThanOrEqual(28);
-    for (const definition of Object.values(MCP_WRAPPER_REGISTRY)) {
-      expect(definition.adapterName).toMatch(/-mcp$/);
-      expect(definition.trustLevel).toBeTruthy();
-      expect(definition.sideEffects.length).toBeGreaterThan(0);
-      expect(definition.scopes.length).toBeGreaterThan(0);
-    }
-
-    expect(LinearMCP.connect({ apiKey: "key" }).metadata).toMatchObject({
-      kind: "mcp-backed",
-      trustLevel: "review-required",
-      requiredSecrets: ["LINEAR_API_KEY"],
-    });
-  });
-
-  it("smoke-tests every built-in MCP wrapper factory", () => {
-    const adapters = [
-      AirtableMCP.connect({ apiKey: "key", baseId: "base" }),
-      ApifyMCP.connect({ token: "token" }),
-      ApifyMCP.connect({
-        transport: "http",
-        token: "token",
-        url: "https://mcp.example.test",
-      }),
-      BraveSearchMCP.connect({ apiKey: "key" }),
-      BrowserbaseMCP.connect({ apiKey: "key", projectId: "project" }),
-      CloudflareMCP.connect({ apiToken: "token", accountId: "acct" }),
-      Context7MCP.connect(),
-      Context7MCP.connect({
-        transport: "http",
-        url: "https://mcp.example.test",
-      }),
-      ElevenLabsMCP.connect({
-        apiKey: "key",
-        packageSpec: "@mindstone-engineering/mcp-server-elevenlabs@0.2.1",
-      }),
-      FetchMCP.connect({ packageSpec: "@yawlabs/fetch-mcp@0.3.1" }),
-      FigmaMCP.connect({ apiToken: "token" }),
-      FilesystemMCP.connect({ allowedPaths: ["/tmp/workspace"] }),
-      FirecrawlMCP.connect({ apiKey: "key" }),
-      GitHubMCP.connect({
-        token: "token",
-        packageSpec: "@artificable/github-mcp-server@0.1.0",
-      }),
-      GmailMCP.connect(),
-      JiraMCP.connect({
-        host: "https://example.atlassian.net",
-        email: "me@example.com",
-        apiToken: "token",
-      }),
-      LinearMCP.connect({ apiKey: "key" }),
-      MemoryMCP.connect(),
-      NeonMCP.connect({ apiKey: "key" }),
-      NotionMCP.connect({ token: "token" }),
-      PlaywrightMCP.connect(),
-      PostgresMCP.connect({
-        connectionString: "postgres://user:pass@localhost/db",
-      }),
-      QdrantMCP.connect({ url: "https://qdrant.example.test", apiKey: "key" }),
-      RailwayMCP.connect({ apiToken: "token" }),
-      RenderMCP.connect({ apiKey: "key" }),
-      ResendMCP.connect({ apiKey: "key" }),
-      ResendMCP.connect({
-        transport: "http",
-        apiKey: "key",
-        url: "https://mcp.example.test",
-      }),
-      SentryMCP.connect({ transport: "stdio", authToken: "token" }),
-      SentryMCP.connect({ transport: "http", authToken: "token" }),
-      SlackMCP.connect({ botToken: "token", teamId: "T1" }),
-      StripeMCP.connect({ secretKey: "sk_test" }),
-      StripeMCP.connect({
-        transport: "http",
-        secretKey: "sk_test",
-        url: "https://mcp.example.test",
-      }),
-      SupabaseMCP.connect({
-        url: "https://supabase.example.test",
-        apiKey: "key",
-      }),
-      VercelMCP.connect({ apiToken: "token" }),
-    ];
-
-    expect(adapters.map((adapter) => adapter.name).sort()).toEqual(
-      expect.arrayContaining(Object.keys(MCP_WRAPPER_REGISTRY)),
-    );
-    for (const adapter of adapters) {
-      expect(adapter.metadata?.kind).toBe("mcp-backed");
-      expect(adapter.metadata?.trustLevel).toBeTruthy();
-      expect(adapter.getTools).toBeDefined();
-    }
-    expect(warningSpy).not.toHaveBeenCalled();
-  });
-
-  it("fails closed for wrappers without verified default npm packages", () => {
-    expect(() => GitHubMCP.connect({ token: "token" })).toThrow(
-      ConfigurationError,
-    );
+  it("fails closed for wrappers without a verified default npm package", () => {
+    expect(() => GitHubMCP.connect({ token: "token" })).toThrow(ConfigurationError);
     expect(() => FetchMCP.connect()).toThrow(ConfigurationError);
-    expect(() => ElevenLabsMCP.connect({ apiKey: "key" })).toThrow(
-      ConfigurationError,
-    );
-    expect(() =>
-      GitHubMCP.connect({
-        token: "token",
-        packageSpec: "@artificable/github-mcp-server",
-      }),
-    ).toThrow(ConfigurationError);
+    expect(() => GitHubMCP.connect({ token: "token", packageSpec: "@artificable/github-mcp-server" })).toThrow(ConfigurationError);
   });
 
-  it("keeps every default stdio MCP package version-pinned", () => {
-    for (const definition of Object.values(MCP_WRAPPER_REGISTRY)) {
-      if (definition.packageStatus === "requires-user-package") {
-        expect(definition.packageName).toBeUndefined();
-        continue;
-      }
-      if (definition.transport === "stdio" || definition.transport === "dual") {
-        expect(definition.packageName).toBeDefined();
-        expect(isPinnedPackage(definition.packageName!)).toBe(true);
-      }
-    }
+  it("MCP.connect() creates an HTTP adapter from a URL", () => {
+    const adapter = MCP.connect({ url: "https://my-mcp.example.com", auth: { type: "bearer", token: "abc" } });
+    expect(adapter.name).toBe("mcp");
+    expect(adapter.metadata?.kind).toBe("mcp-backed");
   });
 
-  it("exposes wrapper-level allowlists for friendly MCP factories", async () => {
+  it("MCP.connect() creates a stdio adapter from a command", () => {
+    const adapter = MCP.connect({ command: "node", name: "my-mcp", args: ["./server.js"], env: { TOKEN: "x" } });
+    expect(adapter.name).toBe("my-mcp");
+    expect(adapter.metadata?.kind).toBe("mcp-backed");
+  });
+
+  it("MCP.connect() creates a package adapter via npx", () => {
+    const adapter = MCP.connect({ package: "@modelcontextprotocol/server-github@2025.4.8", env: { GITHUB_TOKEN: "token" }, name: "gh" });
+    expect(adapter.name).toBe("gh");
+    expect(adapter.metadata?.kind).toBe("mcp-backed");
+  });
+
+  it("MCP.connect() supports api-key and basic auth", () => {
+    const apiKey = MCP.connect({ url: "https://example.com", auth: { type: "api-key", header: "X-API-Key", key: "secret" } });
+    expect(apiKey.name).toBe("mcp");
+
+    const basic = MCP.connect({ url: "https://example.com", auth: { type: "basic", username: "user", password: "pass" } });
+    expect(basic.name).toBe("mcp");
+  });
+
+  it("MCP.connect() rejects unpinned packages", () => {
+    expect(() => MCP.connect({ package: "@modelcontextprotocol/server-github" })).toThrow(ConfigurationError);
+  });
+
+  it("supports allowedTools filtering in MCP.connect()", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (_url: string, init?: RequestInit) => {
-        const message = JSON.parse(String(init?.body)) as {
-          id: number;
-          method: string;
-        };
+        const message = JSON.parse(String(init?.body)) as { id: number; method: string };
         return {
           ok: true,
           json: async () => ({
@@ -208,38 +85,23 @@ describe("MCP server wrappers", () => {
             id: message.id,
             result:
               message.method === "tools/list"
-                ? {
-                    tools: [
-                      {
-                        name: "allowed_lookup",
-                        inputSchema: { type: "object" },
-                      },
-                      {
-                        name: "blocked_write",
-                        inputSchema: { type: "object" },
-                      },
-                    ],
-                  }
+                ? { tools: [{ name: "allowed_tool", inputSchema: { type: "object" } }, { name: "blocked_tool", inputSchema: { type: "object" } }] }
                 : {},
           }),
         } as Response;
       }),
     );
 
-    const adapter = Context7MCP.connect({
-      transport: "http",
+    const adapter = MCP.connect({
       url: "https://mcp.example.test",
-      allowedTools: ["allowed_lookup"],
-      allowedResources: ["docs://agentcraft/"],
-      roots: ["https://docs.example.test"],
+      allowedTools: ["allowed_tool"],
     });
     const tools = await adapter.getTools?.();
-
-    expect(tools?.map((item) => item.name)).toEqual(["allowed_lookup"]);
+    expect(tools?.map((t) => t.name)).toEqual(["allowed_tool"]);
     await adapter.cleanup?.();
   });
 
-  it("maps wrapper-level roots and tool allowlists into stdio MCP configs", () => {
+  it("FilesystemMCP rejects unsafe roots", () => {
     expect(() =>
       FilesystemMCP.connect({
         allowedPaths: ["/tmp/workspace"],
@@ -247,17 +109,25 @@ describe("MCP server wrappers", () => {
         roots: ["../not-allowed"],
       }),
     ).toThrow(ConfigurationError);
+  });
 
-    expect(
-      StripeMCP.connect({
-        secretKey: "sk_test",
-        tools: ["customers.read"],
-      }).metadata?.sideEffects,
-    ).toEqual(["read", "write", "external"]);
+  it("wrapped adapters have mcp-backed metadata", () => {
+    const adapters = [
+      GitHubMCP.connect({ token: "token", packageSpec: "@artificable/github-mcp-server@0.1.0" }),
+      SlackMCP.connect({ botToken: "token", teamId: "T1" }),
+      PostgresMCP.connect({ connectionString: "postgres://user:pass@localhost/db" }),
+      SupabaseMCP.connect({ url: "https://supabase.example.test", apiKey: "key" }),
+      FilesystemMCP.connect({ allowedPaths: ["/tmp/workspace"] }),
+      BraveSearchMCP.connect({ apiKey: "key" }),
+      FirecrawlMCP.connect({ apiKey: "key" }),
+      FetchMCP.connect({ packageSpec: "@yawlabs/fetch-mcp@0.3.1" }),
+    ];
+
+    for (const adapter of adapters) {
+      expect(adapter.metadata?.kind).toBe("mcp-backed");
+      expect(adapter.metadata?.trustLevel).toBeTruthy();
+      expect(adapter.getTools).toBeDefined();
+    }
+    expect(warningSpy).not.toHaveBeenCalled();
   });
 });
-
-function isPinnedPackage(packageName: string): boolean {
-  if (packageName.startsWith("@")) return packageName.slice(1).includes("@");
-  return packageName.includes("@");
-}

@@ -93,7 +93,7 @@ import { QuotaExceededError } from "@deskcreate/agentcraft";
 try {
   await agent.run({
     prompt: "Write a book.",
-    budget: { maxCostUsd: 0.001 },
+    budget: { maxCost: 0.001 },
   });
 } catch (err) {
   if (err instanceof QuotaExceededError) {
@@ -115,7 +115,7 @@ const primaryAgent = Agent.create({
 });
 
 const fallbackAgent = Agent.create({
-  model: Provider.anthropic["claude-haiku-4-5-20251001"],
+  model: Provider.anthropic["claude-haiku-4-5"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 

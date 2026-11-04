@@ -11,6 +11,8 @@ export interface ToolDefinition {
     properties: Record<string, { type: string; description?: string; enum?: string[] }>;
     required: string[];
   };
+  /** Set by native-provider adapters (BuiltInTools). Skips function-call serialization. */
+  nativeSpec?: { type: 'web_search' | 'file_search'; [key: string]: unknown };
   security?: {
     sideEffect: 'none' | 'read' | 'write' | 'external';
     requiresConfirmation?: boolean;
@@ -43,7 +45,7 @@ export interface ProviderProtocol {
   createClient(config: ModelConfig, definition: ProviderDefinition): unknown;
   formatRequest(params: LLMCallParams, config: ModelConfig): unknown;
   formatRequestWithTools?(params: LLMCallParams, config: ModelConfig, nativeTools: unknown): unknown;
-  callRaw(client: unknown, nativeRequest: unknown): Promise<unknown>;
+  callRaw(client: unknown, nativeRequest: unknown, params: LLMCallParams): Promise<unknown>;
   extractResponse(raw: unknown, params: LLMCallParams): LLMResponse;
   formatTools(tools: ToolDefinition[]): unknown;
   extractToolCalls(raw: unknown): ToolCall[];

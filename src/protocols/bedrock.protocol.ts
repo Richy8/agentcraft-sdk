@@ -87,7 +87,7 @@ export class BedrockProtocol implements ProviderProtocol {
     };
   }
 
-  async callRaw(client: unknown, nativeRequest: unknown): Promise<unknown> {
+  async callRaw(client: unknown, nativeRequest: unknown, _params: LLMCallParams): Promise<unknown> {
     return (client as BedrockRuntimeClient).send(new ConverseCommand(nativeRequest as ConverseCommandInput));
   }
 

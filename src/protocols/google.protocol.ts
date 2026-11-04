@@ -84,7 +84,7 @@ export class GoogleProtocol implements ProviderProtocol {
     };
   }
 
-  async callRaw(client: unknown, nativeRequest: unknown): Promise<unknown> {
+  async callRaw(client: unknown, nativeRequest: unknown, _params: LLMCallParams): Promise<unknown> {
     return (client as GoogleGenAI).models.generateContent(nativeRequest as never);
   }
 

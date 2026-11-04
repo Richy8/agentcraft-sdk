@@ -87,7 +87,7 @@ npm install better-sqlite3
 
 ### Schema Validation
 
-Set `validateSchemas: true` when artifacts should match the registered creator schemas. Built-in schemas come from [`ArtifactRegistry`](../core/structured-output.md#with-artifactregistry-creator-pack-schemas).
+Set `validateSchemas: true` when artifacts should match schemas registered with [`ArtifactRegistry`](../core/structured-output.md#with-artifactregistry).
 
 ```ts
 import { FileArtifactStore } from "@deskcreate/agentcraft";

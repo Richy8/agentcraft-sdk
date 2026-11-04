@@ -83,20 +83,27 @@ if (report) {
 ### Adapter Trace
 
 ```ts
-import { RunTracer } from "@deskcreate/agentcraft";
+import type { TraceSink, TraceSpan } from "@deskcreate/agentcraft";
 
-const tracer = RunTracer.create();
+const spans: TraceSpan[] = [];
+const traceSink: TraceSink = {
+  onSpanStart: (span) => spans.push(span),
+  onSpanEnd: (span) => {
+    const current = spans.find((item) => item.spanId === span.spanId);
+    if (current) Object.assign(current, span);
+  },
+};
+
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
-  traceSink: tracer,
+  traceSink,
 });
 
 const response = await agent.run({ prompt: "Search for TypeScript best practices." });
 
-const spans = tracer.spans();
 for (const span of spans) {
-  console.log(`${span.name}: ${span.durationMs}ms`);
+  console.log(`${span.name}: ${span.status}`);
 }
 ```
 

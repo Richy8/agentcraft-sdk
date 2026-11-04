@@ -22,6 +22,7 @@ export function toLLMCallParams(
     ),
     ...optional("stopSequences", runParams.stopSequences ?? config.stopSequences),
     ...optional("responseFormat", runParams.responseFormat ?? config.responseFormat),
+    ...optional("reasoning", runParams.reasoning ?? config.reasoning),
     ...optional("signal", runParams.signal),
   };
 }

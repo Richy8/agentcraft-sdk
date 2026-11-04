@@ -35,7 +35,6 @@ export type {
   AssemblyStats,
 } from "./types/assembler.types.js";
 export { AGENT_DEFAULTS } from "./agent/config.js";
-export { MCPAdapter } from "./agent/adapters/mcp.adapter.js";
 export {
   parseAndValidateStructuredOutput,
   structuredOutputInstruction,
@@ -95,6 +94,8 @@ export type {
 } from "./agent/workflow/index.js";
 export { AgentWorkspace } from "./agent/workspace.js";
 export { AgentMemory } from "./agent/memory/index.js";
+export { BuiltInTools } from "./agent/built-in-tools.js";
+export type { WebSearchConfig, FileSearchConfig } from "./agent/built-in-tools.js";
 export type {
   AgentWorkspaceConfig,
   AgentWorkspaceInstance,
@@ -212,36 +213,6 @@ export type {
   GovernanceQueueOptions,
   RollbackPlan,
 } from "./agent/governance/index.js";
-export type {
-  BrandVoiceProfile as CreatorBrandVoiceProfile,
-  ContentPillars,
-  MediaBrief,
-  PersonaProfile,
-  PublishingStatus,
-} from "./agent/creator/types.js";
-export {
-  BrandVoiceProfileSchema,
-  ContentPillarsSchema,
-  MediaBriefSchema,
-  PersonaProfileSchema,
-  PublishingStatusSchema,
-} from "./agent/creator/types.js";
-export { FileSystemCreatorMemoryStore } from "./agent/creator/memory.js";
-export type {
-  BrandVoiceProfile,
-  CorpusDocument,
-  CorpusSearchResult,
-  CreatorMemoryStore,
-  CreatorMemoryWriteApprovalRequest,
-  FileSystemCreatorMemoryStoreOptions,
-  MemoryFreshness,
-  MemorySummaryOptions,
-} from "./agent/creator/memory.js";
-export { FileSystemAnalyticsHistoryStore } from "./agent/creator/analytics-history.js";
-export type {
-  AnalyticsHistorySnapshot,
-  ExperimentResult,
-} from "./agent/creator/analytics-history.js";
 export { costCalculator, CostCalculator } from "./cost-calculator/index.js";
 export type {
   CostBreakdown,

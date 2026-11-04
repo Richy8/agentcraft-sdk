@@ -31,21 +31,18 @@ const agent = Agent.create({
 
 ## Enabling Cache on a Tool
 
-Only tools with `security.cache.safe: true` are eligible for caching:
+Only tools with cache metadata marked as safe are eligible for conservative caching:
 
 ```ts
-import { tool } from "@deskcreate/agentcraft";
+import { tool } from "@deskcreate/agentcraft/adapters";
 
-const getWeather = tool({
-  name: "get_weather",
+const getWeather = tool("get_weather", {
   description: "Get current weather for a city.",
   params: {
     city: { type: "string", description: "City name" },
   },
-  security: {
-    sideEffect: "read",
-    cache: { safe: true, deterministic: true, ttlMs: 300_000 }, // 5 min
-  },
+  sideEffect: "read",
+  cache: { safe: true, deterministic: true, ttlMs: 300_000 }, // 5 min
   run: async ({ city }) => {
     const res = await fetch(`https://api.weather.example.com/${city}`);
     return res.json();
@@ -56,7 +53,12 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   cache: AgentCache.memory(),
-}).use(getWeather);
+});
+
+const response = await agent.run({
+  prompt: "Check the current weather in Lagos.",
+  tools: [getWeather],
+});
 ```
 
 ## Reading Cache Statistics

@@ -30,10 +30,10 @@ Agent.create({ model: Provider.openai["gpt-4o-mini"], apiKey: process.env.OPENAI
 // Anthropic
 Agent.create({ model: Provider.anthropic["claude-sonnet-4-6"], apiKey: process.env.ANTHROPIC_API_KEY! });
 Agent.create({ model: Provider.anthropic["claude-opus-4-7"], apiKey: process.env.ANTHROPIC_API_KEY! });
-Agent.create({ model: Provider.anthropic["claude-haiku-4-5-20251001"], apiKey: process.env.ANTHROPIC_API_KEY! });
+Agent.create({ model: Provider.anthropic["claude-haiku-4-5"], apiKey: process.env.ANTHROPIC_API_KEY! });
 
 // Google Gemini
-Agent.create({ model: Provider.google["gemini-2.0-flash"], apiKey: process.env.GOOGLE_API_KEY! });
+Agent.create({ model: Provider.gemini["gemini-2.5-flash"], apiKey: process.env.GOOGLE_API_KEY! });
 
 // Groq (fast inference)
 Agent.create({ model: Provider.groq["llama-3.3-70b-versatile"], apiKey: process.env.GROQ_API_KEY! });
@@ -60,7 +60,7 @@ const pool = AgentPool.create(
   [
     Agent.create({ model: Provider.openai["gpt-4o-mini"], apiKey: process.env.OPENAI_API_KEY! }),
     Agent.create({ model: Provider.groq["llama-3.3-70b-versatile"], apiKey: process.env.GROQ_API_KEY! }),
-    Agent.create({ model: Provider.anthropic["claude-haiku-4-5-20251001"], apiKey: process.env.ANTHROPIC_API_KEY! }),
+    Agent.create({ model: Provider.anthropic["claude-haiku-4-5"], apiKey: process.env.ANTHROPIC_API_KEY! }),
   ],
   { strategy: "cost" },
 );

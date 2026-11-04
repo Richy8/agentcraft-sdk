@@ -12,7 +12,7 @@ import { ApprovalQueue } from '../../agent/governance/index.js';
 import { FetchAdapter } from '../../agent/adapters/index.js';
 import { MemoryArtifactStore } from '../../artifact-store/memory.js';
 import { QuotaExceededError } from '../../errors/index.js';
-import { WritingTrait, HumanizerTrait } from '../../agent/traits/index.js';
+// WritingTrait, HumanizerTrait removed in v0.3.0
 
 // ---------------------------------------------------------------------------
 // Gate flags
@@ -52,7 +52,6 @@ function makeAgent(opts?: { cache?: ReturnType<typeof AgentCache.memory>; worksp
     apiKey: openAiKey!,
     temperature: 0,
     maxTokens,
-    traitActivation: 'auto',
     toolSelection: 'auto',
     retry: { maxAttempts: 1, backoff: 'fixed', initialDelay: 100, maxDelay: 100 },
     ...(opts?.cache && { cache: opts.cache }),
@@ -430,7 +429,7 @@ describe('live infrastructure certification', () => {
         temperature: 0,
         maxTokens,
         retry: { maxAttempts: 1, backoff: 'fixed', initialDelay: 100, maxDelay: 100 },
-      }).use(WritingTrait.create());
+      }); // WritingTrait removed in v0.3.0 — removed .use() call
 
       const summarizerAgent = Agent.create({
         model: `openai:${liveModel}`,

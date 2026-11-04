@@ -21,13 +21,21 @@ export interface OpenAIModelConfig extends BaseModelConfig {
 }
 
 export interface OpenAICompatCloudConfig extends BaseModelConfig {
-  provider: 'groq' | 'mistral' | 'xai';
+  provider: 'groq' | 'mistral' | 'xai' | 'cohere' | 'together' | 'fireworks' | 'anyscale' | 'novita' | 'openrouter';
   apiKey: string;
   baseUrl?: string;
 }
 
+export interface AzureModelConfig extends BaseModelConfig {
+  provider: 'azure';
+  apiKey: string;
+  baseUrl: string;
+  deployment?: string;
+  apiVersion?: string;
+}
+
 export interface LocalOpenAICompatConfig extends BaseModelConfig {
-  provider: 'ollama';
+  provider: 'ollama' | 'lmstudio' | 'vllm' | 'localai';
   baseUrl?: string;
 }
 
@@ -63,6 +71,7 @@ export interface VertexAIModelConfig extends BaseModelConfig {
 export type ModelConfig =
   | OpenAIModelConfig
   | OpenAICompatCloudConfig
+  | AzureModelConfig
   | LocalOpenAICompatConfig
   | DeepSeekModelConfig
   | AnthropicModelConfig

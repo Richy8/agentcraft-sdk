@@ -62,7 +62,9 @@ export interface AgentAdapter {
   readonly declaredToolNames?: string[];
   readonly dependsOn?: readonly unknown[];
   readonly metadata?: {
-    kind?: 'placeholder' | 'mcp-backed' | 'native-sdk' | 'custom';
+    kind?: 'placeholder' | 'mcp-backed' | 'native-sdk' | 'custom' | 'native-provider' | 'skill';
+    nativeToolType?: 'web_search' | 'file_search';
+    nativeToolConfig?: Record<string, unknown>;
     auth?: 'none' | 'api-key' | 'oauth' | 'aws' | 'connection-string' | 'custom';
     trustLevel?: 'trusted' | 'review-required' | 'untrusted';
     sideEffects?: Array<'none' | 'read' | 'write' | 'external'>;
@@ -82,19 +84,23 @@ export interface AgentAdapter {
   ): AgentResponse | Promise<AgentResponse>;
 }
 
-export function tool<T extends Record<string, ToolParam>>(config: {
-  name: string;
+export interface ToolSpec<P extends Record<string, ToolParam> = Record<string, ToolParam>> {
   description: string;
-  params: T;
-  security?: ToolDefinition['security'];
-  run: (args: { [K in keyof T]: InferParamType<T[K]> }) => Promise<unknown>;
-}): ToolDefinition {
-  const required = Object.entries(config.params)
+  params: P;
+  sideEffect?: 'none' | 'read' | 'write' | 'external';
+  requiresConfirmation?: boolean;
+  scopes?: string[];
+  cache?: NonNullable<ToolDefinition['security']>['cache'];
+  run: (args: { [K in keyof P]: InferParamType<P[K]> }) => Promise<unknown>;
+}
+
+export function tool<T extends Record<string, ToolParam>>(name: string, spec: ToolSpec<T>): ToolDefinition {
+  const required = Object.entries(spec.params)
     .filter(([, param]) => param.required !== false)
     .map(([key]) => key);
 
   const properties = Object.fromEntries(
-    Object.entries(config.params).map(([key, param]) => [
+    Object.entries(spec.params).map(([key, param]) => [
       key,
       {
         type: param.type,
@@ -104,17 +110,56 @@ export function tool<T extends Record<string, ToolParam>>(config: {
     ])
   );
 
+  const security: ToolDefinition['security'] | undefined =
+    spec.sideEffect !== undefined || spec.requiresConfirmation !== undefined || spec.scopes !== undefined || spec.cache !== undefined
+      ? {
+          sideEffect: spec.sideEffect ?? 'none',
+          ...(spec.requiresConfirmation !== undefined && { requiresConfirmation: spec.requiresConfirmation }),
+          ...(spec.scopes !== undefined && { scopes: spec.scopes }),
+          ...(spec.cache !== undefined && { cache: spec.cache }),
+        }
+      : undefined;
+
   const definition: ToolDefinition = {
-    name: config.name,
-    description: config.description,
+    name,
+    description: spec.description,
     parameters: { type: 'object', properties, required },
-    ...(config.security !== undefined && { security: config.security }),
+    ...(security !== undefined && { security }),
     execute: async (args: Record<string, unknown>) => {
       validateToolArguments(definition, args);
-      return config.run(args as { [K in keyof T]: InferParamType<T[K]> });
+      return spec.run(args as { [K in keyof T]: InferParamType<T[K]> });
     },
   };
   return definition;
+}
+
+export type AdapterTrustLevel = 'trusted' | 'review-required' | 'untrusted';
+export type AdapterSideEffect = 'none' | 'read' | 'write' | 'external';
+
+export interface DefineAdapterOptions {
+  auth?: 'none' | 'custom';
+  trustLevel?: AdapterTrustLevel;
+  scopes?: string[];
+}
+
+export function defineAdapter(
+  name: string,
+  tools: Record<string, ToolSpec>,
+  options?: DefineAdapterOptions
+): AgentAdapter {
+  const toolDefs = Object.entries(tools).map(([toolName, spec]) => tool(toolName, spec));
+  const sideEffects = [...new Set(toolDefs.map((t) => t.security?.sideEffect ?? 'none'))] as AdapterSideEffect[];
+  return createAdapter({
+    name,
+    tools: toolDefs,
+    metadata: {
+      kind: 'custom',
+      auth: options?.auth ?? 'none',
+      trustLevel: options?.trustLevel ?? 'trusted',
+      sideEffects,
+      scopes: options?.scopes ?? [],
+    },
+  });
 }
 
 export function createAdapter(config: {

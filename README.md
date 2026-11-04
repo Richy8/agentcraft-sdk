@@ -54,7 +54,7 @@ console.log(result.trace);
 - `AgentWorkflow` for repeatable step graphs with retries, approvals, branches, parallel fan-out, Zod-validated input, and resumable failed runs.
 - `AgentWorkspace` for shared runtime context wiring cache, adapters, tool policy, budget, events, and artifact stores once for teams and workflows.
 - `ArtifactStore` for typed durable persistence with validation, history, link traversal, capabilities, and memory/file/SQLite backends.
-- `ArtifactRegistry` for 19 built-in creator artifact schemas with custom extension support.
+- `ArtifactRegistry` for registering project-owned Zod schemas used by structured output and artifact validation.
 - `AgentEval`, `AgentReports`, distributed cache, governance queues, and semantic memory for production readiness.
 
 ## What You Can Build

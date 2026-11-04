@@ -17,6 +17,8 @@ export interface ToolCallResult {
   success: boolean;
 }
 
+export type ReasoningEffort = 'none' | 'low' | 'medium' | 'high' | 'xhigh';
+
 export interface LLMCallParams {
   prompt: string;
   systemMessage?: string;
@@ -27,6 +29,7 @@ export interface LLMCallParams {
   presencePenalty?: number;
   stopSequences?: string[];
   responseFormat?: ResponseFormat;
+  reasoning?: ReasoningEffort;
   signal?: AbortSignal;
   _providerState?: unknown;
 }
@@ -85,6 +88,12 @@ export interface ModelCapabilities {
   supportsAudio: boolean;
   supportsVideo: boolean;
   supportsFiles: boolean;
+  supportsReasoning?: boolean;
+  reasoningEffortLevels?: ReadonlyArray<'none' | 'low' | 'medium' | 'high' | 'xhigh'>;
+  supportsStructuredOutput?: boolean;
+  supportsParallelToolCalls?: boolean;
+  supportsNativeWebSearch?: boolean;
+  supportsNativeFileSearch?: boolean;
 
   optimizedFor: ReadonlyArray<'reasoning' | 'code' | 'creative' | 'speed' | 'cost' | 'quality'>;
   qualityScore: number;

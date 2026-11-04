@@ -6,7 +6,7 @@ AgentCraft follows a tiered stability model. Public entry points (`@deskcreate/a
 
 | Import path | Exports | Stability | Use for |
 | --- | --- | --- | --- |
-| `@deskcreate/agentcraft` | `Agent`, `AgentWorkflow`, `AgentTeam`, `AgentPool`, `AgentWorkspace`, `AgentCache`, `AgentMemory`, all artifact stores, all error types | **Stable** | Core runtime, most applications |
+| `@deskcreate/agentcraft` | `Agent`, `AgentWorkflow`, `AgentPool`, `AgentWorkspace`, `AgentCache`, `AgentMemory`, all artifact stores, all error types | **Stable** | Core runtime, most applications |
 | `@deskcreate/agentcraft/adapters` | `FetchAdapter`, `TavilySearchAdapter`, `DatabaseAdapter`, `ImageGenerationAdapter`, `createAdapter`, `defineAdapter`, `tool` | **Stable** | External system integration |
 | `@deskcreate/agentcraft/mcp` | `GitHubMCP`, `SlackMCP`, `FilesystemMCP`, `PostgresMCP`, `SupabaseMCP`, `BraveSearchMCP`, `FirecrawlMCP`, `FetchMCP`, `MCP`, `MCPAdapter` | **Stable** | MCP server wrappers |
 | `@deskcreate/agentcraft/team` | `AgentTeam` | **Stable** | Multi-agent coordination |

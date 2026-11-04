@@ -20,6 +20,12 @@ export function inspectModel(model: string): ModelInfo {
       tools: caps.supportsTools,
       streaming: caps.supportsStreaming,
       jsonMode: caps.supportsJsonMode,
+      reasoning: caps.supportsReasoning ?? false,
+      ...(caps.reasoningEffortLevels !== undefined && { reasoningEffortLevels: caps.reasoningEffortLevels }),
+      structuredOutput: caps.supportsStructuredOutput ?? false,
+      parallelToolCalls: caps.supportsParallelToolCalls ?? false,
+      supportsNativeWebSearch: caps.supportsNativeWebSearch ?? false,
+      supportsNativeFileSearch: caps.supportsNativeFileSearch ?? false,
     },
     pricing: {
       inputPerM: caps.costPerMInputToken,

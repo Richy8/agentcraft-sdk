@@ -3,8 +3,6 @@ export const Provider = {
     'gpt-5.5': 'openai:gpt-5.5',
     'gpt-5.4': 'openai:gpt-5.4',
     'gpt-5.4-mini': 'openai:gpt-5.4-mini',
-    'gpt-5.4-nano': 'openai:gpt-5.4-nano',
-    'gpt-5.3-codex': 'openai:gpt-5.3-codex',
     'gpt-4o': 'openai:gpt-4o',
     'gpt-4o-mini': 'openai:gpt-4o-mini',
     o1: 'openai:o1',
@@ -60,14 +58,6 @@ export const Provider = {
     'command-r-plus-08-2024': 'cohere:command-r-plus-08-2024',
     'command-r-08-2024': 'cohere:command-r-08-2024',
     'command-r7b-12-2024': 'cohere:command-r7b-12-2024',
-  },
-  perplexity: {
-    'sonar-pro': 'perplexity:sonar-pro',
-    sonar: 'perplexity:sonar',
-  },
-  cerebras: {
-    'llama3.1-70b': 'cerebras:llama3.1-70b',
-    'llama3.1-8b': 'cerebras:llama3.1-8b',
   },
   bedrock: {
     'anthropic.claude-3-7-sonnet': 'bedrock:anthropic.claude-3-7-sonnet-20250219-v1:0',

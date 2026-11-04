@@ -108,7 +108,7 @@ console.log(`Calls avoided: ${second.cache?.toolCallsAvoided}`); // → 1
 
 ## Step 4 — Enforce a Budget
 
-Prevent runaway costs by setting token or dollar limits. Hard mode throws `QuotaExceededError`; soft mode warns.
+Prevent runaway costs by setting token or dollar limits. The default `fail-closed` mode throws `QuotaExceededError` when the run exceeds its cap.
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
@@ -124,8 +124,8 @@ try {
     prompt: "Write a full novel chapter.",
     // Hard cap: throw if cost would exceed $0.01
     budget: {
-      maxCostUsd: 0.01,
-      mode: "hard",
+      maxCost: 0.01,
+      mode: "fail-closed",
     },
   });
   console.log(response.content);
@@ -202,7 +202,7 @@ console.log(feature.risks);          // → ["Cache invalidation complexity", ..
 | Cloud providers | `apiKey` (or env var) | [Provider Config](../configuration/provider-config.md) |
 | Adapters | Adapter-specific config | [Adapters](../adapters/overview.md) |
 | MCP servers | Auth token per server | [MCP](../mcp/overview.md) |
-| Budget enforcement | `budget.maxCostUsd` or `budget.maxTotalTokens` | [Budget Config](../configuration/budget-config.md) |
+| Budget enforcement | `budget.maxCost` or `budget.maxTokens` | [Budget Config](../configuration/budget-config.md) |
 | Caching | `AgentCache.memory()` / `.file()` / `.sqlite()` | [Cache Config](../configuration/cache-config.md) |
 
 ## Next Steps

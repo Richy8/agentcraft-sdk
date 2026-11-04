@@ -486,10 +486,10 @@ const approvals = ApprovalQueue.memory({
   requireReason: true,
 });
 
-const createDraft = tool({
-  name: "create_draft",
+const createDraft = tool("create_draft", {
   description: "Create a publishable draft.",
-  security: { sideEffect: "write", requiresConfirmation: true },
+  sideEffect: "write",
+  requiresConfirmation: true,
   params: {},
   run: async () => ({ created: true }),
 });

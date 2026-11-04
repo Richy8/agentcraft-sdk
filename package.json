@@ -56,6 +56,10 @@
     "./team": {
       "import": "./dist/team.js",
       "types": "./dist/team.d.ts"
+    },
+    "./skills": {
+      "import": "./dist/skills.js",
+      "types": "./dist/skills.d.ts"
     }
   },
   "scripts": {

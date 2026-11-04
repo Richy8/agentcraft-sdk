@@ -56,6 +56,18 @@ export function mapCommonError(err: unknown, config: ModelConfig): AgentCraftErr
   const status = getErrorStatus(err);
   const msg = getErrorMessage(err);
   const lower = msg.toLowerCase();
+  const code = getErrorCode(err);
+
+  if (
+    code === 'ETIMEDOUT' ||
+    code === 'ECONNABORTED' ||
+    code === 'ABORT_ERR' ||
+    err.name === 'AbortError' ||
+    lower.includes('request was aborted') ||
+    lower.includes('aborted')
+  ) {
+    return new TimeoutError(config.timeout ?? 120_000, { model, provider, code });
+  }
 
   if (status === 429) {
     if (lower.includes('quota') || lower.includes('billing') || lower.includes('insufficient')) {
@@ -81,10 +93,6 @@ export function mapCommonError(err: unknown, config: ModelConfig): AgentCraftErr
   }
   if (status === 503 || status === 529) return new ServiceUnavailableError(provider, { model });
 
-  const code = getErrorCode(err);
-  if (code === 'ETIMEDOUT' || code === 'ECONNABORTED') {
-    return new TimeoutError(config.timeout ?? 120_000, { model, provider, code });
-  }
   if (code === 'ECONNRESET' || code === 'ECONNREFUSED') {
     return new NetworkError(msg, true, { model, provider, code });
   }

@@ -165,8 +165,9 @@ import { Agent, AgentCache, PromptAssembler } from "@deskcreate/agentcraft";
 // Adapters — built-in native adapters
 import { FetchAdapter, TavilySearchAdapter, DatabaseAdapter, ImageGenerationAdapter } from "@deskcreate/agentcraft/adapters";
 
-// Team — AgentTeam, AgentWorkflow, AgentWorkspace
-import { AgentTeam, AgentWorkflow, AgentWorkspace } from "@deskcreate/agentcraft/team";
+// Team and workflow orchestration
+import { AgentTeam } from "@deskcreate/agentcraft/team";
+import { AgentWorkflow, AgentWorkspace } from "@deskcreate/agentcraft";
 
 // MCP — built-in MCP wrappers and generic MCP.connect()
 import { GitHubMCP, SlackMCP, FilesystemMCP, MCP, MCPAdapter } from "@deskcreate/agentcraft/mcp";

@@ -108,7 +108,7 @@ import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // System prompt is prepended to every run — good for role/persona
 const agent = Agent.create({
-  model: Provider.anthropic["claude-3-5-haiku-20241022"],
+  model: Provider.anthropic["claude-haiku-4-5"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
   name: "support-bot",
   system: [

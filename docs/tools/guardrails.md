@@ -97,10 +97,9 @@ console.log(response.content);
 import { Agent, blockSecretsGuardrail, Provider } from "@deskcreate/agentcraft";
 import { tool } from "@deskcreate/agentcraft/adapters";
 
-const logEvent = tool({
-  name: "log_event",
+const logEvent = tool("log_event", {
   description: "Log an event string to the audit log.",
-  security: { sideEffect: "write" },
+  sideEffect: "write",
   params: { message: { type: "string", description: "Event message." } },
   run: async ({ message }) => auditLog.write(message),
 });
@@ -129,10 +128,9 @@ console.log(response.content);
 import { Agent, blockPiiGuardrail, Provider } from "@deskcreate/agentcraft";
 import { tool } from "@deskcreate/agentcraft/adapters";
 
-const queryDatabase = tool({
-  name: "query_database",
+const queryDatabase = tool("query_database", {
   description: "Run a read query on the database.",
-  security: { sideEffect: "read" },
+  sideEffect: "read",
   params: { query: { type: "string", description: "SQL SELECT query." } },
   run: async ({ query }) => db.query(query),
 });

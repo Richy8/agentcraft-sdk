@@ -15,8 +15,6 @@ import {
   CustomStep,
   DeterministicFakeProvider,
   FileArtifactStore,
-  FileSystemAnalyticsHistoryStore,
-  FileSystemCreatorMemoryStore,
   MemoryArtifactStore,
   Provider,
   PromptAssembler,
@@ -26,13 +24,14 @@ import {
   estimateTokens,
 } from "../index.js";
 import {
-  CitationManagerAdapter,
-  LinkCheckerAdapter,
-  SeoAdapter,
+  DatabaseAdapter,
+  FetchAdapter,
+  ImageGenerationAdapter,
   TavilySearchAdapter,
+  defineAdapter,
   tool,
 } from "../adapters.js";
-import { LinearMCP } from "../mcp.js";
+import { GitHubMCP, MCP } from "../mcp.js";
 import { AgentTeam } from "../team.js";
 
 describe("public entry points", () => {
@@ -44,11 +43,13 @@ describe("public entry points", () => {
     expect(
       TavilySearchAdapter.connect({ apiKey: "key" }).declaredToolNames,
     ).toEqual(["web_search", "get_page_content"]);
-    expect(CitationManagerAdapter.connect().name).toBe("citation-manager");
-    expect(LinkCheckerAdapter.connect().name).toBe("link-checker");
-    expect(SeoAdapter.connect().name).toBe("seo");
+    expect(FetchAdapter.connect().name).toBe("fetch");
+    expect(DatabaseAdapter.connect({ connectionString: "postgres://localhost/db" }).name).toBe("database");
+    expect(ImageGenerationAdapter.connect({ provider: "openai", apiKey: "key" }).name).toBe("image-generation");
     expect(tool).toBeDefined();
-    expect(LinearMCP.connect({ apiKey: "key" }).name).toBe("linear-mcp");
+    expect(defineAdapter).toBeDefined();
+    expect(GitHubMCP.connect({ token: "token", packageSpec: "@artificable/github-mcp-server@0.1.0" }).name).toBe("github-mcp");
+    expect(MCP.connect({ url: "https://example.com" }).name).toBe("mcp");
     expect(AgentTeam).toBeDefined();
     expect(DeterministicFakeProvider).toBeDefined();
     expect(costCalculator).toBeDefined();
@@ -69,12 +70,6 @@ describe("public entry points", () => {
     expect(MemoryArtifactStore()).toBeDefined();
     expect(FileArtifactStore({ root: "/tmp/agentcraft-artifacts" })).toBeDefined();
     expect(SQLiteArtifactStore).toBeDefined();
-    expect(ArtifactRegistry.lookup("Draft")).toBeDefined();
-    expect(
-      new FileSystemCreatorMemoryStore("/tmp/agentcraft-memory").root,
-    ).toContain("agentcraft-memory");
-    expect(
-      new FileSystemAnalyticsHistoryStore("/tmp/agentcraft-analytics").root,
-    ).toContain("agentcraft-analytics");
+    expect(ArtifactRegistry.list()).toBeDefined();
   });
 });

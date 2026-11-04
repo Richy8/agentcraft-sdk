@@ -12,6 +12,12 @@ function caps(config: {
   audio?: boolean;
   video?: boolean;
   files?: boolean;
+  reasoning?: boolean;
+  reasoningEffortLevels?: ModelCapabilities['reasoningEffortLevels'];
+  structuredOutput?: boolean;
+  parallelToolCalls?: boolean;
+  nativeWebSearch?: boolean;
+  nativeFileSearch?: boolean;
   optimizedFor?: Optimization[];
   qualityScore: number;
   speedScore: number;
@@ -40,6 +46,12 @@ function caps(config: {
     supportsAudio: config.audio ?? false,
     supportsVideo: config.video ?? false,
     supportsFiles: config.files ?? false,
+    ...(config.reasoning !== undefined && { supportsReasoning: config.reasoning }),
+    ...(config.reasoningEffortLevels !== undefined && { reasoningEffortLevels: config.reasoningEffortLevels }),
+    ...(config.structuredOutput !== undefined && { supportsStructuredOutput: config.structuredOutput }),
+    ...(config.parallelToolCalls !== undefined && { supportsParallelToolCalls: config.parallelToolCalls }),
+    ...(config.nativeWebSearch !== undefined && { supportsNativeWebSearch: config.nativeWebSearch }),
+    ...(config.nativeFileSearch !== undefined && { supportsNativeFileSearch: config.nativeFileSearch }),
     optimizedFor: config.optimizedFor ?? ['quality'],
     qualityScore: config.qualityScore,
     speedScore: config.speedScore,
@@ -60,28 +72,25 @@ function caps(config: {
   };
 }
 
-export const MODEL_CATALOG: Record<string, ModelCapabilities> = {
-  'openai:gpt-5': caps({ maxContextLength: 256_000, maxOutputTokens: 32_000, tools: true, vision: true, qualityScore: 10, speedScore: 7, costPerMInputToken: 5, costPerMOutputToken: 30, cachedInputDiscount: 0.5 }),
-  'openai:gpt-5-mini': caps({ maxContextLength: 128_000, maxOutputTokens: 16_000, tools: true, vision: true, optimizedFor: ['cost', 'speed'], qualityScore: 7, speedScore: 8, costPerMInputToken: 0.75, costPerMOutputToken: 4.5, cachedInputDiscount: 0.5 }),
-  'openai:gpt-5-nano': caps({ maxContextLength: 128_000, maxOutputTokens: 8_000, tools: true, vision: true, optimizedFor: ['cost', 'speed'], qualityScore: 5, speedScore: 9, costPerMInputToken: 0.2, costPerMOutputToken: 1.25, cachedInputDiscount: 0.5 }),
-  'openai:gpt-5.5': caps({ maxContextLength: 256_000, maxOutputTokens: 32_000, tools: true, vision: true, qualityScore: 10, speedScore: 7, costPerMInputToken: 5, costPerMOutputToken: 30, cachedInputDiscount: 0.5 }),
-  'openai:gpt-5.4': caps({ maxContextLength: 256_000, maxOutputTokens: 32_000, tools: true, vision: true, qualityScore: 9, speedScore: 7, costPerMInputToken: 2.5, costPerMOutputToken: 15, cachedInputDiscount: 0.5 }),
-  'openai:gpt-5.4-mini': caps({ maxContextLength: 128_000, maxOutputTokens: 16_000, tools: true, vision: true, optimizedFor: ['cost', 'speed'], qualityScore: 7, speedScore: 8, costPerMInputToken: 0.75, costPerMOutputToken: 4.5, cachedInputDiscount: 0.5 }),
-  'openai:gpt-5.4-nano': caps({ maxContextLength: 128_000, maxOutputTokens: 8_000, tools: true, vision: true, optimizedFor: ['cost', 'speed'], qualityScore: 5, speedScore: 9, costPerMInputToken: 0.2, costPerMOutputToken: 1.25, cachedInputDiscount: 0.5 }),
-  'openai:gpt-5.3-codex': caps({ maxContextLength: 200_000, maxOutputTokens: 32_000, tools: true, optimizedFor: ['code'], qualityScore: 9, speedScore: 7, costPerMInputToken: 1.75, costPerMOutputToken: 14, cachedInputDiscount: 0.5 }),
-  'openai:gpt-4o': caps({ maxContextLength: 128_000, maxOutputTokens: 16_000, tools: true, vision: true, qualityScore: 9, speedScore: 7, costPerMInputToken: 2.5, costPerMOutputToken: 10, cachedInputDiscount: 0.5 }),
-  'openai:gpt-4o-mini': caps({ maxContextLength: 128_000, maxOutputTokens: 16_000, tools: true, vision: true, optimizedFor: ['cost', 'speed'], qualityScore: 6, speedScore: 8, costPerMInputToken: 0.15, costPerMOutputToken: 0.6, cachedInputDiscount: 0.5 }),
-  'openai:o1': caps({ maxContextLength: 200_000, maxOutputTokens: 100_000, tools: true, vision: true, optimizedFor: ['reasoning'], qualityScore: 10, speedScore: 3, costPerMInputToken: 15, costPerMOutputToken: 60, cachedInputDiscount: 0.5 }),
-  'openai:o3': caps({ maxContextLength: 200_000, maxOutputTokens: 100_000, tools: true, vision: true, optimizedFor: ['reasoning', 'code'], qualityScore: 10, speedScore: 4, costPerMInputToken: 2, costPerMOutputToken: 8, cachedInputDiscount: 0.75 }),
-  'openai:o4-mini': caps({ maxContextLength: 200_000, maxOutputTokens: 100_000, tools: true, vision: true, optimizedFor: ['reasoning', 'cost'], qualityScore: 8, speedScore: 7, costPerMInputToken: 1.1, costPerMOutputToken: 4.4, cachedInputDiscount: 0.75 }),
-  'openai:o3-deep-research': caps({ maxContextLength: 200_000, maxOutputTokens: 32_000, tools: true, optimizedFor: ['reasoning'], qualityScore: 10, speedScore: 3, costPerMInputToken: 5, costPerMOutputToken: 20 }),
-  'openai:o4-mini-deep-research': caps({ maxContextLength: 200_000, maxOutputTokens: 32_000, tools: true, optimizedFor: ['reasoning', 'cost'], qualityScore: 8, speedScore: 6, costPerMInputToken: 1, costPerMOutputToken: 4 }),
+const OPENAI_REASONING_LEVELS = ['none', 'low', 'medium', 'high', 'xhigh'] as const satisfies ModelCapabilities['reasoningEffortLevels'];
 
-  'anthropic:claude-opus-4-7': caps({ maxContextLength: 1_000_000, maxOutputTokens: 32_000, tools: true, vision: true, files: true, qualityScore: 10, speedScore: 4, costPerMInputToken: 5, costPerMOutputToken: 25, cachedInputDiscount: 0.9 }),
-  'anthropic:claude-opus-4-6': caps({ maxContextLength: 1_000_000, maxOutputTokens: 32_000, tools: true, vision: true, files: true, qualityScore: 10, speedScore: 4, costPerMInputToken: 5, costPerMOutputToken: 25, cachedInputDiscount: 0.9 }),
-  'anthropic:claude-sonnet-4-6': caps({ maxContextLength: 1_000_000, maxOutputTokens: 64_000, tools: true, vision: true, files: true, qualityScore: 9, speedScore: 7, costPerMInputToken: 3, costPerMOutputToken: 15, cachedInputDiscount: 0.9 }),
-  'anthropic:claude-sonnet-4-5': caps({ maxContextLength: 1_000_000, maxOutputTokens: 64_000, tools: true, vision: true, files: true, qualityScore: 9, speedScore: 7, costPerMInputToken: 3, costPerMOutputToken: 15, cachedInputDiscount: 0.9 }),
-  'anthropic:claude-haiku-4-5': caps({ maxContextLength: 200_000, maxOutputTokens: 16_000, tools: true, vision: true, optimizedFor: ['speed'], qualityScore: 6, speedScore: 9, costPerMInputToken: 1, costPerMOutputToken: 5, cachedInputDiscount: 0.9 }),
+export const MODEL_CATALOG: Record<string, ModelCapabilities> = {
+  'openai:gpt-5.5': caps({ maxContextLength: 1_050_000, maxOutputTokens: 128_000, tools: true, vision: true, reasoning: true, reasoningEffortLevels: OPENAI_REASONING_LEVELS, structuredOutput: true, parallelToolCalls: true, nativeWebSearch: true, nativeFileSearch: true, qualityScore: 10, speedScore: 7, costPerMInputToken: 5, costPerMOutputToken: 30, cachedInputDiscount: 0.5, pricingTiers: [{ minTokens: 0, inputPerM: 5, outputPerM: 30 }, { minTokens: 272_000, inputPerM: 10, outputPerM: 45 }] }),
+  'openai:gpt-5.4': caps({ maxContextLength: 1_050_000, maxOutputTokens: 128_000, tools: true, vision: true, reasoning: true, reasoningEffortLevels: OPENAI_REASONING_LEVELS, structuredOutput: true, parallelToolCalls: true, nativeWebSearch: true, nativeFileSearch: true, qualityScore: 9, speedScore: 7, costPerMInputToken: 2.5, costPerMOutputToken: 15, cachedInputDiscount: 0.5, pricingTiers: [{ minTokens: 0, inputPerM: 2.5, outputPerM: 15 }, { minTokens: 272_000, inputPerM: 5, outputPerM: 22.5 }] }),
+  'openai:gpt-5.4-mini': caps({ maxContextLength: 1_050_000, maxOutputTokens: 32_000, tools: true, vision: true, structuredOutput: true, parallelToolCalls: true, nativeWebSearch: true, nativeFileSearch: true, optimizedFor: ['cost', 'speed'], qualityScore: 7, speedScore: 8, costPerMInputToken: 0.75, costPerMOutputToken: 4.5, cachedInputDiscount: 0.5 }),
+  'openai:gpt-4o': caps({ maxContextLength: 128_000, maxOutputTokens: 16_000, tools: true, vision: true, structuredOutput: true, parallelToolCalls: true, nativeWebSearch: true, nativeFileSearch: true, qualityScore: 9, speedScore: 7, costPerMInputToken: 2.5, costPerMOutputToken: 10, cachedInputDiscount: 0.5 }),
+  'openai:gpt-4o-mini': caps({ maxContextLength: 128_000, maxOutputTokens: 16_000, tools: true, vision: true, structuredOutput: true, parallelToolCalls: true, nativeWebSearch: true, nativeFileSearch: true, optimizedFor: ['cost', 'speed'], qualityScore: 6, speedScore: 8, costPerMInputToken: 0.15, costPerMOutputToken: 0.6, cachedInputDiscount: 0.5 }),
+  'openai:o1': caps({ maxContextLength: 200_000, maxOutputTokens: 100_000, tools: true, vision: true, reasoning: true, reasoningEffortLevels: OPENAI_REASONING_LEVELS, optimizedFor: ['reasoning'], qualityScore: 10, speedScore: 3, costPerMInputToken: 15, costPerMOutputToken: 60, cachedInputDiscount: 0.5 }),
+  'openai:o3': caps({ maxContextLength: 200_000, maxOutputTokens: 100_000, tools: true, vision: true, reasoning: true, reasoningEffortLevels: OPENAI_REASONING_LEVELS, structuredOutput: true, nativeWebSearch: true, nativeFileSearch: true, optimizedFor: ['reasoning', 'code'], qualityScore: 10, speedScore: 4, costPerMInputToken: 2, costPerMOutputToken: 8, cachedInputDiscount: 0.75 }),
+  'openai:o4-mini': caps({ maxContextLength: 200_000, maxOutputTokens: 100_000, tools: true, vision: true, reasoning: true, reasoningEffortLevels: OPENAI_REASONING_LEVELS, structuredOutput: true, nativeWebSearch: true, nativeFileSearch: true, optimizedFor: ['reasoning', 'cost'], qualityScore: 8, speedScore: 7, costPerMInputToken: 1.1, costPerMOutputToken: 4.4, cachedInputDiscount: 0.75 }),
+  'openai:o3-deep-research': caps({ maxContextLength: 200_000, maxOutputTokens: 32_000, tools: true, reasoning: true, reasoningEffortLevels: OPENAI_REASONING_LEVELS, optimizedFor: ['reasoning'], qualityScore: 10, speedScore: 3, costPerMInputToken: 5, costPerMOutputToken: 20 }),
+  'openai:o4-mini-deep-research': caps({ maxContextLength: 200_000, maxOutputTokens: 32_000, tools: true, reasoning: true, reasoningEffortLevels: OPENAI_REASONING_LEVELS, optimizedFor: ['reasoning', 'cost'], qualityScore: 8, speedScore: 6, costPerMInputToken: 1, costPerMOutputToken: 4 }),
+
+  'anthropic:claude-opus-4-7': caps({ maxContextLength: 1_000_000, maxOutputTokens: 32_000, tools: true, vision: true, files: true, reasoning: true, structuredOutput: true, nativeWebSearch: true, qualityScore: 10, speedScore: 4, costPerMInputToken: 5, costPerMOutputToken: 25, cachedInputDiscount: 0.9 }),
+  'anthropic:claude-opus-4-6': caps({ maxContextLength: 1_000_000, maxOutputTokens: 32_000, tools: true, vision: true, files: true, reasoning: true, structuredOutput: true, nativeWebSearch: true, qualityScore: 10, speedScore: 4, costPerMInputToken: 5, costPerMOutputToken: 25, cachedInputDiscount: 0.9 }),
+  'anthropic:claude-sonnet-4-6': caps({ maxContextLength: 1_000_000, maxOutputTokens: 64_000, tools: true, vision: true, files: true, reasoning: true, structuredOutput: true, nativeWebSearch: true, qualityScore: 9, speedScore: 7, costPerMInputToken: 3, costPerMOutputToken: 15, cachedInputDiscount: 0.9 }),
+  'anthropic:claude-sonnet-4-5': caps({ maxContextLength: 1_000_000, maxOutputTokens: 64_000, tools: true, vision: true, files: true, reasoning: true, structuredOutput: true, nativeWebSearch: true, qualityScore: 9, speedScore: 7, costPerMInputToken: 3, costPerMOutputToken: 15, cachedInputDiscount: 0.9 }),
+  'anthropic:claude-haiku-4-5': caps({ maxContextLength: 200_000, maxOutputTokens: 16_000, tools: true, vision: true, structuredOutput: true, optimizedFor: ['speed'], qualityScore: 6, speedScore: 9, costPerMInputToken: 1, costPerMOutputToken: 5, cachedInputDiscount: 0.9 }),
 
   'gemini:gemini-3.1-pro-preview': caps({ maxContextLength: 2_000_000, maxOutputTokens: 65_000, tools: true, vision: true, audio: true, qualityScore: 10, speedScore: 6, costPerMInputToken: 2, costPerMOutputToken: 12, cachedInputDiscount: 0.9 }),
   'gemini:gemini-3-flash-preview': caps({ maxContextLength: 1_000_000, maxOutputTokens: 65_000, tools: true, vision: true, audio: true, optimizedFor: ['speed'], qualityScore: 8, speedScore: 8, costPerMInputToken: 0.5, costPerMOutputToken: 3, cachedInputDiscount: 0.9 }),
@@ -93,7 +102,7 @@ export const MODEL_CATALOG: Record<string, ModelCapabilities> = {
   'deepseek:deepseek-v4': caps({ maxContextLength: 1_000_000, maxOutputTokens: 384_000, tools: true, optimizedFor: ['cost', 'code'], qualityScore: 8, speedScore: 7, costPerMInputToken: 0.3, costPerMOutputToken: 0.5, cachedInputDiscount: 0.98 }),
   'deepseek:deepseek-v4-flash': caps({ maxContextLength: 1_000_000, maxOutputTokens: 384_000, tools: true, optimizedFor: ['cost', 'code'], qualityScore: 7, speedScore: 8, costPerMInputToken: 0.14, costPerMOutputToken: 0.28, cachedInputDiscount: 0.98 }),
   'deepseek:deepseek-v4-pro': caps({ maxContextLength: 1_000_000, maxOutputTokens: 384_000, tools: true, optimizedFor: ['quality', 'code', 'reasoning'], qualityScore: 9, speedScore: 6, costPerMInputToken: 0.435, costPerMOutputToken: 0.87, cachedInputDiscount: 0.99 }),
-  'deepseek:deepseek-r1': caps({ maxContextLength: 1_000_000, maxOutputTokens: 32_000, tools: true, optimizedFor: ['reasoning'], qualityScore: 9, speedScore: 5, costPerMInputToken: 0.55, costPerMOutputToken: 2.19, cachedInputDiscount: 0.98 }),
+  'deepseek:deepseek-r1': caps({ maxContextLength: 1_000_000, maxOutputTokens: 32_000, tools: true, reasoning: true, optimizedFor: ['reasoning'], qualityScore: 9, speedScore: 5, costPerMInputToken: 0.55, costPerMOutputToken: 2.19, cachedInputDiscount: 0.98 }),
 
   'xai:grok-4-3': caps({ maxContextLength: 256_000, maxOutputTokens: 16_000, tools: true, vision: true, optimizedFor: ['quality', 'reasoning'], qualityScore: 9, speedScore: 7, costPerMInputToken: 1.8, costPerMOutputToken: 9 }),
   'xai:grok-4-20': caps({ maxContextLength: 2_000_000, maxOutputTokens: 32_000, tools: true, vision: true, optimizedFor: ['quality'], qualityScore: 9, speedScore: 6, costPerMInputToken: 2, costPerMOutputToken: 6 }),
@@ -138,7 +147,7 @@ const PRICING_SOURCE_BY_PROVIDER: Record<string, { sourceUrl: string; notes?: st
   __default__: { sourceUrl: 'package-default', notes: 'Fallback estimate for unknown models; do not use for billing.' },
 };
 
-const PRICING_UPDATED_AT = '2026-05-08';
+const PRICING_UPDATED_AT = '2026-05-29';
 
 for (const [key, modelCaps] of Object.entries(MODEL_CATALOG)) {
   const provider = key.includes(':') ? key.split(':')[0]! : '__default__';

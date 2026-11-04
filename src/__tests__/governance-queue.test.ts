@@ -15,10 +15,10 @@ describe("ApprovalQueue", () => {
       expiresInMs: 60_000,
       requireReason: true,
     });
-    const writeTool = tool({
-      name: "write_page",
+    const writeTool = tool("write_page", {
       description: "Write a page.",
-      security: { sideEffect: "write", requiresConfirmation: true },
+      sideEffect: "write",
+      requiresConfirmation: true,
       params: { title: { type: "string", description: "Title" } },
       run: async ({ title }) => ({ title }),
     });
@@ -43,10 +43,10 @@ describe("ApprovalQueue", () => {
   });
 
   it("preserves inline approval callback behavior without a queue", async () => {
-    const writeTool = tool({
-      name: "write_inline",
+    const writeTool = tool("write_inline", {
       description: "Write inline.",
-      security: { sideEffect: "write", requiresConfirmation: true },
+      sideEffect: "write",
+      requiresConfirmation: true,
       params: {},
       run: async () => "ok",
     });
@@ -79,10 +79,10 @@ describe("ApprovalQueue", () => {
 
   it("denial prevents execution with an actionable approval status", async () => {
     const queue = ApprovalQueue.memory();
-    const writeTool = tool({
-      name: "write_denied",
+    const writeTool = tool("write_denied", {
       description: "Denied write.",
-      security: { sideEffect: "write", requiresConfirmation: true },
+      sideEffect: "write",
+      requiresConfirmation: true,
       params: {},
       run: async () => "should-not-run",
     });
@@ -149,10 +149,10 @@ describe("ApprovalQueue", () => {
 
   it("can be used inside workflow steps for queued write previews", async () => {
     const queue = ApprovalQueue.memory();
-    const writeTool = tool({
-      name: "write_workflow",
+    const writeTool = tool("write_workflow", {
       description: "Workflow write.",
-      security: { sideEffect: "write", requiresConfirmation: true },
+      sideEffect: "write",
+      requiresConfirmation: true,
       params: {},
       run: async () => "ok",
     });

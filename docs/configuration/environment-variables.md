@@ -8,7 +8,7 @@ AgentCraft reads credentials and feature flags from environment variables. Unit 
 | --------------------- | -------------------------------- | -------------------------------------------- |
 | `OPENAI_API_KEY`      | OpenAI provider                  | Model calls using `Provider.openai[...]`.    |
 | `ANTHROPIC_API_KEY`   | Anthropic provider               | Model calls using `Provider.anthropic[...]`. |
-| `GOOGLE_API_KEY`      | Google Gemini provider           | Model calls using `Provider.google[...]`.    |
+| `GOOGLE_API_KEY`      | Google Gemini provider           | Model calls using `Provider.gemini[...]`.    |
 | `GROQ_API_KEY`        | Groq provider                    | Model calls using `Provider.groq[...]`.      |
 | `COHERE_API_KEY`      | Cohere provider                  | Model calls using `Provider.cohere[...]`.    |
 | `TOGETHER_API_KEY`    | OpenAI-compatible endpoint       | Pass as `apiKey` with a custom `baseUrl`.    |

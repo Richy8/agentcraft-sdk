@@ -435,20 +435,7 @@ workspace.events.on("cost.updated", ({ cost }) => {
 });
 ```
 
-If you need to handle subscriber errors, pass `onHandlerError` when creating the workspace:
-
-```ts
-import { AgentWorkspace } from "@deskcreate/agentcraft";
-
-const workspace = new AgentWorkspace({
-  // onHandlerError is called instead of silently swallowing errors
-  eventOptions: {
-    onHandlerError: (error, { event }) => {
-      console.error(`Event handler error on "${event}":`, error);
-    },
-  },
-});
-```
+Workspace event subscribers are observers. Handler errors are isolated so they do not break the agent run that emitted the event.
 
 ## `AgentEventMap` Type Reference
 

@@ -2,12 +2,12 @@
 
 Composing prompts from files and templates.
 
-## `promptFile()` Shorthand
+## Prompt Files
 
 Load a single prompt file directly in `agent.run()`:
 
 ```ts
-import { Agent, Provider, promptFile } from "@deskcreate/agentcraft";
+import { Agent, Provider } from "@deskcreate/agentcraft";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -15,7 +15,7 @@ const agent = Agent.create({
 });
 
 const response = await agent.run({
-  prompt: promptFile("./prompts/summarize.md"),
+  promptFile: "./prompts/summarize.md",
 });
 ```
 
@@ -31,16 +31,13 @@ Focus on practical implications for developers.
 Inject variables into prompt templates:
 
 ```ts
-import { promptFile } from "@deskcreate/agentcraft";
-
 const response = await agent.run({
-  prompt: promptFile("./prompts/review.md", {
-    variables: {
-      language: "TypeScript",
-      context: "production codebase",
-      focus: "security vulnerabilities",
-    },
-  }),
+  promptFile: "./prompts/review.md",
+  vars: {
+    language: "TypeScript",
+    context: "production codebase",
+    focus: "security vulnerabilities",
+  },
 });
 ```
 
@@ -56,24 +53,20 @@ Focus on {{focus}}.
 Combine multiple prompt fragments into a single assembled prompt:
 
 ```ts
-import { PromptAssembler } from "@deskcreate/agentcraft";
+import { FileLoader, PromptAssembler } from "@deskcreate/agentcraft";
 
-const assembler = new PromptAssembler({
-  root: "./prompts",
-  mode: "concat",
+const assembler = new PromptAssembler(new FileLoader());
+
+const assembled = await assembler.assemble({
+  mode: "file",
+  file: "prompts/summarize.md",
 });
-
-const assembled = await assembler.assemble([
-  "personas/technical-writer.md",
-  "tasks/summarize.md",
-  "constraints/brevity.md",
-]);
 
 const response = await agent.run({
-  prompt: assembled.content,
+  prompt: assembled.prompt,
 });
 
-console.log(`Assembled ${assembled.stats.fileCount} files, ${assembled.stats.totalBytes} bytes`);
+console.log(`Assembled ${assembled.stats.partialsCount} partials`);
 ```
 
 ## File Structure Conventions
@@ -100,15 +93,14 @@ prompts/
 
 | Mode | Behavior |
 | --- | --- |
-| `concat` | Joins files with newlines |
-| `sections` | Wraps each file in a labeled section |
-| `merge` | De-duplicates overlapping instructions |
+| `file` | Loads one prompt file and resolves `{{include ...}}` partials |
+| `inline` | Assembles an inline prompt with variable/config injection |
 
 ```ts
-const assembler = new PromptAssembler({
-  root: "./prompts",
-  mode: "sections",
-  sectionSeparator: "\n\n---\n\n",
+const assembled = await assembler.assemble({
+  mode: "inline",
+  content: "Write a {{tone}} summary for {{audience}}.",
+  vars: { tone: "concise", audience: "engineers" },
 });
 ```
 

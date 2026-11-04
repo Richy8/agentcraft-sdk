@@ -1,10 +1,17 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { UnsupportedCapabilityError } from '../errors/index.js';
 import type { AgentCraftError } from '../errors/index.js';
 import type { ProviderDefinition } from '../provider-registry/registry.js';
 import type { AnthropicModelConfig, ModelConfig } from '../types/config.types.js';
-import type { FinishReason, LLMCallParams, LLMResponse, StreamChunk, ToolCall } from '../types/provider.types.js';
+import type { FinishReason, LLMCallParams, LLMResponse, ReasoningEffort, StreamChunk, ToolCall } from '../types/provider.types.js';
 import { mapCommonError } from './shared/map-error.js';
 import type { ProviderProtocol, ToolDefinition, ToolResult } from './types.js';
+
+function reasoningEffortToThinkingBudget(effort: ReasoningEffort | undefined): number | undefined {
+  if (!effort || effort === 'none') return undefined;
+  const budgets: Record<string, number> = { low: 1_024, medium: 8_192, high: 32_768, xhigh: 64_000 };
+  return budgets[effort];
+}
 
 type AnthropicState = { messages: Anthropic.MessageParam[] };
 
@@ -16,7 +23,10 @@ function mapAnthropicFinishReason(reason: string | null | undefined): FinishReas
 
 export class AnthropicProtocol implements ProviderProtocol {
   createClient(config: ModelConfig, _definition: ProviderDefinition): Anthropic {
-    return new Anthropic({ apiKey: (config as AnthropicModelConfig).apiKey });
+    return new Anthropic({
+      apiKey: (config as AnthropicModelConfig).apiKey,
+      ...(config.timeout !== undefined && { timeout: config.timeout }),
+    });
   }
 
   formatRequest(params: LLMCallParams, config: ModelConfig): Anthropic.MessageCreateParamsNonStreaming {
@@ -31,6 +41,8 @@ export class AnthropicProtocol implements ProviderProtocol {
     if (params.temperature !== undefined) request['temperature'] = params.temperature;
     if (params.topP !== undefined) request['top_p'] = params.topP;
     if (params.stopSequences !== undefined) request['stop_sequences'] = params.stopSequences;
+    const thinkingBudget = reasoningEffortToThinkingBudget(params.reasoning);
+    if (thinkingBudget !== undefined) request['thinking'] = { type: 'enabled', budget_tokens: thinkingBudget };
 
     return request as unknown as Anthropic.MessageCreateParamsNonStreaming;
   }
@@ -42,10 +54,13 @@ export class AnthropicProtocol implements ProviderProtocol {
     return base as unknown as Anthropic.MessageCreateParamsNonStreaming;
   }
 
-  async callRaw(client: unknown, nativeRequest: unknown): Promise<unknown> {
+  async callRaw(client: unknown, nativeRequest: unknown, runParams: LLMCallParams): Promise<unknown> {
     const anthropic = client as Anthropic;
     const params = nativeRequest as Anthropic.MessageCreateParamsNonStreaming;
-    return anthropic.messages.create(params);
+    const requestOptions: Anthropic.RequestOptions = {
+      ...(runParams.signal !== undefined && { signal: runParams.signal }),
+    };
+    return anthropic.messages.create(params, requestOptions);
   }
 
   extractResponse(raw: unknown): LLMResponse {
@@ -55,6 +70,14 @@ export class AnthropicProtocol implements ProviderProtocol {
       .map((block) => block.text)
       .join('');
 
+    // Thinking blocks carry their own token count in the content block metadata
+    const thinkingTokens = response.content
+      .filter((block): block is Anthropic.ThinkingBlock => block.type === 'thinking')
+      .reduce((sum, block) => {
+        const meta = block as unknown as Record<string, unknown>;
+        return sum + (typeof meta.thinking_tokens === 'number' ? meta.thinking_tokens : 0);
+      }, 0);
+
     return {
       success: true,
       content,
@@ -62,6 +85,7 @@ export class AnthropicProtocol implements ProviderProtocol {
         prompt: response.usage.input_tokens,
         completion: response.usage.output_tokens,
         total: response.usage.input_tokens + response.usage.output_tokens,
+        ...(thinkingTokens > 0 && { reasoning: thinkingTokens }),
       },
       finishReason: mapAnthropicFinishReason(response.stop_reason),
       toolCalls: this.extractToolCalls(raw),
@@ -70,6 +94,11 @@ export class AnthropicProtocol implements ProviderProtocol {
   }
 
   formatTools(tools: ToolDefinition[]): Anthropic.Tool[] {
+    for (const tool of tools) {
+      if (tool.nativeSpec) {
+        throw new UnsupportedCapabilityError(String(tool.nativeSpec.type), 'anthropic', 'standard-api');
+      }
+    }
     return tools.map((tool) => ({
       name: tool.name,
       description: tool.description,

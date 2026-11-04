@@ -37,10 +37,9 @@ export class FetchAdapter {
         readOnly: true,
       },
       tools: [
-        tool({
-          name: 'fetch_url',
+        tool('fetch_url', {
           description: 'Fetch a URL using domain, protocol, content-type, size, and timeout guardrails.',
-          security: { sideEffect: 'external', scopes: ['web:read'] },
+          sideEffect: 'external',
           params: {
             url: { type: 'string', description: 'Absolute HTTP or HTTPS URL to fetch.' },
           },

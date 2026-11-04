@@ -1,49 +1,120 @@
-import { Agent, Provider } from "@deskcreate/agentcraft";
-import {
-  FetchAdapter,
-  TavilySearchAdapter,
-} from "@deskcreate/agentcraft/adapters";
-import { MemoryMCP } from "@deskcreate/agentcraft/mcp";
+/**
+ * Skills + MCP + Memory — a composable agent
+ *
+ * Demonstrates:
+ *  - Skill.define() for injecting tone/format constraints (Level 1 + Level 2)
+ *  - FilesystemMCP for scoped local file access
+ *  - AgentMemory for cross-run fact persistence
+ *  - MCP.connect() generic factory for a custom stdio MCP server
+ */
+
+import { Agent, AgentMemory, Provider } from "@deskcreate/agentcraft";
+import { Skill } from "@deskcreate/agentcraft/skills";
+import { FetchAdapter } from "@deskcreate/agentcraft/adapters";
+import { FilesystemMCP, MCP } from "@deskcreate/agentcraft/mcp";
+
+// ---------------------------------------------------------------------------
+// Define a skill — injected as Level 1 (system prompt) + Level 2 (tool)
+// ---------------------------------------------------------------------------
+
+const releaseWriter = Skill.define({
+  name: "release-writer",
+  description:
+    "Drafts concise, customer-visible release notes. Each note has a headline, one-sentence impact, and a callout for breaking changes.",
+  instructions: `
+## Release Note Contract
+
+Structure every note as:
+  1. **Headline** — verb + noun, present tense (e.g. "Adds streaming support for tool calls")
+  2. **Impact** — one sentence: who benefits and how
+  3. **Breaking?** — "None" or a short description of what callers must update
+
+Rules:
+  - Maximum 80 words
+  - No marketing language ("game-changing", "revolutionary")
+  - Active voice
+  - End with: <!-- end -->
+  `.trim(),
+  files: {
+    "tone-guide.txt": `
+Audience: developers reading a changelog
+Voice: direct, precise, no fluff
+Good: "Reduces cold-start latency by 40% by pre-warming the provider pool."
+Bad: "We are excited to announce major performance improvements!"
+    `.trim(),
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Semantic memory — persists facts across agent runs
+// ---------------------------------------------------------------------------
+
+const memory = AgentMemory.create({ backend: "local" });
+
+// ---------------------------------------------------------------------------
+// Agent — skill + filesystem MCP + fetch + memory
+// ---------------------------------------------------------------------------
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
+  memory,
 })
-  // MemoryMCP is a built-in MCP wrapper. It launches the official memory server
-  // through stdio and exposes memory tools to the agent.
-  // filePath is optional. Provide it when you want memory stored in a predictable
-  // local file for demos or small internal workflows.
-  .use(MemoryMCP.connect({ filePath: "./.agentcraft-memory.json" }))
-  // FetchAdapter is a native adapter, not MCP. It lets the agent fetch
-  // trusted web pages while MemoryMCP handles continuity across runs.
-  .use(FetchAdapter.connect({ allowedDomains: ["docs.example.com"] }))
-  // TavilySearchAdapter provides web search capability.
-  .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
+  .use(releaseWriter)
+  .use(
+    // FilesystemMCP gives the agent scoped read access to local files
+    FilesystemMCP.connect({
+      roots: ["./CHANGELOG.md"],
+      allowedTools: ["read_file"],
+    }),
+  )
+  .use(
+    // FetchAdapter for trusted external reads
+    FetchAdapter.connect({
+      allowedDomains: ["docs.example.com"],
+    }),
+  );
+
+// ---------------------------------------------------------------------------
+// Run 1 — store a project fact in memory
+// ---------------------------------------------------------------------------
 
 await agent.run({
   prompt:
-    "Remember that our preferred release-note tone is concise, customer-visible, and practical.",
-  toolPolicy: {
-    timeoutMs: 8_000,
-    // readOnly false allows the memory server to write/update memory. Keep this
-    // true for analysis-only agents and false only when persistence is intended.
-    readOnly: false,
-  },
-  budget: {
-    maxToolCalls: 2,
-  },
+    "Remember: our product is called AgentCraft and our primary users are backend engineers.",
+  budget: { maxToolCalls: 1 },
 });
+
+// ---------------------------------------------------------------------------
+// Run 2 — draft a release note using the skill and remembered context
+// ---------------------------------------------------------------------------
 
 const response = await agent.run({
   prompt:
-    "Using the remembered release-note tone, research https://docs.example.com/changelog and draft a short release summary.",
-  toolPolicy: {
-    timeoutMs: 12_000,
-    readOnly: false,
-  },
-  budget: {
-    maxToolCalls: 6,
-  },
+    "Draft a release note for the new Skill.fromGitHub() feature that lets agents load skills from any public GitHub repo.",
+  budget: { maxToolCalls: 3 },
 });
 
 console.log(response.content);
+
+// ---------------------------------------------------------------------------
+// Generic MCP.connect() — connect any stdio MCP package
+// ---------------------------------------------------------------------------
+
+const genericAgent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+}).use(
+  MCP.connect({
+    command: "npx",
+    args: ["-y", "@modelcontextprotocol/server-filesystem@0.6.2", "./docs"],
+    allowedTools: ["read_file", "list_directory"],
+  }),
+);
+
+const docsResponse = await genericAgent.run({
+  prompt: "List the top-level files in the docs directory.",
+  budget: { maxToolCalls: 2 },
+});
+
+console.log(docsResponse.content);

@@ -4,6 +4,7 @@ export interface TokensUsed {
   prompt: number;
   completion: number;
   total: number;
+  reasoning?: number;
   cachedPrompt?: number;
   cacheWritePrompt?: number;
 }

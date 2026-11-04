@@ -1,13 +1,6 @@
-import { mkdir, writeFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
-import { chromium } from 'playwright';
 import {
-  ApifyAdapter,
   FetchAdapter,
-  FileSystemAdapter,
-  FirecrawlAdapter,
-  GitHubAdapter,
-  PlaywrightAdapter,
   TavilySearchAdapter,
 } from '../../agent/adapters/index.js';
 
@@ -15,50 +8,11 @@ const integrationEnabled = process.env.INTEGRATION_TESTS === 'true';
 const liveAdapters = parseSelection(process.env.AGENTCRAFT_LIVE_ADAPTERS);
 
 describe('live native adapter smoke tests', () => {
-  const githubIt =
-    integrationEnabled && liveAdapters.has('github') && process.env.GITHUB_TOKEN ? it : it.skip;
+  // GitHubAdapter removed in v1.0.0 — use GitHubMCP.connect() instead
+  it.skip('github reads public repository metadata with the configured token', () => {});
 
-  githubIt(
-    'github reads public repository metadata with the configured token',
-    async () => {
-      const [owner, repo] = (process.env.AGENTCRAFT_LIVE_GITHUB_REPO ?? 'octocat/Hello-World').split('/');
-      const adapter = GitHubAdapter.connect({
-        token: process.env.GITHUB_TOKEN!,
-        allowedRepos: [`${owner}/${repo}`],
-        timeoutMs: 10_000,
-      });
-      const getRepo = (await adapter.getTools?.())?.find((tool) => tool.name === 'get_repo');
-
-      const result = await getRepo?.execute({ owner, repo });
-
-      expect(result).toMatchObject({ full_name: `${owner}/${repo}` });
-    },
-    20_000
-  );
-
-  const firecrawlIt =
-    integrationEnabled && liveAdapters.has('firecrawl') && process.env.FIRECRAWL_API_KEY
-      ? it
-      : it.skip;
-
-  firecrawlIt(
-    'firecrawl performs a tiny read-only scrape',
-    async () => {
-      const url = process.env.AGENTCRAFT_LIVE_FIRECRAWL_URL ?? process.env.AGENTCRAFT_LIVE_PUBLIC_URL ?? 'https://vitepress.dev/';
-      const adapter = FirecrawlAdapter.connect({
-        apiKey: process.env.FIRECRAWL_API_KEY!,
-        defaultFormats: ['markdown'],
-        defaultTimeout: 10_000,
-        timeoutMs: 20_000,
-      });
-      const scrapeUrl = (await adapter.getTools?.())?.find((tool) => tool.name === 'scrape_url');
-
-      const result = await scrapeUrl?.execute({ url });
-
-      expect(JSON.stringify(result).toLowerCase()).toContain(new URL(url).hostname.split('.')[0]);
-    },
-    30_000
-  );
+  // FirecrawlAdapter removed in v1.0.0 — use FirecrawlMCP.connect() instead
+  it.skip('firecrawl performs a tiny read-only scrape', () => {});
 
   const fetchIt =
     integrationEnabled && liveAdapters.has('fetch') && process.env.AGENTCRAFT_LIVE_FETCH_URL
@@ -115,64 +69,11 @@ describe('live native adapter smoke tests', () => {
     25_000
   );
 
-  const apifyIt =
-    integrationEnabled &&
-    liveAdapters.has('apify') &&
-    process.env.APIFY_TOKEN &&
-    process.env.AGENTCRAFT_LIVE_APIFY_DATASET_ID
-      ? it
-      : it.skip;
+  // ApifyAdapter removed in v1.0.0 — use MCP.connect() with the Apify MCP package instead
+  it.skip('apify reads a configured dataset without starting an actor', () => {});
 
-  apifyIt(
-    'apify reads a configured dataset without starting an actor',
-    async () => {
-      const adapter = ApifyAdapter.connect({
-        token: process.env.APIFY_TOKEN!,
-        defaultDatasetId: process.env.AGENTCRAFT_LIVE_APIFY_DATASET_ID,
-        timeoutMs: 15_000,
-      });
-      const getDatasetItems = (await adapter.getTools?.())?.find(
-        (tool) => tool.name === 'get_dataset_items'
-      );
-
-      const result = await getDatasetItems?.execute({ limit: 1 });
-
-      expect(Array.isArray(result)).toBe(true);
-    },
-    30_000
-  );
-
-  const filesystemIt =
-    integrationEnabled && liveAdapters.has('filesystem') && process.env.AGENTCRAFT_LIVE_FILESYSTEM_PATH
-      ? it
-      : it.skip;
-
-  filesystemIt(
-    'filesystem reads from a local sandbox and rejects traversal',
-    async () => {
-      const rootPath = process.env.AGENTCRAFT_LIVE_FILESYSTEM_PATH!;
-      await mkdir(rootPath, { recursive: true });
-      await writeFile(`${rootPath}/agentcraft-smoke.txt`, 'agentcraft filesystem smoke', 'utf8');
-
-      const adapter = FileSystemAdapter.connect({
-        rootPath,
-        allowedExtensions: ['.txt'],
-        readOnly: true,
-      });
-      const tools = await adapter.getTools?.();
-      const readFileTool = tools?.find((tool) => tool.name === 'read_file');
-      const listDirectory = tools?.find((tool) => tool.name === 'list_directory');
-
-      await expect(listDirectory?.execute({ path: '.' })).resolves.toEqual(
-        expect.arrayContaining([{ path: 'agentcraft-smoke.txt', type: 'file' }])
-      );
-      await expect(readFileTool?.execute({ path: 'agentcraft-smoke.txt' })).resolves.toContain(
-        'agentcraft filesystem smoke'
-      );
-      await expect(readFileTool?.execute({ path: '../.env' })).rejects.toThrow('escapes the configured root');
-    },
-    20_000
-  );
+  // FileSystemAdapter removed in v1.0.0 — use FilesystemMCP.connect() instead
+  it.skip('filesystem reads from a local sandbox and rejects traversal', () => {});
 
   const tavilyIt =
     integrationEnabled &&
@@ -202,39 +103,8 @@ describe('live native adapter smoke tests', () => {
     30_000
   );
 
-  const playwrightIt =
-    integrationEnabled &&
-    liveAdapters.has('playwright-auth') &&
-    process.env.AGENTCRAFT_LIVE_ENABLE_PLAYWRIGHT_AUTH === 'true' &&
-    process.env.AGENTCRAFT_LIVE_PLAYWRIGHT_AUTH_URL
-      ? it
-      : it.skip;
-
-  playwrightIt(
-    'playwright can navigate to a public Basic Auth fixture when enabled',
-    async () => {
-      const url = process.env.AGENTCRAFT_LIVE_PLAYWRIGHT_AUTH_URL!;
-      const adapter = PlaywrightAdapter.connect({
-        allowedDomains: [process.env.AGENTCRAFT_LIVE_AUTH_DOMAIN ?? new URL(url).hostname],
-        defaultTimeout: 15_000,
-        launch: (options) => chromium.launch(options),
-        timeoutMs: 30_000,
-      });
-      try {
-        const tools = await adapter.getTools?.();
-        const browseUrl = tools?.find((tool) => tool.name === 'browse_url');
-        const extractText = tools?.find((tool) => tool.name === 'extract_text');
-
-        await browseUrl?.execute({ url });
-        const result = await extractText?.execute({ selector: 'body' });
-
-        expect(JSON.stringify(result)).toContain('authenticated');
-      } finally {
-        await adapter.cleanup?.();
-      }
-    },
-    45_000
-  );
+  // PlaywrightAdapter removed in v1.0.0 — use Playwright's MCP server via MCP.connect() instead
+  it.skip('playwright can navigate to a public Basic Auth fixture when enabled', () => {});
 });
 
 function parseSelection(value: string | undefined): Set<string> {
@@ -245,16 +115,7 @@ function parseSelection(value: string | undefined): Set<string> {
     .filter(Boolean);
 
   if (selected.includes('all')) {
-    return new Set([
-      'github',
-      'firecrawl',
-      'apify',
-      'fetch',
-      'fetch-auth',
-      'filesystem',
-      'tavily',
-      'playwright-auth',
-    ]);
+    return new Set(['fetch', 'fetch-auth', 'tavily']);
   }
   return new Set(selected);
 }

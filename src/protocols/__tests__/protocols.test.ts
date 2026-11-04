@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { AuthenticationError, ContextWindowError, ModelNotFoundError, QuotaExceededError, RateLimitError } from '../../errors/index.js';
+import { AuthenticationError, ContextWindowError, ModelNotFoundError, QuotaExceededError, RateLimitError, TimeoutError } from '../../errors/index.js';
 import type { ModelConfig } from '../../types/config.types.js';
 import type { LLMCallParams } from '../../types/provider.types.js';
 import { AnthropicProtocol } from '../anthropic.protocol.js';
@@ -73,6 +73,7 @@ describe('OpenAICompatProtocol', () => {
     expect(protocol.mapError(errorWithStatus(429, 'billing quota'), config)).toBeInstanceOf(QuotaExceededError);
     expect(protocol.mapError(errorWithStatus(401, 'bad key'), config)).toBeInstanceOf(AuthenticationError);
     expect(protocol.mapError(errorWithStatus(413, 'too long'), config)).toBeInstanceOf(ContextWindowError);
+    expect(protocol.mapError(new Error('Request was aborted.'), config)).toBeInstanceOf(TimeoutError);
   });
 
   it('streams incremental OpenAI-compatible tool-call chunks', async () => {
@@ -133,6 +134,42 @@ describe('OpenAICompatProtocol', () => {
   it('constructs OpenAI-compatible client without network access', () => {
     expect(protocol.createClient(config, { protocol })).toBeDefined();
   });
+
+  it('passes timeout and abort signals to OpenAI requests', async () => {
+    const controller = new AbortController();
+    const chatCreate = vi.fn(async () => ({ choices: [], usage: {} }));
+    const responsesCreate = vi.fn(async () => ({ object: 'response', output: [], status: 'completed' }));
+    const client = {
+      chat: { completions: { create: chatCreate } },
+      responses: { create: responsesCreate },
+    };
+
+    await protocol.callRaw(
+      client,
+      { model: 'gpt-4o', messages: [] },
+      { prompt: 'Hello', signal: controller.signal }
+    );
+    expect(chatCreate).toHaveBeenCalledWith(
+      { model: 'gpt-4o', messages: [] },
+      { signal: controller.signal }
+    );
+
+    await protocol.callRaw(
+      client,
+      { api: 'responses', request: { model: 'gpt-5.4', input: [], stream: false, store: false } },
+      { prompt: 'Hello', signal: controller.signal }
+    );
+    expect(responsesCreate).toHaveBeenCalledWith(
+      { model: 'gpt-5.4', input: [], stream: false, store: false },
+      { signal: controller.signal }
+    );
+
+    const timedClient = protocol.createClient(
+      { provider: 'openai', model: 'gpt-5.4', apiKey: 'key', timeout: 1234 },
+      { protocol }
+    ) as unknown as { timeout?: number };
+    expect(timedClient.timeout).toBe(1234);
+  });
 });
 
 describe('AnthropicProtocol', () => {
@@ -183,6 +220,27 @@ describe('AnthropicProtocol', () => {
   it('constructs an Anthropic client without network access', () => {
     const protocol = new AnthropicProtocol();
     expect(protocol.createClient({ provider: 'anthropic', model: 'claude-sonnet-4-6', apiKey: 'key' }, { protocol })).toBeDefined();
+  });
+
+  it('passes timeout and abort signals to Anthropic requests', async () => {
+    const protocol = new AnthropicProtocol();
+    const controller = new AbortController();
+    const create = vi.fn(async () => ({
+      content: [],
+      usage: { input_tokens: 1, output_tokens: 1 },
+      stop_reason: 'end_turn',
+    }));
+    const client = { messages: { create } };
+    const request = { model: 'claude-sonnet-4-6', max_tokens: 10, messages: [{ role: 'user', content: 'Hi' }] };
+
+    await protocol.callRaw(client, request, { prompt: 'Hi', signal: controller.signal });
+    expect(create).toHaveBeenCalledWith(request, { signal: controller.signal });
+
+    const timedClient = protocol.createClient(
+      { provider: 'anthropic', model: 'claude-sonnet-4-6', apiKey: 'key', timeout: 1234 },
+      { protocol }
+    ) as unknown as { timeout?: number };
+    expect(timedClient.timeout).toBe(1234);
   });
 });
 

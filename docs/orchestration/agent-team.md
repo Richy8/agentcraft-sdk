@@ -278,7 +278,7 @@ const team = AgentTeam.create({
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { AgentTeam } from "@deskcreate/agentcraft/team";
-import type { TeamTrace } from "@deskcreate/agentcraft";
+import type { TeamTrace } from "@deskcreate/agentcraft/team";
 
 // ... (create team as above)
 

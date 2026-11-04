@@ -14,7 +14,7 @@ const agent = Agent.create({
 
 const response = await agent.run({
   prompt: "Write a comprehensive guide on TypeScript generics.",
-  budget: { maxCostUsd: 0.02 }, // hard limit: $0.02
+  budget: { maxCost: 0.02 }, // fail-closed limit: $0.02
 });
 
 console.log(`Cost: $${response.cost.toFixed(6)}`);
@@ -29,7 +29,7 @@ import { QuotaExceededError } from "@deskcreate/agentcraft";
 try {
   const response = await agent.run({
     prompt: "Write a 10,000 word essay on distributed systems.",
-    budget: { maxCostUsd: 0.001 }, // very tight budget
+    budget: { maxCost: 0.001 }, // very tight budget
   });
 } catch (err) {
   if (err instanceof QuotaExceededError) {
@@ -39,24 +39,25 @@ try {
 }
 ```
 
-## Soft vs Hard Budget Mode
+## Budget Modes
 
 ```ts
-// Soft mode: log a warning but don't throw
+// Prefer-cache mode: require specific tools to hit cache instead of executing live.
 const response = await agent.run({
   prompt: "Generate content.",
   budget: {
-    maxCostUsd: 0.01,
-    mode: "soft", // warns but continues
+    maxCost: 0.01,
+    mode: "prefer-cache",
+    cachePolicy: { requireCachedFor: ["fetch"] },
   },
 });
 
-// Hard mode (default): throws QuotaExceededError if budget exceeded
+// Fail-closed mode (default): throws QuotaExceededError if budget is exceeded.
 const response2 = await agent.run({
   prompt: "Generate content.",
   budget: {
-    maxCostUsd: 0.01,
-    mode: "hard", // throws on budget breach
+    maxCost: 0.01,
+    mode: "fail-closed",
   },
 });
 ```
@@ -67,9 +68,9 @@ const response2 = await agent.run({
 const response = await agent.run({
   prompt: "Summarize this document...",
   budget: {
-    maxTotalTokens: 2000,
-    maxPromptTokens: 1000,
-    maxCompletionTokens: 1000,
+    maxTokens: 2000,
+    maxInputTokens: 1000,
+    maxOutputTokens: 1000,
   },
 });
 ```
@@ -88,10 +89,11 @@ console.log(`Total tokens: ${response.tokensUsed.total}`);
 ## Workspace-Level Budget Shared Across a Team
 
 ```ts
-import { AgentTeam, AgentWorkspace } from "@deskcreate/agentcraft/team";
+import { AgentWorkflow, AgentWorkspace } from "@deskcreate/agentcraft";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
 
-const workspace = AgentWorkspace.memory({
-  budget: { maxCostUsd: 0.10 }, // shared $0.10 budget across all agents
+const workspace = AgentWorkspace.create({
+  budget: { maxCost: 0.10 }, // shared $0.10 budget across all agents
 });
 
 const team = AgentTeam.create({
@@ -110,12 +112,12 @@ const response = await team.run({ prompt: "Research and write an article on AI a
 ## Cost Tracking With `cost.updated` Event
 
 ```ts
-import { AgentWorkspace } from "@deskcreate/agentcraft/team";
+import { AgentWorkspace } from "@deskcreate/agentcraft";
 
 const workspace = AgentWorkspace.memory();
 
 workspace.events.on("cost.updated", (event) => {
-  console.log(`Run ${event.runId}: +$${event.cost.toFixed(6)} (total: $${event.totalCost.toFixed(6)})`);
+  console.log(`${event.provider}/${event.model}: +$${event.cost.toFixed(6)}`);
 });
 
 // All agent runs through this workspace emit cost.updated
@@ -132,7 +134,7 @@ The runtime estimates cost before a run and checks against the budget. The estim
 try {
   const response = await agent.run({
     prompt: "A very long prompt that will exceed the budget...",
-    budget: { maxCostUsd: 0.0001 }, // extremely tight
+    budget: { maxCost: 0.0001 }, // extremely tight
   });
 } catch (err) {
   if (err instanceof QuotaExceededError) {

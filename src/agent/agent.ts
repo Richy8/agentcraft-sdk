@@ -29,6 +29,7 @@ import {
 } from "./adapters/tool-policy.js";
 import { AGENT_DEFAULTS, AgentConfigSchema } from "./config.js";
 import type { AgentCreateConfig, ValidatedAgentConfig } from "./config.js";
+import type { ProviderModel } from "./provider-catalog.js";
 import { registerAgentForProcessCleanup, unregisterAgentForProcessCleanup } from "./lifecycle.js";
 import {
   createRunAdapterScope as createScopedRunAdapters,
@@ -174,12 +175,12 @@ export class Agent {
     });
   }
 
-  static inspect(model: string): ModelInfo {
+  static inspect(model: ProviderModel | (string & {})): ModelInfo {
     return inspectModel(model);
   }
 
   static supports(
-    model: string,
+    model: ProviderModel | (string & {}),
     capability: keyof ModelInfo["capabilities"],
   ): boolean {
     return modelSupports(model, capability);

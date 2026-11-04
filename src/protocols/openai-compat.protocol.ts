@@ -3,6 +3,8 @@ import type {
   ChatCompletion,
   ChatCompletionCreateParams,
   ChatCompletionCreateParamsNonStreaming,
+  ChatCompletionFunctionTool,
+  ChatCompletionMessageFunctionToolCall,
   ChatCompletionMessageParam,
   ChatCompletionTool,
 } from 'openai/resources/chat/completions.js';
@@ -82,7 +84,7 @@ export class OpenAICompatProtocol implements ProviderProtocol {
       input: [
         ...(state?.input ?? []),
         { role: 'user', content: params.prompt },
-      ] as ResponseCreateParamsNonStreaming['input'],
+      ] as NonNullable<ResponseCreateParamsNonStreaming['input']>,
       stream: false,
       store: false,
     };
@@ -211,7 +213,9 @@ export class OpenAICompatProtocol implements ProviderProtocol {
     }
 
     const response = raw as ChatCompletion;
-    return (response.choices[0]?.message.tool_calls ?? []).map((toolCall) => ({
+    return (response.choices[0]?.message.tool_calls ?? [])
+      .filter((toolCall): toolCall is ChatCompletionMessageFunctionToolCall => 'function' in toolCall)
+      .map((toolCall) => ({
       id: toolCall.id,
       name: toolCall.function.name,
       arguments: toolCall.function.arguments,
@@ -366,7 +370,9 @@ function mapResponsesFinishReason(response: Response): FinishReason {
 }
 
 function toResponsesTools(tools: ChatCompletionTool[]): FunctionTool[] {
-  return tools.map((tool) => ({
+  return tools
+    .filter((tool): tool is ChatCompletionFunctionTool => 'function' in tool)
+    .map((tool) => ({
     type: 'function',
     name: tool.function.name,
     description: tool.function.description ?? null,

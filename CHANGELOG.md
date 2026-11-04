@@ -16,6 +16,12 @@
 - `promptCompression` benchmark variants and live skill certification scripts removed.
 - All skill, pack, and trait documentation pages removed.
 
+### Runtime and dependency requirements
+
+- Node.js 22.12 or later is now required (Node.js 20 reached end of life in April 2026).
+- `zod` is upgraded from 3.x to 4.x. If you pass Zod schemas to AgentCraft (for example as `responseSchema`), build them with Zod 4.
+- `openai` is upgraded from 4.x to 6.x.
+
 ### Why
 
 Benchmark comparison showed native LLM skills (Anthropic and OpenAI) are 25× more token-heavy, 3× slower, and score lower on quality than equivalent system prompts you control directly. The internal prompt-injection system (traits/skills/packs) added complexity without measurable output benefit. The infrastructure — adapters, tools, ToolPolicy, AgentWorkflow, AgentTeam, AgentMemory, AgentCache, ArtifactStore — delivers the same capability with less overhead and full user control over prompt quality.

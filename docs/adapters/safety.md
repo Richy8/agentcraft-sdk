@@ -32,9 +32,7 @@ const myAdapter = createAdapter({
     requiredSecrets: ["DATA_API_KEY"], // env vars needed
     readOnly: true, // signals non-mutating adapter
   },
-  tools: [
-    /* ... */
-  ],
+  tools: [/* ... */],
 });
 ```
 
@@ -255,9 +253,7 @@ import { AdapterRequirementError } from "@deskcreate/agentcraft";
 const myWebSummary = createAdapter({
   name: "web-summary",
   dependsOn: [{ adapterName: "fetch" }],
-  tools: [
-    /* ... */
-  ],
+  tools: [/* ... */],
 });
 
 // If FetchAdapter is not attached, AdapterRequirementError is thrown

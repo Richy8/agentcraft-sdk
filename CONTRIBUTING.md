@@ -4,7 +4,7 @@ Thanks for helping improve AgentCraft. This project aims to stay small enough to
 
 ## Prerequisites
 
-- Node.js 20 or newer.
+- Node.js 22.12 or newer.
 - npm with lockfile installs.
 - A local clone of the repository.
 

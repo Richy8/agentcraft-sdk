@@ -8,7 +8,7 @@ This page gets you from install to a running, useful agent in under five minutes
 npm install @deskcreate/agentcraft
 ```
 
-Node.js 20 or later is required.
+Node.js 22.12 or later is required.
 
 ## Environment Variables
 

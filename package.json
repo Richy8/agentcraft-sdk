@@ -30,7 +30,7 @@
     "url": "https://github.com/Richy8/agentcraft-sdk/issues"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.12.0"
   },
   "files": [
     "dist",
@@ -76,7 +76,7 @@
     "test:int": "INTEGRATION_TESTS=true vitest run --config vitest.integration.config.ts",
     "test:int:light": "INTEGRATION_TESTS=true AGENTCRAFT_LIVE_PROVIDERS=openai vitest run --config vitest.integration.config.ts",
     "test:int:full": "INTEGRATION_TESTS=true AGENTCRAFT_LIVE_FULL=true AGENTCRAFT_LIVE_PROVIDERS=all vitest run --config vitest.integration.config.ts",
-    "test:int:certify":"INTEGRATION_TESTS=true AGENTCRAFT_LIVE_FULL_CERTIFICATION=true AGENTCRAFT_LIVE_PROVIDERS=openai vitest run --config vitest.integration.config.ts src/__tests__/integration/live-full-feature-certification.test.ts",
+    "test:int:certify": "INTEGRATION_TESTS=true AGENTCRAFT_LIVE_FULL_CERTIFICATION=true AGENTCRAFT_LIVE_PROVIDERS=openai vitest run --config vitest.integration.config.ts src/__tests__/integration/live-full-feature-certification.test.ts",
     "test:int:infra": "INTEGRATION_TESTS=true AGENTCRAFT_LIVE_FULL_CERTIFICATION=true AGENTCRAFT_LIVE_PROVIDERS=openai vitest run --config vitest.integration.config.ts src/__tests__/integration/live-infrastructure-certification.test.ts",
     "test:int:certify:all": "INTEGRATION_TESTS=true AGENTCRAFT_LIVE_FULL_CERTIFICATION=true AGENTCRAFT_LIVE_PROVIDERS=openai vitest run --config vitest.integration.config.ts src/__tests__/integration/live-full-feature-certification.test.ts src/__tests__/integration/live-infrastructure-certification.test.ts",
     "exports:smoke": "node ./scripts/smoke-exports.mjs",
@@ -100,8 +100,8 @@
     "@aws-sdk/client-bedrock-runtime": "^3.0.0",
     "@google/genai": "^1.0.0",
     "cohere-ai": "^7.0.0",
-    "openai": "^4.0.0",
-    "zod": "^3.22.0"
+    "openai": "^6.49.0",
+    "zod": "^4.6.7"
   },
   "peerDependencies": {
     "better-sqlite3": ">=9.0.0",
@@ -120,15 +120,20 @@
     }
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^22.0.0",
     "playwright": "^1.59.1",
     "prettier": "^3.8.3",
     "typedoc": "^0.28.19",
     "typescript": "^5.4.0",
     "vitepress": "^1.6.3",
-    "vitest": "^4.1.5"
+    "vitest": "^5.1.0"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "overrides": {
+    "vitepress": {
+      "vite": "^6.4.5"
+    }
   }
 }

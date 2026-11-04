@@ -15,20 +15,16 @@ Click any example in the table to jump to the full source below. The source bloc
 | [structured-output.ts](#structured-output)                 | JSON schema validation, retry repair, and structured response handling.               | [`responseSchema`](./guides/config/structured-output.md "Validates JSON into structuredResponse"), [`responseFormat`](./guides/config/structured-output.md "Requests provider-native JSON where supported"), [`structuredOutput`](./guides/config/structured-output.md "Controls retries and tool fallback").                                                                                                                                                             |
 | [streaming-with-tools.ts](#streaming-with-tools)           | Streaming model output with tool-call and tool-result events.                         | `streamWithTools`, stream events, [`toolPolicy`](./guides/config/tools-and-guardrails.md#tool-policy "Controls approvals, guardrails, redaction, timeouts, and audits").                                                                                                                                                                                                                                                                                                  |
 | [multimodal-inputs.ts](#multimodal-inputs)                 | Image, file, and audio run inputs with capability-aware skills.                       | [`images`](./guides/config/run-parameters.md#fields "Adds image inputs for vision-capable models"), [`files`](./guides/config/run-parameters.md#fields "Adds file inputs for file-capable models"), [`audio`](./guides/config/run-parameters.md#fields "Adds audio inputs for audio-capable models"), multimodal skills.                                                                                                                                                  |
-| [filesystem-safe-agent.ts](#filesystem-safe-agent)         | Read-only and approval-gated file tooling.                                            | `FilesystemMCP`, [`readOnly`](./guides/config/tools-and-guardrails.md#tool-policy "Blocks writes and confirmation-gated tools"), `allowedPaths`, approval policy via `onApprovalRequired`.                                                                                                                                                                                                                                                                                |
 | [database-readonly.ts](#database-readonly)                 | Read-only database access with scoped query execution.                                | `DatabaseAdapter`, [`readOnly`](./guides/config/tools-and-guardrails.md#tool-policy "Use for analysis and review flows"), `rowLimit`, injected query executor.                                                                                                                                                                                                                                                                                                            |
-| [browser-automation.ts](#browser-automation)               | Browser adapter setup with side-effect-aware controls.                                | Browser launch config, domain policy, confirmation-gated actions.                                                                                                                                                                                                                                                                                                                                                                                                         |
 | [mcp-github-agent.ts](#mcp-github-agent)                   | MCP-backed tool connection with allowlists and metadata.                              | MCP transport, tool allowlists, package trust metadata.                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | [custom-mcp-connection.ts](#custom-mcp-connection)         | Direct custom MCP connection for internal or third-party servers.                     | [`MCPAdapter.connect`](./guides/mcp-lifecycle.md "Connects stdio, HTTP, or SSE MCP servers with allowlists and trust metadata"), `allowedTools`, `allowedResources`, `roots`, package pinning, trace events.                                                                                                                                                                                                                                                              |
-| [built-in-mcp-skill-memory.ts](#built-in-mcp-skill-memory) | Built-in Memory MCP with stateful memory and retrieval adapters.                      | Built-in MCP wrappers, stateful memory, native fetch adapter, tool policy for persistent memory.                                                                                                                                                                                                                                                                                                                                                                                                     |
-| [customer-ops-workflow.ts](#customer-ops-workflow)         | Customer-support workflow using Slack MCP, native Slack, and email.                   | Built-in MCP plus native adapters, write approval boundaries, provider-specific secrets.                                                                                                                                                                                                                                                                                                                                                                                  |
+| [built-in-mcp-skill-memory.ts](#built-in-mcp-skill-memory) | Built-in Memory MCP with stateful memory and retrieval adapters.                      | Built-in MCP wrappers, stateful memory, native fetch adapter, tool policy for persistent memory.                                                                                                                                                                                                                                                                                                                                                                          |
 | [observability-tracing.ts](#observability-tracing)         | Traces, redaction, replay fixtures, and OpenTelemetry-style export.                   | `trace`, trace sinks, replay fixture output.                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | [local-ollama-private.ts](#local-ollama-private)           | Local/private model setup without cloud provider keys.                                | Local OpenAI-compatible provider, `baseUrl`, privacy posture.                                                                                                                                                                                                                                                                                                                                                                                                             |
 | [agent-team.ts](#agent-team)                               | Multi-agent orchestration with specialist roles.                                      | `AgentTeam`, members, supervisor, role budgets.                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | [agent-team-spawn.ts](#agentteam-spawn)                    | Dynamic AgentTeam formation from a root agent and role hints.                         | [`AgentTeam.spawn`](./guides/config/agentteam.md "Creates specialist members dynamically"), `roleHints`, `maxAgents`, supervisor, role budgets.                                                                                                                                                                                                                                                                                                                           |
 | [cost-budgeting.ts](#cost-budgeting)                       | Preflight cost estimates and run budgets.                                             | `budget`, `maxCost`, token limits, cost options.                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | [custom-adapter.ts](#custom-adapter)                       | Authoring a custom adapter and tool.                                                  | `createAdapter`, `tool`, metadata, security labels.                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| [github-review-agent.ts](#github-review-agent)             | GitHub review workflow with scoped repo tooling.                                      | GitHub adapter config, repo scope, write approvals.                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | [guardrails-and-approvals.ts](#guardrails-and-approvals)   | Guardrail and approval behavior around tools.                                         | `guardrailMode`, `onApprovalRequired`, audit events.                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | [prompt-assembly.ts](#prompt-assembly)                     | Prompt files, includes, variables, config injection, strict assembly, and provenance. | [`promptFile`](./guides/config/prompt-assembly.md#prompt-sources "Loads an explicit prompt entry file"), [`vars`](./guides/config/prompt-assembly.md#injection-channels "Replaces double-curly variable placeholders"), [`assembly.config`](./guides/config/prompt-assembly.md#injection-channels "Replaces config placeholders from assembly config values"), [`include`](./guides/config/prompt-assembly.md#injection-channels "Composes files from the entry prompt"). |
 | [replay-mode.ts](#replay-mode)                             | Deterministic replay for demos and tests.                                             | `replay`, trace fixtures, no-provider execution.                                                                                                                                                                                                                                                                                                                                                                                                                          |
@@ -132,18 +128,6 @@ Config ideas to tweak: use `type: 'base64'` for private media loaded by your app
 
 :::
 
-### Filesystem Safe Agent
-
-Use this for local file reading, review, and controlled write workflows. It demonstrates how file access should be rooted, extension-limited, and optionally read-only.
-
-Config ideas to tweak: set `rootPath` to a project or tenant directory, use `readOnly: true` for inspection tasks, narrow `allowedExtensions`, and require approval before write-capable tools run.
-
-::: details Source: `filesystem-safe-agent.ts`
-
-<<< ../examples/filesystem-safe-agent.ts
-
-:::
-
 ### Database Readonly
 
 Use this when an agent needs to answer questions from a database without being allowed to mutate data. The example keeps execution behind an injected query function so the host app owns real database connectivity.
@@ -153,18 +137,6 @@ Config ideas to tweak: set `dialect`, keep `readOnly: true` for analysis, lower 
 ::: details Source: `database-readonly.ts`
 
 <<< ../examples/database-readonly.ts
-
-:::
-
-### Browser Automation
-
-Use this when an agent needs to inspect pages, collect visible text, or perform controlled browser actions. It is useful for QA, research, and internal workflow automation.
-
-Config ideas to tweak: run headless or visible browser sessions, restrict domains at the app layer, treat click/type actions as side-effecting, and require confirmation before interactions that can submit forms or change remote state.
-
-::: details Source: `browser-automation.ts`
-
-<<< ../examples/browser-automation.ts
 
 :::
 
@@ -201,18 +173,6 @@ Config ideas to tweak: set `filePath` for predictable local memory, replace Memo
 ::: details Source: `built-in-mcp-skill-memory.ts`
 
 <<< ../examples/built-in-mcp-skill-memory.ts
-
-:::
-
-### Customer Ops Workflow
-
-Use this for support or customer operations agents that need collaboration context and customer-facing drafts. It demonstrates a mixed MCP/native setup with SlackMCP and approval-gated write tools.
-
-Config ideas to tweak: use MCP when a hosted tool server gives the best integration path, use native adapters when you want direct SDK-style control, keep email sends approval-gated, and scope Slack tokens to the smallest channel/action set possible.
-
-::: details Source: `customer-ops-workflow.ts`
-
-<<< ../examples/customer-ops-workflow.ts
 
 :::
 
@@ -285,18 +245,6 @@ Config ideas to tweak: set `metadata.kind`, `auth`, `trustLevel`, `sideEffects`,
 ::: details Source: `custom-adapter.ts`
 
 <<< ../examples/custom-adapter.ts
-
-:::
-
-### GitHub Review Agent
-
-Use this for repository review and pull-request style workflows. It demonstrates how an agent can inspect GitHub data while keeping write actions explicit.
-
-Config ideas to tweak: scope the token to the narrowest repo permissions, configure default owner/repo values, keep review/comment tools approval-gated, and combine with guardrails for secret or PII exposure.
-
-::: details Source: `github-review-agent.ts`
-
-<<< ../examples/github-review-agent.ts
 
 :::
 

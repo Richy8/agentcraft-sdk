@@ -49,7 +49,7 @@ Bad: "We are excited to announce major performance improvements!"
 // Semantic memory — persists facts across agent runs
 // ---------------------------------------------------------------------------
 
-const memory = AgentMemory.create({ backend: "local" });
+const memory = AgentMemory.local();
 
 // ---------------------------------------------------------------------------
 // Agent — skill + filesystem MCP + fetch + memory
@@ -64,7 +64,7 @@ const agent = Agent.create({
   .use(
     // FilesystemMCP gives the agent scoped read access to local files
     FilesystemMCP.connect({
-      roots: ["./CHANGELOG.md"],
+      allowedPaths: ["./CHANGELOG.md"],
       allowedTools: ["read_file"],
     }),
   )

@@ -2,15 +2,15 @@
 
 Start here when you know what you want to build but do not yet know which AgentCraft surface to use.
 
-| Goal                                                                                        | Start here                                                | Primary example                                                        | Key config surfaces                                               |
-| ------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Run private/local agents without cloud keys                                                 | [Local And Private Agents](./paths/local-private.md)      | [local-ollama-private.ts](../examples.md#local-ollama-private)         | `model`, `baseUrl`, local provider connection, budgets            |
-| Add MCP tool servers                                                                        | [MCP Tools](./paths/mcp-tools.md)                         | [custom-mcp-connection.ts](../examples.md#custom-mcp-connection)       | `MCPAdapter.connect()`, built-in wrappers, tool allowlists, roots |
-| Persist cross-run semantic memory for agents                                                | [Semantic Memory](../persistence/semantic-memory.md)      | [creator-memory-analytics.ts](../examples.md#creator-memory-analytics) | `AgentMemory`, Qdrant, Pinecone, Supabase backends                |
-| Reduce repeated read-tool calls and token burn                                              | [Caching](../persistence/agent-cache.md)                  | [creator-memory-analytics.ts](../examples.md#creator-memory-analytics) | `AgentCache.file`, TTLs, per-run bypass, response cache metadata  |
-| Expose application capabilities as tools                                                    | [Custom Adapters](./paths/custom-adapters.md)             | [custom-adapter.ts](../examples.md#custom-adapter)                     | `createAdapter()`, `tool()`, metadata, guardrails                 |
-| Route across models, control cost, or choose provider fallbacks                             | [Routing And Budgets](./paths/routing-budgets.md)         | [agent-pool-routing.ts](../examples.md#agent-pool-routing)             | `AgentPool`, `budget`, `estimateCost()`, model catalog            |
-| Move toward production safety, approval, and operational review                             | [Production Guardrails](./paths/production-guardrails.md) | [guardrails-and-approvals.ts](../examples.md#guardrails-and-approvals) | `toolPolicy`, guardrails, tracing, MCP security, replay fixtures  |
+| Goal                                                            | Start here                                                | Primary example                                                          | Key config surfaces                                               |
+| --------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| Run private/local agents without cloud keys                     | [Local And Private Agents](./paths/local-private.md)      | [local-ollama-private.ts](../examples.md#local-ollama-private)           | `model`, `baseUrl`, local provider connection, budgets            |
+| Add MCP tool servers                                            | [MCP Tools](./paths/mcp-tools.md)                         | [custom-mcp-connection.ts](../examples.md#custom-mcp-connection)         | `MCPAdapter.connect()`, built-in wrappers, tool allowlists, roots |
+| Persist cross-run semantic memory for agents                    | [Semantic Memory](../persistence/semantic-memory.md)      | [built-in-mcp-skill-memory.ts](../examples.md#built-in-mcp-skill-memory) | `AgentMemory`, Qdrant, Pinecone, Supabase backends                |
+| Reduce repeated read-tool calls and token burn                  | [Caching](../persistence/agent-cache.md)                  | `examples/cost-cache-compression.ts`                                     | `AgentCache.file`, TTLs, per-run bypass, response cache metadata  |
+| Expose application capabilities as tools                        | [Custom Adapters](./paths/custom-adapters.md)             | [custom-adapter.ts](../examples.md#custom-adapter)                       | `createAdapter()`, `tool()`, metadata, guardrails                 |
+| Route across models, control cost, or choose provider fallbacks | [Routing And Budgets](./paths/routing-budgets.md)         | [agent-pool-routing.ts](../examples.md#agent-pool-routing)               | `AgentPool`, `budget`, `estimateCost()`, model catalog            |
+| Move toward production safety, approval, and operational review | [Production Guardrails](./paths/production-guardrails.md) | [guardrails-and-approvals.ts](../examples.md#guardrails-and-approvals)   | `toolPolicy`, guardrails, tracing, MCP security, replay fixtures  |
 
 Each path links to a runnable example, the relevant config reference, and the API reference entry points. For a broad feature-to-example map, use [Feature Coverage](./feature-coverage.md).
 
@@ -42,15 +42,13 @@ Recommended simple progression:
 
 These paths are for real application workflows where agents inspect files, call APIs, or route across models.
 
-| Scenario                    | Start with                                                             | Add next                                                  | Outcome                                                                       |
-| --------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Safe file-review assistant  | [filesystem-safe-agent.ts](../examples.md#filesystem-safe-agent)       | [Tools And Guardrails](./config/tools-and-guardrails.md)  | A local file reader or reviewer with path, extension, and read-only limits.   |
-| Database analysis assistant | [database-readonly.ts](../examples.md#database-readonly)               | [Production Guardrails](./paths/production-guardrails.md) | Read-only database questions with row limits and host-owned query execution.  |
-| Research assistant          | [research-agent.ts](../examples.md#research-agent)                     | [MCP Tools](./paths/mcp-tools.md)                         | Search/fetch-backed research with retrieval policy and source handling.       |
-| Creator memory/history      | [creator-memory-analytics.ts](../examples.md#creator-memory-analytics) | [Creator Memory And Analytics](../creator/analytics.md)   | Brand voice, corpus retrieval, and analytics history as local durable state.  |
-| Custom app capability       | [custom-adapter.ts](../examples.md#custom-adapter)                     | [Custom Adapters](./paths/custom-adapters.md)             | Your application APIs exposed as typed, policy-aware tools.                   |
-| Cost-aware model routing    | [agent-pool-routing.ts](../examples.md#agent-pool-routing)             | [Routing And Budgets](./paths/routing-budgets.md)         | Provider fallback, cost/speed/quality routing, and budget enforcement.        |
-| Multimodal review           | [multimodal-inputs.ts](../examples.md#multimodal-inputs)               | [Run Parameters](./config/run-parameters.md)              | Image, file, or audio inputs paired with capability-aware models.             |
+| Scenario                    | Start with                                                 | Add next                                                  | Outcome                                                                      |
+| --------------------------- | ---------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Database analysis assistant | [database-readonly.ts](../examples.md#database-readonly)   | [Production Guardrails](./paths/production-guardrails.md) | Read-only database questions with row limits and host-owned query execution. |
+| Research assistant          | [research-agent.ts](../examples.md#research-agent)         | [MCP Tools](./paths/mcp-tools.md)                         | Search/fetch-backed research with retrieval policy and source handling.      |
+| Custom app capability       | [custom-adapter.ts](../examples.md#custom-adapter)         | [Custom Adapters](./paths/custom-adapters.md)             | Your application APIs exposed as typed, policy-aware tools.                  |
+| Cost-aware model routing    | [agent-pool-routing.ts](../examples.md#agent-pool-routing) | [Routing And Budgets](./paths/routing-budgets.md)         | Provider fallback, cost/speed/quality routing, and budget enforcement.       |
+| Multimodal review           | [multimodal-inputs.ts](../examples.md#multimodal-inputs)   | [Run Parameters](./config/run-parameters.md)              | Image, file, or audio inputs paired with capability-aware models.            |
 
 Recommended mid-level progression:
 
@@ -62,18 +60,15 @@ Recommended mid-level progression:
 
 These paths are for production operations, multi-agent systems, external tool servers, and serious reviewability.
 
-| Scenario                     | Start with                                                               | Add next                                                  | Outcome                                                                           |
-| ---------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Production tool execution    | [guardrails-and-approvals.ts](../examples.md#guardrails-and-approvals)   | [Production Guardrails](./paths/production-guardrails.md) | Approval-gated, audited, redacted tool execution.                                 |
-| MCP-backed internal tools    | [custom-mcp-connection.ts](../examples.md#custom-mcp-connection)         | [MCP Security Checklist](./mcp-security-checklist.md)     | Internal or third-party MCP servers connected with allowlists and trust metadata. |
-| Built-in MCP with memory     | [built-in-mcp-skill-memory.ts](../examples.md#built-in-mcp-skill-memory) | [MCP Tools](./paths/mcp-tools.md)                         | Stateful memory plus retrieval behavior across runs.                              |
-| Code-review workflow         | [github-review-agent.ts](../examples.md#github-review-agent)             | [Custom Adapters](./paths/custom-adapters.md)             | File/GitHub context with read-only policy and structured review output.           |
-| Customer operations workflow | [customer-ops-workflow.ts](../examples.md#customer-ops-workflow)         | [Production Guardrails](./paths/production-guardrails.md) | Slack, email, MCP, summaries, drafts, and approval boundaries.                    |
-| Browser automation           | [browser-automation.ts](../examples.md#browser-automation)               | [Security Model](./security-model.md)                     | Controlled page inspection or action flows with side-effect awareness.            |
-| Multi-agent orchestration    | [agent-team.ts](../examples.md#agent-team)                               | [AgentTeam Config](./config/agentteam.md)                 | Fixed specialist roles with supervisor review and bounded rounds.                 |
-| Dynamic team spawning        | [agent-team-spawn.ts](../examples.md#agent-team-spawn)                   | [AgentTeam Orchestration](./agentteam-orchestration.md)   | Runtime team formation from role hints, budgets, and supervisor policy.           |
-| Observed production runs     | [observability-tracing.ts](../examples.md#observability-tracing)         | [Security Model](./security-model.md)                     | Redacted traces, replay fixtures, and OpenTelemetry-style export.                 |
-| Release readiness hardening  | [Feature Coverage](./feature-coverage.md)                                | [API Stability](../api-stability.md)                      | Coverage review before publishing or broad production rollout.                    |
+| Scenario                    | Start with                                                               | Add next                                                  | Outcome                                                                           |
+| --------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Production tool execution   | [guardrails-and-approvals.ts](../examples.md#guardrails-and-approvals)   | [Production Guardrails](./paths/production-guardrails.md) | Approval-gated, audited, redacted tool execution.                                 |
+| MCP-backed internal tools   | [custom-mcp-connection.ts](../examples.md#custom-mcp-connection)         | [MCP Security Checklist](./mcp-security-checklist.md)     | Internal or third-party MCP servers connected with allowlists and trust metadata. |
+| Built-in MCP with memory    | [built-in-mcp-skill-memory.ts](../examples.md#built-in-mcp-skill-memory) | [MCP Tools](./paths/mcp-tools.md)                         | Stateful memory plus retrieval behavior across runs.                              |
+| Multi-agent orchestration   | [agent-team.ts](../examples.md#agent-team)                               | [AgentTeam Config](./config/agentteam.md)                 | Fixed specialist roles with supervisor review and bounded rounds.                 |
+| Dynamic team spawning       | [agent-team-spawn.ts](../examples.md#agent-team-spawn)                   | [AgentTeam Orchestration](./agentteam-orchestration.md)   | Runtime team formation from role hints, budgets, and supervisor policy.           |
+| Observed production runs    | [observability-tracing.ts](../examples.md#observability-tracing)         | [Security Model](./security-model.md)                     | Redacted traces, replay fixtures, and OpenTelemetry-style export.                 |
+| Release readiness hardening | [Feature Coverage](./feature-coverage.md)                                | [API Stability](../api-stability.md)                      | Coverage review before publishing or broad production rollout.                    |
 
 Recommended advanced progression:
 
@@ -98,7 +93,7 @@ Best when: teams need private docs search, policy-aware answers, and traceable t
 
 ### Support Triage And Customer Reply
 
-1. Start with [customer-ops-workflow.ts](../examples.md#customer-ops-workflow).
+1. Start with [custom-mcp-connection.ts](../examples.md#custom-mcp-connection) to connect your helpdesk, Slack or email MCP server.
 2. Add [guardrails-and-approvals.ts](../examples.md#guardrails-and-approvals) before any email or Slack writes.
 3. Add [structured-output.ts](../examples.md#structured-output) if routing metadata should feed a queue.
 
@@ -106,10 +101,9 @@ Best when: support teams need summaries, priority routing, and customer-facing d
 
 ### Engineering Review Agent
 
-1. Start with [filesystem-safe-agent.ts](../examples.md#filesystem-safe-agent).
-2. Add [github-review-agent.ts](../examples.md#github-review-agent) for remote PR context.
-3. Add [github-review-agent.ts](../examples.md#github-review-agent) for remote PR context with structured review output.
-4. Add [agent-team.ts](../examples.md#agent-team) only when separate reviewer roles are useful.
+1. Start with [mcp-github-agent.ts](../examples.md#mcp-github-agent) for scoped repo and PR context.
+2. Add [structured-output.ts](../examples.md#structured-output) for structured review output.
+3. Add [agent-team.ts](../examples.md#agent-team) only when separate reviewer roles are useful.
 
 Best when: engineering teams need repeatable review behavior with read-only defaults and clear severity ordering.
 

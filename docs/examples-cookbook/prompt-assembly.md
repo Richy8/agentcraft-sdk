@@ -93,7 +93,7 @@ prompts/
 
 | Mode | Behavior |
 | --- | --- |
-| `file` | Loads one prompt file and resolves `{{include ...}}` partials |
+| `file` | Loads one prompt file and resolves <code v-pre>{{include ...}}</code> partials |
 | `inline` | Assembles an inline prompt with variable/config injection |
 
 ```ts

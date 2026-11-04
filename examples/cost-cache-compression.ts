@@ -3,16 +3,13 @@ import { tool, FetchAdapter } from "@deskcreate/agentcraft/adapters";
 
 // A deterministic read tool can be cached safely. On replay, AgentCraft should
 // return the cached result and report an avoided live tool execution.
-const readBenchmarkFact = tool({
-  name: "read_benchmark_fact",
+const readBenchmarkFact = tool("read_benchmark_fact", {
   description: "Return a stable benchmark fact for a topic.",
-  security: {
-    sideEffect: "read",
-    cache: {
-      safe: true,
-      deterministic: true,
-      ttlMs: 60_000,
-    },
+  sideEffect: "read",
+  cache: {
+    safe: true,
+    deterministic: true,
+    ttlMs: 60_000,
   },
   params: {
     topic: { type: "string", description: "Topic to summarize." },

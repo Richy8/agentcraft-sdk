@@ -16,15 +16,14 @@ const inventory = createAdapter({
     readOnly: true,
   },
   tools: [
-    tool({
-      // Tool names are required, provider-visible, and should be snake_case.
-      name: "lookup_sku",
+    // Tool names are required, provider-visible, and should be snake_case.
+    tool("lookup_sku", {
       // description is required. It should tell the model when to use this tool.
       description: "Look up a product SKU.",
       // sideEffect read means this can run in read-only mode.
       // Alternatives: 'none' for pure computation, 'write' for mutations,
       // 'external' for network calls or third-party side effects.
-      security: { sideEffect: "read" },
+      sideEffect: "read",
       params: {
         // Param type is required. Values: string, number, boolean, array, object.
         // required defaults to true; set required: false for optional params.

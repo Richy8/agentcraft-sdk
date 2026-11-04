@@ -68,4 +68,3 @@ Built-in MCP wrappers apply metadata from the server registry. Some servers such
 | Built-in stdio wrapper   | [MCP GitHub Agent](../examples.md#mcp-github-agent)                   | Use a shipped wrapper while still setting tool allowlists and secret metadata. |
 | Direct custom connection | [Custom MCP Connection](../examples.md#custom-mcp-connection)         | Connect an internal or third-party stdio, HTTP, or SSE MCP server directly.    |
 | MCP plus skill memory    | [Built-In MCP Skill Memory](../examples.md#built-in-mcp-skill-memory) | Pair a built-in MCP wrapper with a stateful skill.                             |
-| MCP plus native adapters | [Customer Ops Workflow](../examples.md#customer-ops-workflow)         | Combine MCP-hosted tools with native adapters during gradual migrations.       |

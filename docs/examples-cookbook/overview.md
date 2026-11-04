@@ -4,14 +4,14 @@ The cookbook is the variant library. Each chapter focuses on a specific dimensio
 
 ## Choose Your Starting Point
 
-| Goal | Start here | Then read | Runnable example |
-| --- | --- | --- | --- |
-| First working agent | [Beginner](./beginner.md) | [Agents](../core/agents.md) | `examples/basic-chat.ts` |
-| Multiple providers and fallback | [Providers](./provider.md) | [Models and Providers](../core/models-and-providers.md) | `examples/provider-routing.ts` |
-| Web fetch, file system, browser tools | [Tools and Adapters](./tools-adapters.md) | [Adapters Overview](../adapters/overview.md) | `examples/filesystem-safe-agent.ts` |
-| MCP servers (GitHub, Notion, filesystem) | [MCP](./mcp.md) | [MCP Overview](../mcp/overview.md) | — |
-| Workflows, teams, pools | [Orchestration](./orchestration.md) | [AgentWorkflow](../orchestration/agent-workflow.md) | — |
-| Budgets, cache, guardrails, evals | [Production](./production.md) | [Security Model](../production/security-model.md) | `examples/cost-cache-compression.ts` |
+| Goal                                     | Start here                                | Then read                                               | Runnable example                        |
+| ---------------------------------------- | ----------------------------------------- | ------------------------------------------------------- | --------------------------------------- |
+| First working agent                      | [Beginner](./beginner.md)                 | [Agents](../core/agents.md)                             | `examples/basic-chat.ts`                |
+| Multiple providers and fallback          | [Providers](./provider.md)                | [Models and Providers](../core/models-and-providers.md) | `examples/provider-routing.ts`          |
+| Web fetch, file system, browser tools    | [Tools and Adapters](./tools-adapters.md) | [Adapters Overview](../adapters/overview.md)            | `examples/built-in-mcp-skill-memory.ts` |
+| MCP servers (GitHub, Notion, filesystem) | [MCP](./mcp.md)                           | [MCP Overview](../mcp/overview.md)                      | —                                       |
+| Workflows, teams, pools                  | [Orchestration](./orchestration.md)       | [AgentWorkflow](../orchestration/agent-workflow.md)     | —                                       |
+| Budgets, cache, guardrails, evals        | [Production](./production.md)             | [Security Model](../production/security-model.md)       | `examples/cost-cache-compression.ts`    |
 
 ## How to Run Examples
 

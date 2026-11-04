@@ -9,14 +9,14 @@ Use the full built-in references when you need complete catalog coverage:
 
 ## Adapter Metadata
 
-| Field         | Values                                                           | Purpose                                         | Use case                                                           |
-| ------------- | ---------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------ |
-| `kind`        | `placeholder`, `mcp-backed`, `native-sdk`, `custom`              | Communicates implementation path and maturity.  | [Custom adapter](../../examples.md#custom-adapter)                 |
-| `auth`        | `none`, `api-key`, `oauth`, `aws`, `connection-string`, `custom` | Documents credential handling.                  | [GitHub review agent](../../examples.md#github-review-agent)       |
-| `trustLevel`  | `trusted`, `review-required`, `untrusted`                        | Sets review expectations before production use. | [Custom MCP connection](../../examples.md#custom-mcp-connection)   |
-| `sideEffects` | `none`, `read`, `write`, `external`                              | Declares maximum adapter behavior.              | [Filesystem safe agent](../../examples.md#filesystem-safe-agent)   |
-| `scopes`      | Strings                                                          | Labels permission domains.                      | [Custom adapter](../../examples.md#custom-adapter)                 |
-| `readOnly`    | Boolean                                                          | Signals non-mutating adapters.                  | [Database readonly](../../examples.md#database-readonly)           |
+| Field         | Values                                                           | Purpose                                         | Use case                                                         |
+| ------------- | ---------------------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------- |
+| `kind`        | `placeholder`, `mcp-backed`, `native-sdk`, `custom`              | Communicates implementation path and maturity.  | [Custom adapter](../../examples.md#custom-adapter)               |
+| `auth`        | `none`, `api-key`, `oauth`, `aws`, `connection-string`, `custom` | Documents credential handling.                  | [Custom adapter](../../examples.md#custom-adapter)               |
+| `trustLevel`  | `trusted`, `review-required`, `untrusted`                        | Sets review expectations before production use. | [Custom MCP connection](../../examples.md#custom-mcp-connection) |
+| `sideEffects` | `none`, `read`, `write`, `external`                              | Declares maximum adapter behavior.              | [Custom adapter](../../examples.md#custom-adapter)               |
+| `scopes`      | Strings                                                          | Labels permission domains.                      | [Custom adapter](../../examples.md#custom-adapter)               |
+| `readOnly`    | Boolean                                                          | Signals non-mutating adapters.                  | [Database readonly](../../examples.md#database-readonly)         |
 
 ## MCP Config
 

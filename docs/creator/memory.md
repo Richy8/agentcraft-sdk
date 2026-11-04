@@ -24,7 +24,9 @@ const agent = Agent.create({
   memory,
 }).use(brandVoice);
 
-await agent.run({ prompt: "Remember: our primary audience is engineering leads." });
+await agent.run({
+  prompt: "Remember: our primary audience is engineering leads.",
+});
 
 const response = await agent.run({
   prompt: "Draft a post about our caching strategy update.",

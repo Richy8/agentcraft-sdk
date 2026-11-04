@@ -13,18 +13,21 @@ import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
-}).use(GitHubMCP.connect({
-  token: process.env.GITHUB_TOKEN!,
-  allowedTools: [
-    "get_pull_request",
-    "get_pull_request_diff",
-    "list_pull_requests",
-    "get_file_contents",
-  ],
-}));
+}).use(
+  GitHubMCP.connect({
+    token: process.env.GITHUB_TOKEN!,
+    allowedTools: [
+      "get_pull_request",
+      "get_pull_request_diff",
+      "list_pull_requests",
+      "get_file_contents",
+    ],
+  }),
+);
 
 const response = await agent.run({
-  prompt: "Review PR #142 in my repo. Check for type safety issues and test coverage gaps.",
+  prompt:
+    "Review PR #142 in my repo. Check for type safety issues and test coverage gaps.",
 });
 console.log(response.content);
 ```
@@ -41,9 +44,11 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: { readOnly: true },
-}).use(FilesystemMCP.connect({
-  allowedPaths: ["./src", "./docs"],
-}));
+}).use(
+  FilesystemMCP.connect({
+    allowedPaths: ["./src", "./docs"],
+  }),
+);
 
 const response = await agent.run({
   prompt: "List the TypeScript source files in the src/ directory.",
@@ -65,7 +70,8 @@ const agent = Agent.create({
 }).use(BraveSearchMCP.connect({ apiKey: process.env.BRAVE_API_KEY! }));
 
 const response = await agent.run({
-  prompt: "Search for the latest news on TypeScript 6.0 and summarize what's coming.",
+  prompt:
+    "Search for the latest news on TypeScript 6.0 and summarize what's coming.",
 });
 console.log(response.content);
 ```
@@ -84,13 +90,16 @@ const agent = Agent.create({
   toolPolicy: {
     onApprovalRequired: async ({ tool }) => tool.name === "slack_post_message",
   },
-}).use(SlackMCP.connect({
-  botToken: process.env.SLACK_BOT_TOKEN!,
-  teamId: process.env.SLACK_TEAM_ID!,
-}));
+}).use(
+  SlackMCP.connect({
+    botToken: process.env.SLACK_BOT_TOKEN!,
+    teamId: process.env.SLACK_TEAM_ID!,
+  }),
+);
 
 const response = await agent.run({
-  prompt: "Post a message to #engineering about the Q3 roadmap review meeting on Tuesday.",
+  prompt:
+    "Post a message to #engineering about the Q3 roadmap review meeting on Tuesday.",
 });
 console.log(response.content);
 ```
@@ -106,15 +115,17 @@ import { MCP } from "@deskcreate/agentcraft/mcp";
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
-}).use(MCP.connect({
-  command: "npx",
-  args: [
-    "-y",
-    "@modelcontextprotocol/server-filesystem@1.2.3", // pinned version — never use latest
-    "/path/to/allowed/directory",
-  ],
-  allowedTools: ["read_file", "list_directory", "search_files"],
-}));
+}).use(
+  MCP.connect({
+    command: "npx",
+    args: [
+      "-y",
+      "@modelcontextprotocol/server-filesystem@1.2.3", // pinned version — never use latest
+      "/path/to/allowed/directory",
+    ],
+    allowedTools: ["read_file", "list_directory", "search_files"],
+  }),
+);
 
 const response = await agent.run({
   prompt: "List the TypeScript source files in the src/ directory.",
@@ -133,14 +144,17 @@ import { MCP } from "@deskcreate/agentcraft/mcp";
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
-}).use(MCP.connect({
-  url: "https://mcp.internal.company.com/mcp",
-  auth: { type: "bearer", token: process.env.INTERNAL_MCP_TOKEN! },
-  allowedTools: ["search_docs", "get_runbook", "list_services"],
-}));
+}).use(
+  MCP.connect({
+    url: "https://mcp.internal.company.com/mcp",
+    auth: { type: "bearer", token: process.env.INTERNAL_MCP_TOKEN! },
+    allowedTools: ["search_docs", "get_runbook", "list_services"],
+  }),
+);
 
 const response = await agent.run({
-  prompt: "Search our internal docs for the deployment runbook for the payments service.",
+  prompt:
+    "Search our internal docs for the deployment runbook for the payments service.",
 });
 console.log(response.content);
 ```
@@ -159,10 +173,12 @@ const agent = Agent.create({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 })
   .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }))
-  .use(GitHubMCP.connect({
-    token: process.env.GITHUB_TOKEN!,
-    allowedTools: ["get_pull_request", "get_file_contents"],
-  }));
+  .use(
+    GitHubMCP.connect({
+      token: process.env.GITHUB_TOKEN!,
+      allowedTools: ["get_pull_request", "get_file_contents"],
+    }),
+  );
 
 const response = await agent.run({
   prompt: `Review PR #200 and cross-reference any external libraries it adds against recent security advisories.`,

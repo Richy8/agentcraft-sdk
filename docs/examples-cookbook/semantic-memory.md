@@ -10,9 +10,13 @@ import { Agent, AgentMemory, Provider } from "@deskcreate/agentcraft";
 const memory = AgentMemory.local();
 
 // Store a memory
-await memory.add("The user prefers concise bullet-point answers.", { userId: "user-123" });
+await memory.add("The user prefers concise bullet-point answers.", {
+  userId: "user-123",
+});
 await memory.add("The user's timezone is UTC+1.", { userId: "user-123" });
-await memory.add("The user is working on a TypeScript SDK project.", { userId: "user-123" });
+await memory.add("The user is working on a TypeScript SDK project.", {
+  userId: "user-123",
+});
 
 // Search for relevant memories before a run
 const relevant = await memory.search("What are this user's preferences?", {
@@ -22,7 +26,7 @@ const relevant = await memory.search("What are this user's preferences?", {
 });
 
 // Inject into agent run
-const context = relevant.map(m => m.text).join("\n");
+const context = relevant.map((m) => m.text).join("\n");
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -40,10 +44,11 @@ const response = await agent.run({
 Store a memory with optional metadata for filtering:
 
 ```ts
-await memory.add(
-  "The project uses Vitest for testing.",
-  { project: "agentcraft", category: "tooling", timestamp: Date.now() },
-);
+await memory.add("The project uses Vitest for testing.", {
+  project: "agentcraft",
+  category: "tooling",
+  timestamp: Date.now(),
+});
 ```
 
 ## `memory.search(query, options)`
@@ -51,11 +56,14 @@ await memory.add(
 Find the most relevant memories for a given query:
 
 ```ts
-const results = await memory.search("What testing framework does this project use?", {
-  limit: 5,
-  threshold: 0.6, // minimum similarity score (0–1)
-  filter: { project: "agentcraft" },
-});
+const results = await memory.search(
+  "What testing framework does this project use?",
+  {
+    limit: 5,
+    threshold: 0.6, // minimum similarity score (0–1)
+    filter: { project: "agentcraft" },
+  },
+);
 
 for (const result of results) {
   console.log(`Score: ${result.score.toFixed(3)} — ${result.text}`);
@@ -70,11 +78,15 @@ Build up memory across sessions and inject it in each new session:
 // Session 1 — add memories
 const memory = AgentMemory.local();
 await memory.add("The user asked about caching strategies.");
-await memory.add("The user understood TTL but was confused about LRU eviction.");
+await memory.add(
+  "The user understood TTL but was confused about LRU eviction.",
+);
 
 // Session 2 — recall and inject
-const priorContext = await memory.search("What did we discuss before?", { limit: 5 });
-const contextText = priorContext.map(m => m.text).join("\n");
+const priorContext = await memory.search("What did we discuss before?", {
+  limit: 5,
+});
+const contextText = priorContext.map((m) => m.text).join("\n");
 
 const response = await agent.run({
   prompt: "Let's continue our previous discussion.",
@@ -96,7 +108,9 @@ const memory = AgentMemory.qdrant({
   dimension: 1536, // OpenAI ada-002 dimensions
 });
 
-await memory.add("Customer A prefers email over Slack.", { customerId: "cust-a" });
+await memory.add("Customer A prefers email over Slack.", {
+  customerId: "cust-a",
+});
 
 const results = await memory.search("How does Customer A communicate?", {
   filter: { customerId: "cust-a" },

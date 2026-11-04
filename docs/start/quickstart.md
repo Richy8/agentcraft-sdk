@@ -65,7 +65,8 @@ const agent = Agent.create({
 );
 
 const response = await agent.run({
-  prompt: "Fetch https://api.github.com/repos/microsoft/TypeScript/releases/latest and summarize the changes.",
+  prompt:
+    "Fetch https://api.github.com/repos/microsoft/TypeScript/releases/latest and summarize the changes.",
 });
 
 console.log(response.content);
@@ -93,16 +94,18 @@ const agent = Agent.create({
 
 // First run — cache miss, tool executes
 const first = await agent.run({
-  prompt: "Fetch https://api.github.com/repos/microsoft/TypeScript and tell me the star count.",
+  prompt:
+    "Fetch https://api.github.com/repos/microsoft/TypeScript and tell me the star count.",
 });
-console.log(`Cache hits: ${first.cache?.hits}`);    // → 0
-console.log(`Writes: ${first.cache?.writes}`);      // → 1
+console.log(`Cache hits: ${first.cache?.hits}`); // → 0
+console.log(`Writes: ${first.cache?.writes}`); // → 1
 
 // Second run — cache hit, tool skipped entirely
 const second = await agent.run({
-  prompt: "Fetch https://api.github.com/repos/microsoft/TypeScript and tell me the star count.",
+  prompt:
+    "Fetch https://api.github.com/repos/microsoft/TypeScript and tell me the star count.",
 });
-console.log(`Cache hits: ${second.cache?.hits}`);   // → 1
+console.log(`Cache hits: ${second.cache?.hits}`); // → 1
 console.log(`Calls avoided: ${second.cache?.toolCallsAvoided}`); // → 1
 ```
 
@@ -182,38 +185,39 @@ const FeatureSchema = z.object({
 });
 
 const response = await agent.run({
-  prompt: "Estimate the effort to add Redis caching to an existing TypeScript API.",
+  prompt:
+    "Estimate the effort to add Redis caching to an existing TypeScript API.",
   responseSchema: FeatureSchema,
 });
 
 // structuredResponse is fully typed as the Zod inferred type
 const feature = response.structuredResponse as z.infer<typeof FeatureSchema>;
-console.log(feature.name);           // → "Redis Caching"
-console.log(feature.priority);       // → "high"
-console.log(feature.estimatedDays);  // → 5
-console.log(feature.risks);          // → ["Cache invalidation complexity", ...]
+console.log(feature.name); // → "Redis Caching"
+console.log(feature.priority); // → "high"
+console.log(feature.estimatedDays); // → 5
+console.log(feature.risks); // → ["Cache invalidation complexity", ...]
 ```
 
 ## Required Config
 
-| Scenario | Required | More |
-| --- | --- | --- |
-| Any agent | `model` | [Agent Config](../configuration/agent-config.md) |
-| Cloud providers | `apiKey` (or env var) | [Provider Config](../configuration/provider-config.md) |
-| Adapters | Adapter-specific config | [Adapters](../adapters/overview.md) |
-| MCP servers | Auth token per server | [MCP](../mcp/overview.md) |
-| Budget enforcement | `budget.maxCost` or `budget.maxTokens` | [Budget Config](../configuration/budget-config.md) |
-| Caching | `AgentCache.memory()` / `.file()` / `.sqlite()` | [Cache Config](../configuration/cache-config.md) |
+| Scenario           | Required                                        | More                                                   |
+| ------------------ | ----------------------------------------------- | ------------------------------------------------------ |
+| Any agent          | `model`                                         | [Agent Config](../configuration/agent-config.md)       |
+| Cloud providers    | `apiKey` (or env var)                           | [Provider Config](../configuration/provider-config.md) |
+| Adapters           | Adapter-specific config                         | [Adapters](../adapters/overview.md)                    |
+| MCP servers        | Auth token per server                           | [MCP](../mcp/overview.md)                              |
+| Budget enforcement | `budget.maxCost` or `budget.maxTokens`          | [Budget Config](../configuration/budget-config.md)     |
+| Caching            | `AgentCache.memory()` / `.file()` / `.sqlite()` | [Cache Config](../configuration/cache-config.md)       |
 
 ## Next Steps
 
-| Want to... | Go to |
-| --- | --- |
-| Learn all providers and model options | [Models & Providers](../core/models-and-providers.md) |
-| Understand every run parameter | [Running Agents](../core/running-agents.md) |
-| Build tools and adapters | [Tools](../tools/tools.md) · [Adapters](../adapters/overview.md) |
-| Use MCP servers | [MCP](../mcp/overview.md) |
-| Orchestrate multiple agents | [Agent Workflow](../orchestration/agent-workflow.md) |
-| Persist outputs | [Artifact Store](../persistence/artifact-store.md) |
-| Go to production | [Security Model](../production/security-model.md) · [AgentEval](../production/agent-eval.md) |
-| See all runnable examples | [Examples & Cookbook](../examples-cookbook/overview.md) |
+| Want to...                            | Go to                                                                                        |
+| ------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Learn all providers and model options | [Models & Providers](../core/models-and-providers.md)                                        |
+| Understand every run parameter        | [Running Agents](../core/running-agents.md)                                                  |
+| Build tools and adapters              | [Tools](../tools/tools.md) · [Adapters](../adapters/overview.md)                             |
+| Use MCP servers                       | [MCP](../mcp/overview.md)                                                                    |
+| Orchestrate multiple agents           | [Agent Workflow](../orchestration/agent-workflow.md)                                         |
+| Persist outputs                       | [Artifact Store](../persistence/artifact-store.md)                                           |
+| Go to production                      | [Security Model](../production/security-model.md) · [AgentEval](../production/agent-eval.md) |
+| See all runnable examples             | [Examples & Cookbook](../examples-cookbook/overview.md)                                      |

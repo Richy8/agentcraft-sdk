@@ -6,7 +6,10 @@ Adapters are tool bundles — they package a set of related model-callable funct
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { FetchAdapter, TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
+import {
+  FetchAdapter,
+  TavilySearchAdapter,
+} from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -40,19 +43,24 @@ Every adapter is an object that implements `AgentAdapter`. Most adapters expose 
 
 ```ts
 interface AgentAdapter {
-  name: string;                   // unique adapter name
-  requires: string[];             // model capabilities needed ("tools", "vision", etc.)
-  declaredToolNames?: string[];   // tool names the adapter exposes (for conflict detection)
-  dependsOn?: unknown[];          // other adapters this adapter requires
-  metadata?: AdapterMetadata;     // auth, scopes, side effects, trust level
+  name: string; // unique adapter name
+  requires: string[]; // model capabilities needed ("tools", "vision", etc.)
+  declaredToolNames?: string[]; // tool names the adapter exposes (for conflict detection)
+  dependsOn?: unknown[]; // other adapters this adapter requires
+  metadata?: AdapterMetadata; // auth, scopes, side effects, trust level
 
-  init?(): Promise<void>;         // called once before the first run
-  cleanup?(): Promise<void>;      // called when the agent or run scope ends
+  init?(): Promise<void>; // called once before the first run
+  cleanup?(): Promise<void>; // called when the agent or run scope ends
   getTools?(): ToolDefinition[] | Promise<ToolDefinition[]>; // dynamic tool list
 
-  onBeforeRun?(params: AgentRunParams): AgentRunParams | Promise<AgentRunParams>;
+  onBeforeRun?(
+    params: AgentRunParams,
+  ): AgentRunParams | Promise<AgentRunParams>;
   onAfterRun?(response: AgentResponse): AgentResponse | Promise<AgentResponse>;
-  onAfterStream?(chunks: StreamChunk[], response: AgentResponse): AgentResponse | Promise<AgentResponse>;
+  onAfterStream?(
+    chunks: StreamChunk[],
+    response: AgentResponse,
+  ): AgentResponse | Promise<AgentResponse>;
 }
 ```
 
@@ -60,15 +68,15 @@ interface AgentAdapter {
 
 The `metadata` field documents the adapter's security posture. It is used by the attachment manager for dependency validation and by the safety layer for trust decisions:
 
-| Field | Type | Purpose |
-| --- | --- | --- |
-| `kind` | `"native-sdk" \| "mcp-backed" \| "custom" \| "placeholder"` | How the adapter is implemented |
-| `auth` | `"none" \| "api-key" \| "oauth" \| "aws" \| "connection-string" \| "custom"` | Credential model |
-| `trustLevel` | `"trusted" \| "review-required" \| "untrusted"` | Trust level for tool results |
-| `sideEffects` | `Array<"none" \| "read" \| "write" \| "external">` | Side-effect levels the adapter may exhibit |
-| `scopes` | `string[]` | Permission domains (e.g. `"repo"`, `"web"`, `"database"`) |
-| `requiredSecrets` | `string[]` | Environment variable names the adapter requires |
-| `readOnly` | `boolean` | Whether the adapter only performs reads |
+| Field             | Type                                                                         | Purpose                                                   |
+| ----------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `kind`            | `"native-sdk" \| "mcp-backed" \| "custom" \| "placeholder"`                  | How the adapter is implemented                            |
+| `auth`            | `"none" \| "api-key" \| "oauth" \| "aws" \| "connection-string" \| "custom"` | Credential model                                          |
+| `trustLevel`      | `"trusted" \| "review-required" \| "untrusted"`                              | Trust level for tool results                              |
+| `sideEffects`     | `Array<"none" \| "read" \| "write" \| "external">`                           | Side-effect levels the adapter may exhibit                |
+| `scopes`          | `string[]`                                                                   | Permission domains (e.g. `"repo"`, `"web"`, `"database"`) |
+| `requiredSecrets` | `string[]`                                                                   | Environment variable names the adapter requires           |
+| `readOnly`        | `boolean`                                                                    | Whether the adapter only performs reads                   |
 
 ## Attaching Adapters
 
@@ -78,17 +86,27 @@ Tools from agent-level adapters are available for every run on that agent:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { TavilySearchAdapter, DatabaseAdapter } from "@deskcreate/agentcraft/adapters";
+import {
+  TavilySearchAdapter,
+  DatabaseAdapter,
+} from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
 })
   .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }))
-  .use(DatabaseAdapter.connect({ connectionString: process.env.DATABASE_URL!, readOnly: true }));
+  .use(
+    DatabaseAdapter.connect({
+      connectionString: process.env.DATABASE_URL!,
+      readOnly: true,
+    }),
+  );
 
 // Search and database tools are available on every run
-const response = await agent.run({ prompt: "Search for competitors and compare to our user count." });
+const response = await agent.run({
+  prompt: "Search for competitors and compare to our user count.",
+});
 ```
 
 ### Per-Run (Scoped)
@@ -120,12 +138,12 @@ const response = await agent.run({
 
 The following adapters ship with AgentCraft and are importable from `@deskcreate/agentcraft/adapters`:
 
-| Adapter | Purpose |
-| --- | --- |
-| `FetchAdapter` | HTTP GET/POST with domain allowlisting and SSRF protection |
-| `TavilySearchAdapter` | AI-optimized web search results |
-| `DatabaseAdapter` | SQL query execution (PostgreSQL, MySQL, SQLite) |
-| `ImageGenerationAdapter` | Generate images via DALL-E or compatible APIs |
+| Adapter                  | Purpose                                                    |
+| ------------------------ | ---------------------------------------------------------- |
+| `FetchAdapter`           | HTTP GET/POST with domain allowlisting and SSRF protection |
+| `TavilySearchAdapter`    | AI-optimized web search results                            |
+| `DatabaseAdapter`        | SQL query execution (PostgreSQL, MySQL, SQLite)            |
+| `ImageGenerationAdapter` | Generate images via DALL-E or compatible APIs              |
 
 For capabilities not covered by native adapters — GitHub, Slack, Filesystem, Supabase, Postgres, Brave Search, Firecrawl — use the [built-in MCP wrappers](../mcp/built-in.md) from `@deskcreate/agentcraft/mcp`. They attach to agents with the same `.use()` pattern.
 
@@ -169,7 +187,10 @@ The attachment manager checks for tool name conflicts across all attached adapte
 import { AdapterToolConflictError } from "@deskcreate/agentcraft";
 
 try {
-  const agent = Agent.create({ model: Provider.openai["gpt-4o-mini"], apiKey: "..." })
+  const agent = Agent.create({
+    model: Provider.openai["gpt-4o-mini"],
+    apiKey: "...",
+  })
     .use(AdapterA.connect({})) // exposes tool "search"
     .use(AdapterB.connect({})); // also exposes tool "search" → conflict
 } catch (err) {
@@ -184,7 +205,9 @@ try {
 After a run, inspect which tools were actually exposed to the model:
 
 ```ts
-const response = await agent.run({ prompt: "Search for the latest AI research." });
+const response = await agent.run({
+  prompt: "Search for the latest AI research.",
+});
 
 console.log("Exposed tools:", response.selection?.exposedTools);
 // → ["tavily_search"]

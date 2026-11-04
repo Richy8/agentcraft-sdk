@@ -4,11 +4,11 @@ The creator-specific adapters (`CreatorResourcesAdapter`, `AnalyticsAdapter`, `P
 
 For content workflows, use the general-purpose adapters:
 
-| Adapter | Use for |
-| --- | --- |
-| `FetchAdapter` | Fetch web content, API responses |
-| `TavilySearchAdapter` | Web search and research |
-| `DatabaseAdapter` | Read from Postgres, MySQL, SQLite |
+| Adapter               | Use for                           |
+| --------------------- | --------------------------------- |
+| `FetchAdapter`        | Fetch web content, API responses  |
+| `TavilySearchAdapter` | Web search and research           |
+| `DatabaseAdapter`     | Read from Postgres, MySQL, SQLite |
 
 For brand voice and content rules, define a `Skill` with your tone guide:
 
@@ -35,7 +35,8 @@ const agent = Agent.create({
   .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
 
 const response = await agent.run({
-  prompt: "Research and draft a LinkedIn post about AI agent caching strategies.",
+  prompt:
+    "Research and draft a LinkedIn post about AI agent caching strategies.",
 });
 console.log(response.content);
 ```

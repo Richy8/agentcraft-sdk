@@ -4,20 +4,20 @@ AgentCraft follows a tiered stability model. Public entry points (`@deskcreate/a
 
 ## Entry Points
 
-| Import path | Exports | Stability | Use for |
-| --- | --- | --- | --- |
-| `@deskcreate/agentcraft` | `Agent`, `AgentWorkflow`, `AgentPool`, `AgentWorkspace`, `AgentCache`, `AgentMemory`, all artifact stores, all error types | **Stable** | Core runtime, most applications |
-| `@deskcreate/agentcraft/adapters` | `FetchAdapter`, `TavilySearchAdapter`, `DatabaseAdapter`, `ImageGenerationAdapter`, `createAdapter`, `defineAdapter`, `tool` | **Stable** | External system integration |
-| `@deskcreate/agentcraft/mcp` | `GitHubMCP`, `SlackMCP`, `FilesystemMCP`, `PostgresMCP`, `SupabaseMCP`, `BraveSearchMCP`, `FirecrawlMCP`, `FetchMCP`, `MCP`, `MCPAdapter` | **Stable** | MCP server wrappers |
-| `@deskcreate/agentcraft/team` | `AgentTeam` | **Stable** | Multi-agent coordination |
+| Import path                       | Exports                                                                                                                                   | Stability  | Use for                         |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------- |
+| `@deskcreate/agentcraft`          | `Agent`, `AgentWorkflow`, `AgentPool`, `AgentWorkspace`, `AgentCache`, `AgentMemory`, all artifact stores, all error types                | **Stable** | Core runtime, most applications |
+| `@deskcreate/agentcraft/adapters` | `FetchAdapter`, `TavilySearchAdapter`, `DatabaseAdapter`, `ImageGenerationAdapter`, `createAdapter`, `defineAdapter`, `tool`              | **Stable** | External system integration     |
+| `@deskcreate/agentcraft/mcp`      | `GitHubMCP`, `SlackMCP`, `FilesystemMCP`, `PostgresMCP`, `SupabaseMCP`, `BraveSearchMCP`, `FirecrawlMCP`, `FetchMCP`, `MCP`, `MCPAdapter` | **Stable** | MCP server wrappers             |
+| `@deskcreate/agentcraft/team`     | `AgentTeam`                                                                                                                               | **Stable** | Multi-agent coordination        |
 
 ## Stability Tiers
 
-| Tier | Guarantee | How to identify |
-| --- | --- | --- |
-| **Stable** | No breaking changes in minor releases. Deprecation before removal. | Default for all six entry points |
-| **Beta** | API shape is solid but may have minor revisions. Breaking changes announced. | Some newer adapters |
-| **Experimental** | No stability guarantee. Can change or be removed in any release. | Flagged in docs and source with `@experimental` |
+| Tier             | Guarantee                                                                    | How to identify                                 |
+| ---------------- | ---------------------------------------------------------------------------- | ----------------------------------------------- |
+| **Stable**       | No breaking changes in minor releases. Deprecation before removal.           | Default for all six entry points                |
+| **Beta**         | API shape is solid but may have minor revisions. Breaking changes announced. | Some newer adapters                             |
+| **Experimental** | No stability guarantee. Can change or be removed in any release.             | Flagged in docs and source with `@experimental` |
 
 ## What "Stable" Means
 
@@ -62,9 +62,9 @@ When an API is deprecated:
 
 ## Version History
 
-| Version | Changes |
-| --- | --- |
-| 0.1.x | Initial release — all six entry points Stable |
+| Version | Changes                                       |
+| ------- | --------------------------------------------- |
+| 0.1.x   | Initial release — all six entry points Stable |
 
 Track changes in [CHANGELOG.md](https://github.com/deskcreate/agentcraft/blob/main/CHANGELOG.md).
 

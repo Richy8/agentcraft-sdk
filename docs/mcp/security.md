@@ -38,16 +38,16 @@ An MCP server with filesystem access may expose files outside the intended direc
 
 Before attaching any MCP server to a production agent:
 
-| Check | Action |
-| --- | --- |
-| Pin stdio packages | Use `@package@version` not `@package/latest` |
-| Allowlist tools | Set `allowedTools` to the minimum needed |
-| Allowlist resources | Set `allowedResources` for resource-reading servers |
-| Set roots | Set `roots` for filesystem-scoped servers |
-| Apply tool policy | Use `toolPolicy.readOnly`, `maxResultBytes`, `redactSecrets` |
-| Add guardrails | Enable `blockPromptInjectionGuardrail` for servers that fetch external content |
-| Require approval | Use `onApprovalRequired` callback in `toolPolicy` for write tools |
-| Review trust level | Set `trustLevel` based on how much you trust the server's output |
+| Check               | Action                                                                         |
+| ------------------- | ------------------------------------------------------------------------------ |
+| Pin stdio packages  | Use `@package@version` not `@package/latest`                                   |
+| Allowlist tools     | Set `allowedTools` to the minimum needed                                       |
+| Allowlist resources | Set `allowedResources` for resource-reading servers                            |
+| Set roots           | Set `roots` for filesystem-scoped servers                                      |
+| Apply tool policy   | Use `toolPolicy.readOnly`, `maxResultBytes`, `redactSecrets`                   |
+| Add guardrails      | Enable `blockPromptInjectionGuardrail` for servers that fetch external content |
+| Require approval    | Use `onApprovalRequired` callback in `toolPolicy` for write tools              |
+| Review trust level  | Set `trustLevel` based on how much you trust the server's output               |
 
 ## Safe Patterns
 
@@ -63,9 +63,9 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
-    readOnly: true,          // block all write-side-effect MCP tools
+    readOnly: true, // block all write-side-effect MCP tools
     maxResultBytes: 100_000, // prevent context overflow
-    redactSecrets: true,     // strip tokens from results
+    redactSecrets: true, // strip tokens from results
   },
 }).use(
   GitHubMCP.connect({
@@ -197,11 +197,11 @@ const agent = Agent.create({
 
 Set `trustLevel` in the MCP wrapper or adapter metadata to communicate the server's trust posture to the policy layer:
 
-| Level | When to use | Effect |
-| --- | --- | --- |
-| `"trusted"` | Your own internal server | Results passed through without extra scrutiny |
-| `"review-required"` | Known third-party server | Results subject to guardrail checks |
-| `"untrusted"` | User-provided server or content | Results blocked by guardrails on injection detection |
+| Level               | When to use                     | Effect                                               |
+| ------------------- | ------------------------------- | ---------------------------------------------------- |
+| `"trusted"`         | Your own internal server        | Results passed through without extra scrutiny        |
+| `"review-required"` | Known third-party server        | Results subject to guardrail checks                  |
+| `"untrusted"`       | User-provided server or content | Results blocked by guardrails on injection detection |
 
 ## Related
 

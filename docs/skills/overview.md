@@ -8,7 +8,8 @@ import { Skill } from "@deskcreate/agentcraft/skills";
 
 const precisionWriter = Skill.define({
   name: "precision-writer",
-  description: "Produces structured, concise technical writing with numbered sections and measurable claims.",
+  description:
+    "Produces structured, concise technical writing with numbered sections and measurable claims.",
   instructions: `
 Structure every response as:
   1. One-sentence hook — state the core claim directly
@@ -58,14 +59,16 @@ When a skill has `files`, AgentCraft exposes a `load_skill_file` tool. The model
 import { Skill } from "@deskcreate/agentcraft/skills";
 
 const mySkill = Skill.define({
-  name: "code-reviewer",          // kebab-case, unique
-  description: "Reviews TypeScript code for type safety, edge cases, and naming.",
-  instructions: "...",            // Level 2 — loaded on demand
-  files: {                        // Level 3 — loaded on demand
+  name: "code-reviewer", // kebab-case, unique
+  description:
+    "Reviews TypeScript code for type safety, edge cases, and naming.",
+  instructions: "...", // Level 2 — loaded on demand
+  files: {
+    // Level 3 — loaded on demand
     "review-checklist.txt": "...",
     "naming-guide.txt": "...",
   },
-  version: 1,                     // optional
+  version: 1, // optional
 });
 
 agent.use(mySkill);
@@ -101,6 +104,7 @@ version: 1
 ## Review Contract
 
 Check every PR for:
+
 1. Missing null checks on external inputs
 2. Overly broad `catch` blocks that swallow errors
 3. Names that describe type rather than role (`data`, `info`, `obj`)
@@ -131,7 +135,9 @@ const skill = await Skill.fromGitHub(
 agent.use(skill);
 
 // All skills in a repo
-const skills = await Skill.fromGitHub("https://github.com/your-org/skills-repo");
+const skills = await Skill.fromGitHub(
+  "https://github.com/your-org/skills-repo",
+);
 for (const skill of skills) agent.use(skill);
 
 // With options: branch, token, subdir, external cache
@@ -143,9 +149,9 @@ const privSkill = await Skill.fromGitHub(
   {
     ref: "main",
     token: process.env.GITHUB_TOKEN!,
-    subdir: "skills",       // look in /skills/ instead of repo root
-    cache,                  // persist definitions across process restarts
-    cacheTtlMs: 3_600_000,  // 1 hour
+    subdir: "skills", // look in /skills/ instead of repo root
+    cache, // persist definitions across process restarts
+    cacheTtlMs: 3_600_000, // 1 hour
   },
 );
 agent.use(privSkill);
@@ -153,13 +159,13 @@ agent.use(privSkill);
 
 ## GitHubSkillOptions
 
-| Option       | Type          | Default     | Purpose                                                          |
-| ------------ | ------------- | ----------- | ---------------------------------------------------------------- |
-| `ref`        | `string`      | default branch | Branch, tag, or commit SHA to fetch from.                     |
-| `token`      | `string`      | None        | GitHub PAT. Required for private repos; reduces rate-limit risk. |
-| `subdir`     | `string`      | `''`        | Subdirectory within the repo where skills live.                  |
-| `cache`      | `AgentCache`  | None        | External cache for cross-restart persistence.                    |
-| `cacheTtlMs` | `number`      | `3_600_000` | How long to keep fetched skills in the external cache.           |
+| Option       | Type         | Default        | Purpose                                                          |
+| ------------ | ------------ | -------------- | ---------------------------------------------------------------- |
+| `ref`        | `string`     | default branch | Branch, tag, or commit SHA to fetch from.                        |
+| `token`      | `string`     | None           | GitHub PAT. Required for private repos; reduces rate-limit risk. |
+| `subdir`     | `string`     | `''`           | Subdirectory within the repo where skills live.                  |
+| `cache`      | `AgentCache` | None           | External cache for cross-restart persistence.                    |
+| `cacheTtlMs` | `number`     | `3_600_000`    | How long to keep fetched skills in the external cache.           |
 
 ## Multiple Skills
 
@@ -169,7 +175,9 @@ Attach as many skills as needed. Each gets its own `load_skill_instructions` and
 agent
   .use(Skill.define({ name: "brand-voice", description: "..." }))
   .use(Skill.define({ name: "code-reviewer", description: "..." }))
-  .use(await Skill.fromGitHub("https://github.com/org/skills", "seo-optimizer"));
+  .use(
+    await Skill.fromGitHub("https://github.com/org/skills", "seo-optimizer"),
+  );
 ```
 
 The model activates the right skill based on the task — you don't need to route manually.

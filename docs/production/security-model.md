@@ -4,16 +4,16 @@ AgentCraft treats all external input as untrusted by default: prompt content, ad
 
 ## Threat Model
 
-| Threat | Attack vector | Mitigation |
-| --- | --- | --- |
-| Prompt injection | Scraped content, MCP tool output, user messages | Directive injection prevention in code blocks; guardrails; tool policy |
-| Path traversal | Filesystem MCP with relative paths | `allowedPaths` boundary enforcement; `readOnly: true` default |
-| SSRF / domain abuse | FetchAdapter with arbitrary URLs | `allowedDomains` allowlist; domain-level restriction |
-| Over-permissioned tools | MCP servers exposing write tools | `allowedTools` MCP allowlisting; tool policy read-only mode |
-| Secret leakage | Tool results containing API keys | `redactSecrets: true`; `maxResultBytes` truncation |
-| Runaway tool calls | Agents looping on tool use | `maxToolCalls` budget; per-run enforcement |
-| Supply chain (MCP) | Unpinned stdio MCP packages | Pinned `npx` with exact version |
-| Unauthorized cost | Agents running expensive models | `maxCost` budget; preflight estimation |
+| Threat                  | Attack vector                                   | Mitigation                                                             |
+| ----------------------- | ----------------------------------------------- | ---------------------------------------------------------------------- |
+| Prompt injection        | Scraped content, MCP tool output, user messages | Directive injection prevention in code blocks; guardrails; tool policy |
+| Path traversal          | Filesystem MCP with relative paths              | `allowedPaths` boundary enforcement; `readOnly: true` default          |
+| SSRF / domain abuse     | FetchAdapter with arbitrary URLs                | `allowedDomains` allowlist; domain-level restriction                   |
+| Over-permissioned tools | MCP servers exposing write tools                | `allowedTools` MCP allowlisting; tool policy read-only mode            |
+| Secret leakage          | Tool results containing API keys                | `redactSecrets: true`; `maxResultBytes` truncation                     |
+| Runaway tool calls      | Agents looping on tool use                      | `maxToolCalls` budget; per-run enforcement                             |
+| Supply chain (MCP)      | Unpinned stdio MCP packages                     | Pinned `npx` with exact version                                        |
+| Unauthorized cost       | Agents running expensive models                 | `maxCost` budget; preflight estimation                                 |
 
 ## Security Layers
 
@@ -28,13 +28,13 @@ import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
 // Filesystem: read-only, bounded to allowed paths
 FilesystemMCP.connect({
   allowedPaths: ["./content"],
-})
+});
 
 // Fetch: allowlisted domains only
 FetchAdapter.connect({
   allowedDomains: ["api.github.com", "raw.githubusercontent.com"],
   maxResponseBytes: 500_000,
-})
+});
 ```
 
 ### 2. Tool Policy
@@ -48,10 +48,11 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
-    readOnly: true,                // blocks all write-side-effect tools
-    maxResultBytes: 20_000,        // truncates large tool results
-    redactSecrets: true,           // redacts secret-like patterns from results
-    onApprovalRequired: async ({ tool }) => ["publish_draft", "send_email"].includes(tool.name),
+    readOnly: true, // blocks all write-side-effect tools
+    maxResultBytes: 20_000, // truncates large tool results
+    redactSecrets: true, // redacts secret-like patterns from results
+    onApprovalRequired: async ({ tool }) =>
+      ["publish_draft", "send_email"].includes(tool.name),
   },
 });
 ```
@@ -64,8 +65,8 @@ Budgets cap tool calls and cost on every run, preventing runaway loops or expens
 const response = await agent.run({
   prompt: "Research and summarize the top 10 TypeScript libraries.",
   budget: {
-    maxToolCalls: 8,    // stop after 8 tool calls
-    maxCost: 0.10,      // stop if estimated cost exceeds $0.10
+    maxToolCalls: 8, // stop after 8 tool calls
+    maxCost: 0.1, // stop if estimated cost exceeds $0.10
   },
 });
 ```
@@ -110,11 +111,12 @@ const agent = Agent.create({
     approvalQueue: queue,
     onApprovalRequired: async ({ tool }) => tool.name === "slack_post_message",
   },
-})
-  .use(SlackMCP.connect({
+}).use(
+  SlackMCP.connect({
     botToken: process.env.SLACK_BOT_TOKEN!,
     teamId: process.env.SLACK_TEAM_ID!,
-  }));
+  }),
+);
 
 // Approve programmatically
 queue.onRequest(async ({ toolName, args }) => {
@@ -134,12 +136,12 @@ import { GitHubMCP, MCP } from "@deskcreate/agentcraft/mcp";
 GitHubMCP.connect({
   token: process.env.GITHUB_TOKEN!,
   allowedTools: ["list_pull_requests", "get_pull_request", "get_file_contents"],
-})
+});
 
 // ✗ No allowlist — agent has access to all GitHub tools (create, delete, push)
 GitHubMCP.connect({
   token: process.env.GITHUB_TOKEN!,
-})
+});
 ```
 
 For stdio MCP packages, always pin the version:
@@ -150,15 +152,19 @@ import { MCP } from "@deskcreate/agentcraft/mcp";
 // ✓ Pinned version — supply chain safe
 MCP.connect({
   command: "npx",
-  args: ["-y", "@modelcontextprotocol/server-filesystem@1.2.3", "/path/to/root"],
+  args: [
+    "-y",
+    "@modelcontextprotocol/server-filesystem@1.2.3",
+    "/path/to/root",
+  ],
   allowedTools: ["read_file", "list_directory"],
-})
+});
 
 // ✗ Unpinned — can silently pull malicious updates
 MCP.connect({
   command: "npx",
   args: ["@modelcontextprotocol/server-filesystem", "/path/to/root"],
-})
+});
 ```
 
 ## Production Security Baseline
@@ -166,7 +172,12 @@ MCP.connect({
 The minimum security configuration for a production agent:
 
 ```ts
-import { Agent, AgentWorkspace, AgentCache, Provider } from "@deskcreate/agentcraft";
+import {
+  Agent,
+  AgentWorkspace,
+  AgentCache,
+  Provider,
+} from "@deskcreate/agentcraft";
 import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
 
@@ -176,7 +187,7 @@ const workspace = AgentWorkspace.create({
     maxResultBytes: 50_000,
     redactSecrets: true,
   },
-  budget: { maxCost: 1.00, maxToolCalls: 20 },
+  budget: { maxCost: 1.0, maxToolCalls: 20 },
   cache: AgentCache.file(".cache", { strategy: "conservative" }),
   adapters: [
     FilesystemMCP.connect({ allowedPaths: ["./content"] }),
@@ -192,22 +203,22 @@ const agent = Agent.create({
 
 ## Security Checklist
 
-| Category | Check |
-| --- | --- |
-| Adapters | Scope every adapter (domain, path, channel, or project) |
-| Adapters | Set `readOnly: true` on all adapters unless writes are required |
-| Adapters | Set `allowedPaths` on `FilesystemMCP` to restrict directory access |
-| Adapters | Set `allowedDomains` on `FetchAdapter` |
-| Tool policy | Set `readOnly: true` at workspace or agent level |
-| Tool policy | Set `redactSecrets: true` |
-| Tool policy | Gate write tools with `onApprovalRequired` callback |
-| MCP | Specify `allowedTools` for every MCP server |
-| MCP | Pin stdio MCP packages with exact versions |
-| Budget | Set `maxCost` and `maxToolCalls` on every production run |
-| Guardrails | Enable `blockInjectionPatterns` for agents processing external input |
-| Secrets | Load all API keys from environment variables, never hard-code |
-| Secrets | Use `process.env.X!` assertion pattern, not string literals |
-| Testing | Add regression tests for prompt injection, path traversal, and destructive actions |
+| Category    | Check                                                                              |
+| ----------- | ---------------------------------------------------------------------------------- |
+| Adapters    | Scope every adapter (domain, path, channel, or project)                            |
+| Adapters    | Set `readOnly: true` on all adapters unless writes are required                    |
+| Adapters    | Set `allowedPaths` on `FilesystemMCP` to restrict directory access                 |
+| Adapters    | Set `allowedDomains` on `FetchAdapter`                                             |
+| Tool policy | Set `readOnly: true` at workspace or agent level                                   |
+| Tool policy | Set `redactSecrets: true`                                                          |
+| Tool policy | Gate write tools with `onApprovalRequired` callback                                |
+| MCP         | Specify `allowedTools` for every MCP server                                        |
+| MCP         | Pin stdio MCP packages with exact versions                                         |
+| Budget      | Set `maxCost` and `maxToolCalls` on every production run                           |
+| Guardrails  | Enable `blockInjectionPatterns` for agents processing external input               |
+| Secrets     | Load all API keys from environment variables, never hard-code                      |
+| Secrets     | Use `process.env.X!` assertion pattern, not string literals                        |
+| Testing     | Add regression tests for prompt injection, path traversal, and destructive actions |
 
 ## Testing Security Behavior
 
@@ -225,9 +236,11 @@ test("agent cannot read outside allowedPaths", async () => {
     provider: DeterministicFakeProvider.create({
       responses: [{ content: "I will try to read /etc/passwd" }],
     }),
-  }).use(FilesystemMCP.connect({
-    allowedPaths: ["./content"],
-  }));
+  }).use(
+    FilesystemMCP.connect({
+      allowedPaths: ["./content"],
+    }),
+  );
 
   const response = await agent.run({ prompt: "Read /etc/passwd" });
   // The adapter rejects the path traversal attempt
@@ -240,8 +253,10 @@ test("agent respects maxToolCalls budget", async () => {
     budget: { maxToolCalls: 2 },
   });
 
-  expect(response.cache?.toolCallsAvoided ?? 0 + (response.measurement?.toolCalls ?? 0))
-    .toBeLessThanOrEqual(2);
+  expect(
+    response.cache?.toolCallsAvoided ??
+      0 + (response.measurement?.toolCalls ?? 0),
+  ).toBeLessThanOrEqual(2);
 });
 ```
 

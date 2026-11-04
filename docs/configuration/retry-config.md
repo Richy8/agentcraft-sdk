@@ -4,12 +4,12 @@
 
 ## `RetryConfig` Fields
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `maxAttempts` | `number` | `1` (no retry) | Maximum number of attempts including the first try. |
-| `backoff` | `'fixed' \| 'exponential' \| 'linear'` | `'exponential'` | Delay strategy between attempts. |
-| `initialDelay` | `number` | `500` | Delay in ms before the first retry. |
-| `maxDelay` | `number` | `15000` | Maximum delay in ms regardless of backoff. |
+| Field          | Type                                   | Default         | Description                                         |
+| -------------- | -------------------------------------- | --------------- | --------------------------------------------------- |
+| `maxAttempts`  | `number`                               | `1` (no retry)  | Maximum number of attempts including the first try. |
+| `backoff`      | `'fixed' \| 'exponential' \| 'linear'` | `'exponential'` | Delay strategy between attempts.                    |
+| `initialDelay` | `number`                               | `500`           | Delay in ms before the first retry.                 |
+| `maxDelay`     | `number`                               | `15000`         | Maximum delay in ms regardless of backoff.          |
 
 ## Usage
 
@@ -106,16 +106,16 @@ Attempt 2: wait initialDelay (500ms)
 
 Only retryable errors trigger automatic retries:
 
-| Error | Retryable |
-| --- | --- |
-| `RateLimitError` | Yes |
-| `ServiceUnavailableError` | Yes |
-| `InternalServerError` | Yes |
-| `NetworkError` | Sometimes (connection errors) |
-| `AuthenticationError` | No |
-| `QuotaExceededError` | No |
-| `ContentPolicyError` | No |
-| `ContextWindowError` | No |
+| Error                     | Retryable                     |
+| ------------------------- | ----------------------------- |
+| `RateLimitError`          | Yes                           |
+| `ServiceUnavailableError` | Yes                           |
+| `InternalServerError`     | Yes                           |
+| `NetworkError`            | Sometimes (connection errors) |
+| `AuthenticationError`     | No                            |
+| `QuotaExceededError`      | No                            |
+| `ContentPolicyError`      | No                            |
+| `ContextWindowError`      | No                            |
 
 Use `isRetryableError(err)` to check programmatically:
 

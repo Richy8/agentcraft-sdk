@@ -4,7 +4,10 @@ All skill methods are imported from `@deskcreate/agentcraft/skills`.
 
 ```ts
 import { Skill } from "@deskcreate/agentcraft/skills";
-import type { GitHubSkillOptions, SkillDefinition } from "@deskcreate/agentcraft/skills";
+import type {
+  GitHubSkillOptions,
+  SkillDefinition,
+} from "@deskcreate/agentcraft/skills";
 ```
 
 ## `Skill.define(spec)`
@@ -35,9 +38,9 @@ const adapter = Skill.from("./skills/code-reviewer");
 
 ```yaml
 ---
-name: code-reviewer        # required
-description: "..."         # required
-version: 1                 # optional
+name: code-reviewer # required
+description: "..." # required
+version: 1 # optional
 ---
 ## Instructions body here
 ```
@@ -79,10 +82,11 @@ https://github.com/owner/repo/tree/ref/subdir
 
 ```ts
 interface GitHubSkillOptions {
-  ref?: string;        // branch, tag, or commit SHA (default: repo default branch)
-  token?: string;      // GitHub PAT for private repos
-  subdir?: string;     // subdirectory within repo (overrides any subdir in the URL)
-  cache?: {            // external cache for cross-restart persistence
+  ref?: string; // branch, tag, or commit SHA (default: repo default branch)
+  token?: string; // GitHub PAT for private repos
+  subdir?: string; // subdirectory within repo (overrides any subdir in the URL)
+  cache?: {
+    // external cache for cross-restart persistence
     get(key: string): Promise<unknown>;
     set(key: string, value: unknown, ttlMs?: number): Promise<void>;
   };
@@ -108,8 +112,8 @@ interface SkillDefinition {
 
 ## Progressive Disclosure Summary
 
-| Level | What the model sees               | When                        |
-| ----- | --------------------------------- | --------------------------- |
-| 1     | `[Skill available: name: desc]`   | Always, in system prompt    |
-| 2     | Full `instructions` string        | When model calls `load_skill_instructions` |
-| 3     | Individual file contents          | When model calls `load_skill_file` |
+| Level | What the model sees             | When                                       |
+| ----- | ------------------------------- | ------------------------------------------ |
+| 1     | `[Skill available: name: desc]` | Always, in system prompt                   |
+| 2     | Full `instructions` string      | When model calls `load_skill_instructions` |
+| 3     | Individual file contents        | When model calls `load_skill_file`         |

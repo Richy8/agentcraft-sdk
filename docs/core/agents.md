@@ -205,8 +205,7 @@ import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
-})
-  .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
+}).use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
 
 // Now agent.run() can invoke Tavily search tools
 const response = await agent.run({

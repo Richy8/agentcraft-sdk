@@ -80,11 +80,11 @@ interface AgentImage {
 
 ### Tools
 
-| Field        | Default              | Purpose                                                                        |
-| ------------ | -------------------- | ------------------------------------------------------------------------------ |
-| `tools`      | Agent attached tools | Run-specific tool definitions (merged with agent-level tools).                 |
-| `use`        | None                 | Attach adapters for this run only. Cleaned up after.                           |
-| `toolPolicy` | Agent policy         | Per-run override or merge of tool approval, guardrails, and limits.            |
+| Field        | Default              | Purpose                                                             |
+| ------------ | -------------------- | ------------------------------------------------------------------- |
+| `tools`      | Agent attached tools | Run-specific tool definitions (merged with agent-level tools).      |
+| `use`        | None                 | Attach adapters for this run only. Cleaned up after.                |
+| `toolPolicy` | Agent policy         | Per-run override or merge of tool approval, guardrails, and limits. |
 
 ### Structured Output
 

@@ -32,7 +32,8 @@ const agent = Agent.create({
   .use(LinkCheckerAdapter.connect());
 
 const response = await agent.run({
-  prompt: "Research sources for a post about TypeScript performance improvements. Map all claims to sources and record them.",
+  prompt:
+    "Research sources for a post about TypeScript performance improvements. Map all claims to sources and record them.",
 });
 
 console.log(response.content);
@@ -42,39 +43,39 @@ console.log(response.content);
 
 ### `CitationManagerAdapter.connect(options?)`
 
-| Option | Required | Default | Purpose |
-| --- | --- | --- | --- |
-| `store` | No | In-memory | Backing store for citation records. Pass a persistent store for durability across runs. |
-| `requireApproval` | No | `false` | Require tool policy approval before recording citations |
-| `maxCitations` | No | `200` | Maximum citations stored per session |
+| Option            | Required | Default   | Purpose                                                                                 |
+| ----------------- | -------- | --------- | --------------------------------------------------------------------------------------- |
+| `store`           | No       | In-memory | Backing store for citation records. Pass a persistent store for durability across runs. |
+| `requireApproval` | No       | `false`   | Require tool policy approval before recording citations                                 |
+| `maxCitations`    | No       | `200`     | Maximum citations stored per session                                                    |
 
 ### `LinkCheckerAdapter.connect(options?)`
 
-| Option | Required | Default | Purpose |
-| --- | --- | --- | --- |
-| `timeoutMs` | No | `5000` | Milliseconds before a link check times out |
-| `allowedDomains` | No | All domains | Restrict link checking to specific domains |
-| `maxConcurrent` | No | `5` | Maximum concurrent link check requests |
-| `userAgent` | No | Default agent string | User agent sent with link check requests |
-| `followRedirects` | No | `true` | Follow HTTP redirects when checking links |
+| Option            | Required | Default              | Purpose                                    |
+| ----------------- | -------- | -------------------- | ------------------------------------------ |
+| `timeoutMs`       | No       | `5000`               | Milliseconds before a link check times out |
+| `allowedDomains`  | No       | All domains          | Restrict link checking to specific domains |
+| `maxConcurrent`   | No       | `5`                  | Maximum concurrent link check requests     |
+| `userAgent`       | No       | Default agent string | User agent sent with link check requests   |
+| `followRedirects` | No       | `true`               | Follow HTTP redirects when checking links  |
 
 ## Citation Tools
 
 ### CitationManagerAdapter Tools
 
-| Tool | Side Effect | Purpose |
-| --- | --- | --- |
-| `record_citation` | write | Store a citation with URL, quote, page title, and claim context |
-| `list_citations` | read | List all citations recorded in the current session |
-| `verify_citation` | read | Check whether a recorded citation URL is still accessible |
-| `export_citations` | read | Export all citations as structured JSON or markdown bibliography |
+| Tool               | Side Effect | Purpose                                                          |
+| ------------------ | ----------- | ---------------------------------------------------------------- |
+| `record_citation`  | write       | Store a citation with URL, quote, page title, and claim context  |
+| `list_citations`   | read        | List all citations recorded in the current session               |
+| `verify_citation`  | read        | Check whether a recorded citation URL is still accessible        |
+| `export_citations` | read        | Export all citations as structured JSON or markdown bibliography |
 
 ### LinkCheckerAdapter Tools
 
-| Tool | Side Effect | Purpose |
-| --- | --- | --- |
-| `check_link` | read | Verify a single URL is live (returns status code, redirect chain) |
-| `check_links_batch` | read | Check multiple URLs concurrently |
+| Tool                | Side Effect | Purpose                                                           |
+| ------------------- | ----------- | ----------------------------------------------------------------- |
+| `check_link`        | read        | Verify a single URL is live (returns status code, redirect chain) |
+| `check_links_batch` | read        | Check multiple URLs concurrently                                  |
 
 ## Patterns
 
@@ -94,7 +95,11 @@ const agent = Agent.create({
 })
   .use(CitationManagerAdapter.connect())
   .use(LinkCheckerAdapter.connect({ timeoutMs: 8000 }))
-  .use(FetchAdapter.connect({ allowedDomains: ["github.com", "npmjs.com", "tc39.es"] }));
+  .use(
+    FetchAdapter.connect({
+      allowedDomains: ["github.com", "npmjs.com", "tc39.es"],
+    }),
+  );
 
 // Research with evidence
 const research = await agent.run({
@@ -127,10 +132,16 @@ const agent = Agent.create({
   apiKey: process.env.OPENAI_API_KEY!,
 })
   .use(CitationManagerAdapter.connect({ maxCitations: 50 }))
-  .use(LinkCheckerAdapter.connect({
-    allowedDomains: ["pubmed.ncbi.nlm.nih.gov", "cochranelibrary.com", "nejm.org"],
-    timeoutMs: 10000,
-  }));
+  .use(
+    LinkCheckerAdapter.connect({
+      allowedDomains: [
+        "pubmed.ncbi.nlm.nih.gov",
+        "cochranelibrary.com",
+        "nejm.org",
+      ],
+      timeoutMs: 10000,
+    }),
+  );
 
 const review = await agent.run({
   prompt: `Synthesize these 5 RCTs on GLP-1 receptor agonists. Only accept sources from PubMed, Cochrane Library, or NEJM.\n\nStudies: [list of abstracts]`,
@@ -160,27 +171,27 @@ When `record_citation` is called, it stores:
 
 ```ts
 interface CitationRecord {
-  id: string;              // Auto-generated
-  url: string;             // Source URL
-  title: string;           // Page or document title
-  quote?: string;          // Relevant verbatim excerpt
-  claim: string;           // The claim this citation supports
-  recordedAt: string;      // ISO timestamp
-  verified?: boolean;      // Whether link was checked live
-  statusCode?: number;     // HTTP response code from link check
+  id: string; // Auto-generated
+  url: string; // Source URL
+  title: string; // Page or document title
+  quote?: string; // Relevant verbatim excerpt
+  claim: string; // The claim this citation supports
+  recordedAt: string; // ISO timestamp
+  verified?: boolean; // Whether link was checked live
+  statusCode?: number; // HTTP response code from link check
 }
 ```
 
 ## Capabilities by Adapter
 
-| Feature | CitationManagerAdapter | LinkCheckerAdapter |
-| --- | --- | --- |
-| Record sources | ✓ | — |
-| Batch link validation | — | ✓ |
-| Single URL check | — | ✓ |
-| Domain allowlisting | — | ✓ |
-| Export bibliography | ✓ | — |
-| Approval gate for writes | ✓ | N/A (read-only) |
+| Feature                  | CitationManagerAdapter | LinkCheckerAdapter |
+| ------------------------ | ---------------------- | ------------------ |
+| Record sources           | ✓                      | —                  |
+| Batch link validation    | —                      | ✓                  |
+| Single URL check         | —                      | ✓                  |
+| Domain allowlisting      | —                      | ✓                  |
+| Export bibliography      | ✓                      | —                  |
+| Approval gate for writes | ✓                      | N/A (read-only)    |
 
 ## Related
 

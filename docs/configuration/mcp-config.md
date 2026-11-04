@@ -11,20 +11,20 @@ MCP config connects external Model Context Protocol servers through built-in wra
 
 ## Transport Types
 
-| Transport | Use case | How to connect |
-| --------- | -------- | -------------- |
-| stdio | Local npm package spawned as child process | `MCP.connect({ command, args })` |
-| http | Remote MCP server over HTTP/SSE | `MCP.connect({ url, auth? })` |
-| package | Auto-install and run an npm package | `MCP.connect({ package })` |
+| Transport | Use case                                   | How to connect                   |
+| --------- | ------------------------------------------ | -------------------------------- |
+| stdio     | Local npm package spawned as child process | `MCP.connect({ command, args })` |
+| http      | Remote MCP server over HTTP/SSE            | `MCP.connect({ url, auth? })`    |
+| package   | Auto-install and run an npm package        | `MCP.connect({ package })`       |
 
 ## Built-In Wrappers — Shared Config
 
 All built-in wrappers accept these options:
 
-| Option            | Required | Default          | Purpose                                                               |
-| ----------------- | -------- | ---------------- | --------------------------------------------------------------------- |
-| `allowedTools`    | No       | All server tools | Tool names to expose. Unlisted tools are hidden from the model.       |
-| `requireApproval` | No       | never            | never, always, or array of tool names that require human approval.    |
+| Option            | Required | Default          | Purpose                                                            |
+| ----------------- | -------- | ---------------- | ------------------------------------------------------------------ |
+| `allowedTools`    | No       | All server tools | Tool names to expose. Unlisted tools are hidden from the model.    |
+| `requireApproval` | No       | never            | never, always, or array of tool names that require human approval. |
 
 ## GitHubMCP
 
@@ -37,15 +37,17 @@ Read and write GitHub repos, issues, PRs, and files.
 ```ts
 import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
-agent.use(GitHubMCP.connect({
-  token: process.env.GITHUB_TOKEN!,
-  allowedTools: [
-    "get_pull_request",
-    "get_pull_request_diff",
-    "get_file_contents",
-    "list_issues",
-  ],
-}));
+agent.use(
+  GitHubMCP.connect({
+    token: process.env.GITHUB_TOKEN!,
+    allowedTools: [
+      "get_pull_request",
+      "get_pull_request_diff",
+      "get_file_contents",
+      "list_issues",
+    ],
+  }),
+);
 ```
 
 Read-only config — safe for code review agents. Add `create_issue` to `allowedTools` to enable write access.
@@ -54,19 +56,21 @@ Read-only config — safe for code review agents. Add `create_issue` to `allowed
 
 Read channel history and post messages via the Slack MCP server.
 
-| Option      | Required | Default | Purpose                                                    |
-| ----------- | -------- | ------- | ---------------------------------------------------------- |
-| `botToken`  | Yes      | None    | Slack bot token (xoxb-...).                                |
-| `teamId`    | Yes      | None    | Slack workspace team ID.                                   |
+| Option     | Required | Default | Purpose                     |
+| ---------- | -------- | ------- | --------------------------- |
+| `botToken` | Yes      | None    | Slack bot token (xoxb-...). |
+| `teamId`   | Yes      | None    | Slack workspace team ID.    |
 
 ```ts
 import { SlackMCP } from "@deskcreate/agentcraft/mcp";
 
-agent.use(SlackMCP.connect({
-  botToken: process.env.SLACK_BOT_TOKEN!,
-  teamId: process.env.SLACK_TEAM_ID!,
-  allowedTools: ["list_channels", "get_channel_history"],
-}));
+agent.use(
+  SlackMCP.connect({
+    botToken: process.env.SLACK_BOT_TOKEN!,
+    teamId: process.env.SLACK_TEAM_ID!,
+    allowedTools: ["list_channels", "get_channel_history"],
+  }),
+);
 ```
 
 ## FilesystemMCP
@@ -80,9 +84,11 @@ Read and write files within scoped directory paths.
 ```ts
 import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
 
-agent.use(FilesystemMCP.connect({
-  allowedPaths: ["./src", "./docs"],
-}));
+agent.use(
+  FilesystemMCP.connect({
+    allowedPaths: ["./src", "./docs"],
+  }),
+);
 ```
 
 ## PostgresMCP / SupabaseMCP
@@ -93,15 +99,19 @@ Connect to PostgreSQL or Supabase databases.
 import { PostgresMCP, SupabaseMCP } from "@deskcreate/agentcraft/mcp";
 
 // PostgreSQL
-agent.use(PostgresMCP.connect({
-  connectionString: process.env.DATABASE_URL!,
-}));
+agent.use(
+  PostgresMCP.connect({
+    connectionString: process.env.DATABASE_URL!,
+  }),
+);
 
 // Supabase
-agent.use(SupabaseMCP.connect({
-  supabaseUrl: process.env.SUPABASE_URL!,
-  supabaseKey: process.env.SUPABASE_SERVICE_KEY!,
-}));
+agent.use(
+  SupabaseMCP.connect({
+    supabaseUrl: process.env.SUPABASE_URL!,
+    supabaseKey: process.env.SUPABASE_SERVICE_KEY!,
+  }),
+);
 ```
 
 ## BraveSearchMCP / FirecrawlMCP
@@ -119,25 +129,27 @@ agent.use(FirecrawlMCP.connect({ apiKey: process.env.FIRECRAWL_API_KEY! }));
 
 Use `MCP.connect({ command, args })` for any MCP server installed as an npm package. Always pin the version.
 
-| Option         | Required | Default | Purpose                                                             |
-| -------------- | -------- | ------- | ------------------------------------------------------------------- |
-| `command`      | Yes      | None    | The executable. Almost always npx.                                  |
-| `args`         | Yes      | None    | Args array. Second element must be a pinned package version.        |
-| `allowedTools` | No       | All     | Restrict which tools the server exposes.                            |
-| `env`          | No       | None    | Extra environment variables passed to the child process.            |
+| Option         | Required | Default | Purpose                                                      |
+| -------------- | -------- | ------- | ------------------------------------------------------------ |
+| `command`      | Yes      | None    | The executable. Almost always npx.                           |
+| `args`         | Yes      | None    | Args array. Second element must be a pinned package version. |
+| `allowedTools` | No       | All     | Restrict which tools the server exposes.                     |
+| `env`          | No       | None    | Extra environment variables passed to the child process.     |
 
 ```ts
 import { MCP } from "@deskcreate/agentcraft/mcp";
 
-agent.use(MCP.connect({
-  command: "npx",
-  args: [
-    "-y",
-    "@modelcontextprotocol/server-filesystem@1.2.3", // always pin — never use @latest
-    "/path/to/allowed/directory",
-  ],
-  allowedTools: ["read_file", "list_directory"],
-}));
+agent.use(
+  MCP.connect({
+    command: "npx",
+    args: [
+      "-y",
+      "@modelcontextprotocol/server-filesystem@1.2.3", // always pin — never use @latest
+      "/path/to/allowed/directory",
+    ],
+    allowedTools: ["read_file", "list_directory"],
+  }),
+);
 ```
 
 **Security:** Unpinned MCP packages can silently update and gain new tools or behaviors. Always pin the version in production.
@@ -146,21 +158,23 @@ agent.use(MCP.connect({
 
 Use `MCP.connect({ url })` for remote MCP servers over HTTP or SSE.
 
-| Option         | Required | Default | Purpose                                                |
-| -------------- | -------- | ------- | ------------------------------------------------------ |
-| `url`          | Yes      | None    | Full URL of the MCP server endpoint.                   |
-| `auth`         | No       | None    | Bearer, API key, or basic auth object.                 |
-| `allowedTools` | No       | All     | Restrict which server tools the agent can call.        |
-| `headers`      | No       | None    | Additional HTTP headers.                               |
+| Option         | Required | Default | Purpose                                         |
+| -------------- | -------- | ------- | ----------------------------------------------- |
+| `url`          | Yes      | None    | Full URL of the MCP server endpoint.            |
+| `auth`         | No       | None    | Bearer, API key, or basic auth object.          |
+| `allowedTools` | No       | All     | Restrict which server tools the agent can call. |
+| `headers`      | No       | None    | Additional HTTP headers.                        |
 
 ```ts
 import { MCP } from "@deskcreate/agentcraft/mcp";
 
-agent.use(MCP.connect({
-  url: "https://mcp.internal.company.com/mcp",
-  auth: { type: "bearer", token: process.env.INTERNAL_MCP_TOKEN! },
-  allowedTools: ["search_docs", "get_runbook", "list_services"],
-}));
+agent.use(
+  MCP.connect({
+    url: "https://mcp.internal.company.com/mcp",
+    auth: { type: "bearer", token: process.env.INTERNAL_MCP_TOKEN! },
+    allowedTools: ["search_docs", "get_runbook", "list_services"],
+  }),
+);
 ```
 
 ## Security Rules For MCP
@@ -181,18 +195,21 @@ const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
   toolPolicy: {
-    readOnly: true,           // no writes get through
-    maxResultBytes: 40_000,   // prevent large MCP payloads
+    readOnly: true, // no writes get through
+    maxResultBytes: 40_000, // prevent large MCP payloads
     redactSecrets: true,
   },
-}).use(GitHubMCP.connect({
-  token: process.env.GITHUB_TOKEN!,
-  allowedTools: [             // explicit allowlist — no surprises
-    "get_pull_request",
-    "get_file_contents",
-    "list_issues",
-  ],
-}));
+}).use(
+  GitHubMCP.connect({
+    token: process.env.GITHUB_TOKEN!,
+    allowedTools: [
+      // explicit allowlist — no surprises
+      "get_pull_request",
+      "get_file_contents",
+      "list_issues",
+    ],
+  }),
+);
 ```
 
 ## Combining Multiple MCPs
@@ -201,22 +218,30 @@ Chain `.use()` calls for each server:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { GitHubMCP, SlackMCP, BraveSearchMCP } from "@deskcreate/agentcraft/mcp";
+import {
+  GitHubMCP,
+  SlackMCP,
+  BraveSearchMCP,
+} from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
 })
   .use(BraveSearchMCP.connect({ apiKey: process.env.BRAVE_API_KEY! }))
-  .use(GitHubMCP.connect({
-    token: process.env.GITHUB_TOKEN!,
-    allowedTools: ["get_pull_request", "get_file_contents"],
-  }))
-  .use(SlackMCP.connect({
-    botToken: process.env.SLACK_BOT_TOKEN!,
-    teamId: process.env.SLACK_TEAM_ID!,
-    allowedTools: ["list_channels", "get_channel_history"],
-  }));
+  .use(
+    GitHubMCP.connect({
+      token: process.env.GITHUB_TOKEN!,
+      allowedTools: ["get_pull_request", "get_file_contents"],
+    }),
+  )
+  .use(
+    SlackMCP.connect({
+      botToken: process.env.SLACK_BOT_TOKEN!,
+      teamId: process.env.SLACK_TEAM_ID!,
+      allowedTools: ["list_channels", "get_channel_history"],
+    }),
+  );
 ```
 
 For the full wrapper catalog, see [Built-In MCP Wrappers Reference](../reference/built-in-mcps.md).

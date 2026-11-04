@@ -7,11 +7,11 @@ Per-provider configuration reference.
 Model strings follow the format `provider:model-id`:
 
 ```ts
-"openai:gpt-4o"
-"anthropic:claude-sonnet-4-6"
-"gemini:gemini-2.5-pro"
-"bedrock:anthropic.claude-3-7-sonnet-20250219-v1:0"
-"cohere:command-r-plus-08-2024"
+"openai:gpt-4o";
+"anthropic:claude-sonnet-4-6";
+"gemini:gemini-2.5-pro";
+"bedrock:anthropic.claude-3-7-sonnet-20250219-v1:0";
+"cohere:command-r-plus-08-2024";
 ```
 
 Or use the `Provider` catalog to avoid typos:
@@ -19,9 +19,9 @@ Or use the `Provider` catalog to avoid typos:
 ```ts
 import { Provider } from "@deskcreate/agentcraft";
 
-Provider.openai["gpt-4o"]
-Provider.anthropic["claude-sonnet-4-6"]
-Provider.gemini["gemini-2.5-pro"]
+Provider.openai["gpt-4o"];
+Provider.anthropic["claude-sonnet-4-6"];
+Provider.gemini["gemini-2.5-pro"];
 ```
 
 ## OpenAI
@@ -36,11 +36,11 @@ Agent.create({
 });
 ```
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `apiKey` | `string` | Yes | OpenAI API key. Also read from `OPENAI_API_KEY` env var. |
-| `organizationId` | `string` | No | OpenAI organization ID. |
-| `baseUrl` | `string` | No | Override the API base URL for compatible endpoints. |
+| Field            | Type     | Required | Description                                              |
+| ---------------- | -------- | -------- | -------------------------------------------------------- |
+| `apiKey`         | `string` | Yes      | OpenAI API key. Also read from `OPENAI_API_KEY` env var. |
+| `organizationId` | `string` | No       | OpenAI organization ID.                                  |
+| `baseUrl`        | `string` | No       | Override the API base URL for compatible endpoints.      |
 
 ## Anthropic
 
@@ -53,10 +53,10 @@ Agent.create({
 });
 ```
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `apiKey` | `string` | Yes | Anthropic API key. Also read from `ANTHROPIC_API_KEY`. |
-| `anthropicVersion` | `string` | No | API version header. Defaults to latest stable. |
+| Field              | Type     | Required | Description                                            |
+| ------------------ | -------- | -------- | ------------------------------------------------------ |
+| `apiKey`           | `string` | Yes      | Anthropic API key. Also read from `ANTHROPIC_API_KEY`. |
+| `anthropicVersion` | `string` | No       | API version header. Defaults to latest stable.         |
 
 ## Google Gemini
 
@@ -69,10 +69,10 @@ Agent.create({
 });
 ```
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `apiKey` | `string` | Yes | Google AI Studio API key. `GOOGLE_API_KEY` is used in this repo's live-test setup; `GEMINI_API_KEY` is also accepted by some examples and integrations. |
-| `projectId` | `string` | No | Google Cloud project ID (for Vertex AI). |
+| Field       | Type     | Required | Description                                                                                                                                             |
+| ----------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apiKey`    | `string` | Yes      | Google AI Studio API key. `GOOGLE_API_KEY` is used in this repo's live-test setup; `GEMINI_API_KEY` is also accepted by some examples and integrations. |
+| `projectId` | `string` | No       | Google Cloud project ID (for Vertex AI).                                                                                                                |
 
 ## AWS Bedrock
 
@@ -84,10 +84,10 @@ Agent.create({
 });
 ```
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `region` | `string` | Yes | AWS region where Bedrock is available. |
-| `credentials` | `AwsCredentials` | No | Explicit credentials object. Defaults to SDK credential chain. |
+| Field         | Type             | Required | Description                                                    |
+| ------------- | ---------------- | -------- | -------------------------------------------------------------- |
+| `region`      | `string`         | Yes      | AWS region where Bedrock is available.                         |
+| `credentials` | `AwsCredentials` | No       | Explicit credentials object. Defaults to SDK credential chain. |
 
 ## Cohere
 

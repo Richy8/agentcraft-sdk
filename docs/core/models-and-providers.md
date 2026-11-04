@@ -19,7 +19,7 @@ const response = await agent.run({
 console.log(response.content);
 // → "Provider portability means your application code..."
 console.log(response.provider); // → "openai"
-console.log(response.model);    // → "gpt-4o-mini"
+console.log(response.model); // → "gpt-4o-mini"
 ```
 
 ## Provider Catalog
@@ -28,21 +28,21 @@ The `Provider` object gives you a typed, autocomplete-friendly catalog of every 
 
 ```ts
 // All model strings are typed — typos are caught at compile time
-Provider.openai["gpt-4o"]
-Provider.anthropic["claude-sonnet-4-6"]
-Provider.gemini["gemini-2.5-pro"]
-Provider.groq["llama-3.3-70b-versatile"]
-Provider.ollama["llama3.2"]
+Provider.openai["gpt-4o"];
+Provider.anthropic["claude-sonnet-4-6"];
+Provider.gemini["gemini-2.5-pro"];
+Provider.groq["llama-3.3-70b-versatile"];
+Provider.ollama["llama3.2"];
 ```
 
 ## Configuration
 
-| Field | Required | Default | Purpose |
-| --- | --- | --- | --- |
-| `model` | Yes | — | Provider-prefixed model ID or `Provider` catalog value |
-| `apiKey` | Cloud providers | Env var | API key for authentication |
-| `baseUrl` | Local / custom | Provider default | Base URL for local or OpenAI-compatible servers |
-| `timeout` | No | `120000` ms | Per-request timeout |
+| Field     | Required        | Default          | Purpose                                                |
+| --------- | --------------- | ---------------- | ------------------------------------------------------ |
+| `model`   | Yes             | —                | Provider-prefixed model ID or `Provider` catalog value |
+| `apiKey`  | Cloud providers | Env var          | API key for authentication                             |
+| `baseUrl` | Local / custom  | Provider default | Base URL for local or OpenAI-compatible servers        |
+| `timeout` | No              | `120000` ms      | Per-request timeout                                    |
 
 Provider-specific fields (Azure, Bedrock, Vertex) are covered in the [Provider Config](../configuration/provider-config.md) reference.
 
@@ -72,7 +72,9 @@ const reasoning = Agent.create({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-const response = await agent.run({ prompt: "Write a TypeScript type utility." });
+const response = await agent.run({
+  prompt: "Write a TypeScript type utility.",
+});
 console.log(response.content);
 ```
 
@@ -259,8 +261,8 @@ import { Agent, Provider } from "@deskcreate/agentcraft";
 const agent = Agent.create({
   model: Provider.azure.deployment,
   apiKey: process.env.AZURE_OPENAI_API_KEY!,
-  endpoint: process.env.AZURE_OPENAI_ENDPOINT!,  // "https://your-resource.openai.azure.com"
-  deployment: "gpt-4o-prod",                     // your Azure deployment name
+  endpoint: process.env.AZURE_OPENAI_ENDPOINT!, // "https://your-resource.openai.azure.com"
+  deployment: "gpt-4o-prod", // your Azure deployment name
   apiVersion: "2024-02-01",
 });
 
@@ -351,10 +353,10 @@ import { Agent, Provider } from "@deskcreate/agentcraft";
 const info = Agent.inspect(Provider.openai["gpt-4o"]);
 
 // Capabilities
-console.log(info.capabilities.vision);     // → true
-console.log(info.capabilities.streaming);  // → true
-console.log(info.capabilities.tools);      // → true
-console.log(info.capabilities.jsonMode);   // → true
+console.log(info.capabilities.vision); // → true
+console.log(info.capabilities.streaming); // → true
+console.log(info.capabilities.tools); // → true
+console.log(info.capabilities.jsonMode); // → true
 
 // Pricing (per 1M tokens)
 console.log(`Input: $${info.pricing.inputPerM}`);
@@ -400,15 +402,22 @@ console.log(`${all.length} models available`);
 
 // Filter to vision-capable OpenAI models only
 const visionModels = Agent.catalog({ provider: "openai", vision: true });
-visionModels.forEach((m) => console.log(`${m.model} — $${m.pricing.inputPerM}/M input`));
+visionModels.forEach((m) =>
+  console.log(`${m.model} — $${m.pricing.inputPerM}/M input`),
+);
 
 // High-quality streaming models, sorted by quality score
 const highQuality = Agent.catalog({ minQuality: 8, streaming: true });
-highQuality.forEach((m) => console.log(`${m.provider}/${m.model} — quality: ${m.scores.quality}`));
+highQuality.forEach((m) =>
+  console.log(`${m.provider}/${m.model} — quality: ${m.scores.quality}`),
+);
 
 // Local-only models (no API key required)
 const local = Agent.catalog({ provider: "ollama" });
-console.log("Local models:", local.map((m) => m.model));
+console.log(
+  "Local models:",
+  local.map((m) => m.model),
+);
 ```
 
 ## Switching Providers at Runtime
@@ -420,9 +429,18 @@ import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Swap model string to switch provider — no other change needed
 const providers = [
-  { model: Provider.openai["gpt-4o-mini"],          apiKey: process.env.OPENAI_API_KEY! },
-  { model: Provider.anthropic["claude-haiku-4-5"],  apiKey: process.env.ANTHROPIC_API_KEY! },
-  { model: Provider.groq["llama-3.1-8b-instant"],   apiKey: process.env.GROQ_API_KEY! },
+  {
+    model: Provider.openai["gpt-4o-mini"],
+    apiKey: process.env.OPENAI_API_KEY!,
+  },
+  {
+    model: Provider.anthropic["claude-haiku-4-5"],
+    apiKey: process.env.ANTHROPIC_API_KEY!,
+  },
+  {
+    model: Provider.groq["llama-3.1-8b-instant"],
+    apiKey: process.env.GROQ_API_KEY!,
+  },
 ];
 
 for (const config of providers) {
@@ -434,23 +452,23 @@ for (const config of providers) {
 
 ## Environment Variable Reference
 
-| Provider | Variable | Notes |
-| --- | --- | --- |
-| OpenAI | `OPENAI_API_KEY` | Required for all OpenAI models |
-| Anthropic | `ANTHROPIC_API_KEY` | Required for all Claude models |
-| Google Gemini | `GOOGLE_API_KEY` | `GEMINI_API_KEY` is also accepted by some integrations |
-| Groq | `GROQ_API_KEY` | |
-| DeepSeek | `DEEPSEEK_API_KEY` | |
-| xAI | `XAI_API_KEY` | |
-| Mistral | `MISTRAL_API_KEY` | |
-| Cohere | `COHERE_API_KEY` | |
-| Together | `TOGETHER_API_KEY` | |
-| Fireworks | `FIREWORKS_API_KEY` | |
-| OpenRouter | `OPENROUTER_API_KEY` | |
-| AWS Bedrock | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` | Plus `region` in config |
-| Azure OpenAI | `AZURE_OPENAI_API_KEY` | Plus `endpoint` + `deployment` in config |
-| Google Vertex | `GOOGLE_API_KEY` | Plus `project` + `location` in config |
-| Ollama / LM Studio / vLLM | No key needed | Set `baseUrl` to local server |
+| Provider                  | Variable                                      | Notes                                                  |
+| ------------------------- | --------------------------------------------- | ------------------------------------------------------ |
+| OpenAI                    | `OPENAI_API_KEY`                              | Required for all OpenAI models                         |
+| Anthropic                 | `ANTHROPIC_API_KEY`                           | Required for all Claude models                         |
+| Google Gemini             | `GOOGLE_API_KEY`                              | `GEMINI_API_KEY` is also accepted by some integrations |
+| Groq                      | `GROQ_API_KEY`                                |                                                        |
+| DeepSeek                  | `DEEPSEEK_API_KEY`                            |                                                        |
+| xAI                       | `XAI_API_KEY`                                 |                                                        |
+| Mistral                   | `MISTRAL_API_KEY`                             |                                                        |
+| Cohere                    | `COHERE_API_KEY`                              |                                                        |
+| Together                  | `TOGETHER_API_KEY`                            |                                                        |
+| Fireworks                 | `FIREWORKS_API_KEY`                           |                                                        |
+| OpenRouter                | `OPENROUTER_API_KEY`                          |                                                        |
+| AWS Bedrock               | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` | Plus `region` in config                                |
+| Azure OpenAI              | `AZURE_OPENAI_API_KEY`                        | Plus `endpoint` + `deployment` in config               |
+| Google Vertex             | `GOOGLE_API_KEY`                              | Plus `project` + `location` in config                  |
+| Ollama / LM Studio / vLLM | No key needed                                 | Set `baseUrl` to local server                          |
 
 ## Related
 

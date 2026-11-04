@@ -23,38 +23,39 @@ const agent = Agent.create({
 );
 
 const response = await agent.run({
-  prompt: "Generate a hero image for a blog post about TypeScript 5.x — modern, developer-focused aesthetic.",
+  prompt:
+    "Generate a hero image for a blog post about TypeScript 5.x — modern, developer-focused aesthetic.",
 });
 console.log(response.content); // includes the image URL or base64 data
 ```
 
 ### Config
 
-| Field | Required | Default | Purpose |
-| --- | --- | --- | --- |
-| `provider` | Yes | — | `"openai"` or compatible |
-| `apiKey` | Yes | — | Provider API key |
-| `defaultModel` | No | Provider default | Default model (e.g. `"dall-e-3"`) |
-| `defaultSize` | No | Provider default | Default image size (e.g. `"1024x1024"`) |
-| `timeoutMs` | No | `30000` | Per-request timeout |
+| Field          | Required | Default          | Purpose                                 |
+| -------------- | -------- | ---------------- | --------------------------------------- |
+| `provider`     | Yes      | —                | `"openai"` or compatible                |
+| `apiKey`       | Yes      | —                | Provider API key                        |
+| `defaultModel` | No       | Provider default | Default model (e.g. `"dall-e-3"`)       |
+| `defaultSize`  | No       | Provider default | Default image size (e.g. `"1024x1024"`) |
+| `timeoutMs`    | No       | `30000`          | Per-request timeout                     |
 
 ### Tools
 
-| Tool | Side Effect | Purpose |
-| --- | --- | --- |
-| `generate_image` | `external` | Generate an image from a text prompt |
+| Tool             | Side Effect | Purpose                              |
+| ---------------- | ----------- | ------------------------------------ |
+| `generate_image` | `external`  | Generate an image from a text prompt |
 
 ## Other Capabilities via MCP
 
 For capabilities not covered by native adapters, use MCP wrappers or `MCP.connect()`:
 
-| Capability | Approach |
-| --- | --- |
-| Email (Gmail) | `MCP.connect({ package: "@gomomento/mcp-gmail" })` or Gmail MCP |
-| Calendar | `MCP.connect()` with a Google Calendar MCP server |
-| Slack messaging | `SlackMCP.connect({ botToken, teamId })` from `@deskcreate/agentcraft/mcp` |
-| File read/write | `FilesystemMCP.connect({ allowedPaths })` from `@deskcreate/agentcraft/mcp` |
-| GitHub operations | `GitHubMCP.connect({ token })` from `@deskcreate/agentcraft/mcp` |
+| Capability        | Approach                                                                    |
+| ----------------- | --------------------------------------------------------------------------- |
+| Email (Gmail)     | `MCP.connect({ package: "@gomomento/mcp-gmail" })` or Gmail MCP             |
+| Calendar          | `MCP.connect()` with a Google Calendar MCP server                           |
+| Slack messaging   | `SlackMCP.connect({ botToken, teamId })` from `@deskcreate/agentcraft/mcp`  |
+| File read/write   | `FilesystemMCP.connect({ allowedPaths })` from `@deskcreate/agentcraft/mcp` |
+| GitHub operations | `GitHubMCP.connect({ token })` from `@deskcreate/agentcraft/mcp`            |
 
 See [Built-In MCP Wrappers](../mcp/built-in.md) for the full list, or use [`MCP.connect()`](../mcp/custom.md) to connect any MCP server.
 

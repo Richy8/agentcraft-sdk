@@ -17,10 +17,10 @@ const memory = AgentMemory.local();
 
 ```ts
 const memory = AgentMemory.qdrant({
-  url: process.env.QDRANT_URL!,         // e.g., "http://localhost:6333"
-  apiKey: process.env.QDRANT_API_KEY,   // optional for local instances
+  url: process.env.QDRANT_URL!, // e.g., "http://localhost:6333"
+  apiKey: process.env.QDRANT_API_KEY, // optional for local instances
   collectionName: "agent-memory",
-  dimension: 1536,   // must match your embedding model's output dimension
+  dimension: 1536, // must match your embedding model's output dimension
   namespace: "prod", // optional, for multi-tenant isolation
 });
 ```
@@ -61,15 +61,15 @@ const store = new MemoryArtifactStore();
 import { FileArtifactStore } from "@deskcreate/agentcraft";
 
 const store = new FileArtifactStore({
-  root: ".agentcraft/artifacts",   // required: root directory
-  maxSizeBytes: 10 * 1024 * 1024,  // optional: max artifact size (10MB default)
+  root: ".agentcraft/artifacts", // required: root directory
+  maxSizeBytes: 10 * 1024 * 1024, // optional: max artifact size (10MB default)
 });
 ```
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `root` | `string` | Required | Directory for storing artifact JSON files. |
-| `maxSizeBytes` | `number` | `10485760` (10MB) | Maximum size of a single artifact. |
+| Field          | Type     | Default           | Description                                |
+| -------------- | -------- | ----------------- | ------------------------------------------ |
+| `root`         | `string` | Required          | Directory for storing artifact JSON files. |
+| `maxSizeBytes` | `number` | `10485760` (10MB) | Maximum size of a single artifact.         |
 
 ## `SQLiteArtifactStore` Options
 
@@ -77,15 +77,15 @@ const store = new FileArtifactStore({
 import { SQLiteArtifactStore } from "@deskcreate/agentcraft";
 
 const store = new SQLiteArtifactStore({
-  path: ".agentcraft/artifacts.db",  // required: SQLite database file path
-  tableName: "artifacts",            // optional: custom table name
+  path: ".agentcraft/artifacts.db", // required: SQLite database file path
+  tableName: "artifacts", // optional: custom table name
 });
 ```
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `path` | `string` | Required | Path to the SQLite `.db` file. Created if it doesn't exist. |
-| `tableName` | `string` | `'artifacts'` | Table name for artifact storage. |
+| Field       | Type     | Default       | Description                                                 |
+| ----------- | -------- | ------------- | ----------------------------------------------------------- |
+| `path`      | `string` | Required      | Path to the SQLite `.db` file. Created if it doesn't exist. |
+| `tableName` | `string` | `'artifacts'` | Table name for artifact storage.                            |
 
 ## Related
 

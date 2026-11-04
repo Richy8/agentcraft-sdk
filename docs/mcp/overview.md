@@ -45,10 +45,10 @@ The model never knows whether a tool comes from a native adapter or an MCP serve
 
 Both attach tool capabilities to an agent. The choice depends on your use case:
 
-| Choose | When |
-| --- | --- |
-| **Native adapter** | You need typed config, stable tool names, predictable behavior, and tight test coverage |
-| **MCP** | The ecosystem already has a server, you need dynamic tool discovery, or you want to reuse existing MCP infrastructure |
+| Choose             | When                                                                                                                  |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| **Native adapter** | You need typed config, stable tool names, predictable behavior, and tight test coverage                               |
+| **MCP**            | The ecosystem already has a server, you need dynamic tool discovery, or you want to reuse existing MCP infrastructure |
 
 For most AgentCraft use cases, prefer a built-in MCP wrapper (which gives you typed config) over raw `MCPAdapter.connect()`.
 
@@ -75,7 +75,12 @@ const agent = Agent.create({
 })
   .use(GitHubMCP.connect({ token: process.env.GITHUB_TOKEN! }))
   .use(BraveSearchMCP.connect({ apiKey: process.env.BRAVE_API_KEY! }))
-  .use(SlackMCP.connect({ botToken: process.env.SLACK_BOT_TOKEN!, teamId: process.env.SLACK_TEAM_ID! }));
+  .use(
+    SlackMCP.connect({
+      botToken: process.env.SLACK_BOT_TOKEN!,
+      teamId: process.env.SLACK_TEAM_ID!,
+    }),
+  );
 ```
 
 See [Built-In MCP Wrappers](./built-in.md) for the full list.
@@ -151,9 +156,9 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
-    readOnly: true,               // block all write MCP tools
-    maxResultBytes: 100_000,      // cap result size
-    redactSecrets: true,          // strip secrets from MCP results
+    readOnly: true, // block all write MCP tools
+    maxResultBytes: 100_000, // cap result size
+    redactSecrets: true, // strip secrets from MCP results
   },
 }).use(
   GitHubMCP.connect({

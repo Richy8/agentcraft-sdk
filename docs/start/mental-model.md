@@ -14,14 +14,14 @@ Agent.create(config)
 
 ## Main Concepts
 
-| Concept      | Purpose                                                                  | Config home                                 | Examples                                                  |
-| ------------ | ------------------------------------------------------------------------ | ------------------------------------------- | --------------------------------------------------------- |
-| Agent        | Owns model, provider, defaults, policy, cache, and attached capability.  | [Agents](../core/agents.md)                 | [Basic](../examples-cookbook/beginner.md)                 |
-| Tool         | A callable function the model may use.                                   | [Tools](../tools/tools.md)                  | [Tool examples](../examples-cookbook/tools-adapters.md)   |
-| Adapter      | A bundle of tools for a system such as GitHub, files, web, or analytics. | [Adapters](../adapters/overview.md)         | [Built-ins](../reference/built-in-adapters.md)            |
-| MCP          | External tool server connection.                                         | [MCP](../mcp/overview.md)                   | [MCP examples](../examples-cookbook/mcp.md)               |
-| ToolPolicy   | Approval, read-only, timeout, redaction, and guardrails.                 | [Tool Policy](../tools/tool-policy.md)      | [Production examples](../examples-cookbook/production.md) |
-| Cache        | Reuses safe read results.                                                | [AgentCache](../persistence/agent-cache.md) | [Caching](../persistence/agent-cache.md)                  |
+| Concept    | Purpose                                                                  | Config home                                 | Examples                                                  |
+| ---------- | ------------------------------------------------------------------------ | ------------------------------------------- | --------------------------------------------------------- |
+| Agent      | Owns model, provider, defaults, policy, cache, and attached capability.  | [Agents](../core/agents.md)                 | [Basic](../examples-cookbook/beginner.md)                 |
+| Tool       | A callable function the model may use.                                   | [Tools](../tools/tools.md)                  | [Tool examples](../examples-cookbook/tools-adapters.md)   |
+| Adapter    | A bundle of tools for a system such as GitHub, files, web, or analytics. | [Adapters](../adapters/overview.md)         | [Built-ins](../reference/built-in-adapters.md)            |
+| MCP        | External tool server connection.                                         | [MCP](../mcp/overview.md)                   | [MCP examples](../examples-cookbook/mcp.md)               |
+| ToolPolicy | Approval, read-only, timeout, redaction, and guardrails.                 | [Tool Policy](../tools/tool-policy.md)      | [Production examples](../examples-cookbook/production.md) |
+| Cache      | Reuses safe read results.                                                | [AgentCache](../persistence/agent-cache.md) | [Caching](../persistence/agent-cache.md)                  |
 
 ## How Features Work Together
 

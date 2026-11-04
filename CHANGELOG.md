@@ -44,15 +44,17 @@ Replace `CreatorPacks.blog()` or skill directives with explicit `systemMessage` 
 ```ts
 // Before (0.2.x)
 import { CreatorPacks } from "@deskcreate/agentcraft/packs";
-const agent = Agent.create({ model, apiKey, skillActivation: "auto" })
-  .use(CreatorPacks.blog());
+const agent = Agent.create({ model, apiKey, skillActivation: "auto" }).use(
+  CreatorPacks.blog(),
+);
 
 // After (0.3.0)
 import { createAdapter, tool } from "@deskcreate/agentcraft/adapters";
 const agent = Agent.create({
   model,
   apiKey,
-  systemMessage: "You are a professional blog writer. Write in a clear, direct tone.",
+  systemMessage:
+    "You are a professional blog writer. Write in a clear, direct tone.",
 }).use(myContentAdapter); // your own tools as needed
 ```
 

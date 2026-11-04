@@ -71,7 +71,11 @@ Adapters are named bundles of typed tools you attach to an agent with `.use()`. 
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { createAdapter, tool, FetchAdapter } from "@deskcreate/agentcraft/adapters";
+import {
+  createAdapter,
+  tool,
+  FetchAdapter,
+} from "@deskcreate/agentcraft/adapters";
 
 // Built-in adapter — domain-allowlisted web fetch
 const agent = Agent.create({
@@ -83,15 +87,20 @@ const agent = Agent.create({
 // Custom adapter — typed tools with security metadata
 const mathAdapter = createAdapter({
   name: "math",
-  metadata: { kind: "custom", auth: "none", sideEffects: ["none"], readOnly: true },
+  metadata: {
+    kind: "custom",
+    auth: "none",
+    sideEffects: ["none"],
+    readOnly: true,
+  },
   tools: [
     tool("compound_interest", {
       description: "Calculate compound interest: principal × (1 + rate)^years.",
       sideEffect: "none",
       params: {
         principal: { type: "number", description: "Starting amount." },
-        rate:      { type: "number", description: "Annual rate as decimal." },
-        years:     { type: "number", description: "Number of years." },
+        rate: { type: "number", description: "Annual rate as decimal." },
+        years: { type: "number", description: "Number of years." },
       },
       run: async ({ principal, rate, years }) => ({
         result: principal * Math.pow(1 + rate, years),
@@ -123,12 +132,12 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
-    readOnly: true,                          // block any write/external sideEffect tools
-    redactSecrets: true,                     // scrub secrets from args and results
-    timeoutMs: 5000,                         // per-tool execution timeout
+    readOnly: true, // block any write/external sideEffect tools
+    redactSecrets: true, // scrub secrets from args and results
+    timeoutMs: 5000, // per-tool execution timeout
     onApprovalRequired: async ({ tool }) => {
       console.log(`Approval needed for: ${tool.name}`);
-      return false;                          // deny; swap for real approval logic
+      return false; // deny; swap for real approval logic
     },
     onAuditEvent: (evt) => console.log(evt), // every tool lifecycle event
     inputGuardrails: [
@@ -194,14 +203,21 @@ const suite = AgentEval.suite({
 const evalReport = await AgentEval.run({ agent, suite });
 await AgentEval.writeMarkdown(evalReport, "reports/evals/content-gate.md");
 
-const response = await agent.run({ prompt: "Summarize the article plan.", trace: true });
+const response = await agent.run({
+  prompt: "Summarize the article plan.",
+  trace: true,
+});
 await AgentReports.writeMarkdown(response, "reports/runs/article-plan.md");
 ```
 
 ## Distributed Cache and Governance
 
 ```ts
-import { AgentCache, ApprovalQueue, AgentWorkspace } from "@deskcreate/agentcraft";
+import {
+  AgentCache,
+  ApprovalQueue,
+  AgentWorkspace,
+} from "@deskcreate/agentcraft";
 
 const workspace = AgentWorkspace.create({
   cache: AgentCache.redis({
@@ -234,7 +250,9 @@ const memory = AgentMemory.create({
   scope: "session",
 });
 
-await memory.store({ content: "Voice: specific, practical, no motivational filler." });
+await memory.store({
+  content: "Voice: specific, practical, no motivational filler.",
+});
 
 const results = await memory.search({ query: "brand voice", topK: 3 });
 

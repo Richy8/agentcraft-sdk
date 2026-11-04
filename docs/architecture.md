@@ -71,16 +71,16 @@ Every `agent.run()` call follows this sequence:
 
 The `Agent` class is an intentionally thin facade. Internal behavior is split across focused modules:
 
-| Module | Responsibility |
-| --- | --- |
-| `agent/runtime/agent-runtime` | Run/stream choreography, trace spans, cost reports, cache summary assembly |
-| `agent/runtime/structured-output-flow` | JSON-mode vs tool-fallback decisions for structured output |
-| `agent/adapters/attachment-manager` | `.use()` attachment validation, dependency checks, tool-name conflict detection |
-| `agent/adapters/lifecycle-manager` | Adapter init/cleanup, run-only adapter cleanup order |
-| `agent/adapters/run-scope` | Run-level `use` attachments and scoped dependency validation |
-| `agent/tools/tool-manager` | Tool exposure, policy wrapping, trace policy, MCP wrapping, cache wiring |
-| `agent/tools/tool-cache-manager` | Cache lookup/write behavior around tool execution |
-| `agent/memory/context-injector` | Per-run semantic memory retrieval and bounded context injection |
+| Module                                 | Responsibility                                                                  |
+| -------------------------------------- | ------------------------------------------------------------------------------- |
+| `agent/runtime/agent-runtime`          | Run/stream choreography, trace spans, cost reports, cache summary assembly      |
+| `agent/runtime/structured-output-flow` | JSON-mode vs tool-fallback decisions for structured output                      |
+| `agent/adapters/attachment-manager`    | `.use()` attachment validation, dependency checks, tool-name conflict detection |
+| `agent/adapters/lifecycle-manager`     | Adapter init/cleanup, run-only adapter cleanup order                            |
+| `agent/adapters/run-scope`             | Run-level `use` attachments and scoped dependency validation                    |
+| `agent/tools/tool-manager`             | Tool exposure, policy wrapping, trace policy, MCP wrapping, cache wiring        |
+| `agent/tools/tool-cache-manager`       | Cache lookup/write behavior around tool execution                               |
+| `agent/memory/context-injector`        | Per-run semantic memory retrieval and bounded context injection                 |
 
 ## Tool Call Data Flow
 
@@ -145,16 +145,16 @@ AgentPool (request distribution)
 
 ## Configuration Boundaries
 
-| Boundary | Configured with | Scope |
-| --- | --- | --- |
-| Agent defaults | `Agent.create()` | All runs on this agent |
-| Per-run behavior | `agent.run()` | Single run only |
-| Provider protocol | Provider-specific fields on `Agent.create()` | SDK client construction |
-| Tool execution | `ToolDefinition` + `ToolPolicy` | All tool calls through this agent |
-| Adapter lifecycle | Adapter constructor config + `.use()` | Adapter's tools on this agent |
-| MCP server | `MCPAdapter.connect()` or built-in wrapper config | All tool calls from that MCP server |
-| Workspace | `AgentWorkspace.memory()` | Shared across all agents in the workspace |
-| Workflow | `AgentWorkflow.create({ steps, workspace })` | All steps in the workflow run |
+| Boundary          | Configured with                                   | Scope                                     |
+| ----------------- | ------------------------------------------------- | ----------------------------------------- |
+| Agent defaults    | `Agent.create()`                                  | All runs on this agent                    |
+| Per-run behavior  | `agent.run()`                                     | Single run only                           |
+| Provider protocol | Provider-specific fields on `Agent.create()`      | SDK client construction                   |
+| Tool execution    | `ToolDefinition` + `ToolPolicy`                   | All tool calls through this agent         |
+| Adapter lifecycle | Adapter constructor config + `.use()`             | Adapter's tools on this agent             |
+| MCP server        | `MCPAdapter.connect()` or built-in wrapper config | All tool calls from that MCP server       |
+| Workspace         | `AgentWorkspace.memory()`                         | Shared across all agents in the workspace |
+| Workflow          | `AgentWorkflow.create({ steps, workspace })`      | All steps in the workflow run             |
 
 ## Entry Points and What They Export
 
@@ -163,14 +163,25 @@ AgentPool (request distribution)
 import { Agent, AgentCache, PromptAssembler } from "@deskcreate/agentcraft";
 
 // Adapters — built-in native adapters
-import { FetchAdapter, TavilySearchAdapter, DatabaseAdapter, ImageGenerationAdapter } from "@deskcreate/agentcraft/adapters";
+import {
+  FetchAdapter,
+  TavilySearchAdapter,
+  DatabaseAdapter,
+  ImageGenerationAdapter,
+} from "@deskcreate/agentcraft/adapters";
 
 // Team and workflow orchestration
 import { AgentTeam } from "@deskcreate/agentcraft/team";
 import { AgentWorkflow, AgentWorkspace } from "@deskcreate/agentcraft";
 
 // MCP — built-in MCP wrappers and generic MCP.connect()
-import { GitHubMCP, SlackMCP, FilesystemMCP, MCP, MCPAdapter } from "@deskcreate/agentcraft/mcp";
+import {
+  GitHubMCP,
+  SlackMCP,
+  FilesystemMCP,
+  MCP,
+  MCPAdapter,
+} from "@deskcreate/agentcraft/mcp";
 ```
 
 ## Related

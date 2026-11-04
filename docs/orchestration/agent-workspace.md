@@ -32,12 +32,8 @@ const tavilyKey = process.env.TAVILY_API_KEY ?? "";
 const workspace = AgentWorkspace.create({
   cache: AgentCache.file(".cache", { strategy: "auto", namespace: "acme" }),
   store: FileArtifactStore({ root: ".artifacts" }),
-  adapters: [
-    TavilySearchAdapter.connect({ apiKey: tavilyKey }),
-  ],
-  mcps: [
-    FilesystemMCP.connect({ allowedPaths: ["./content"] }),
-  ],
+  adapters: [TavilySearchAdapter.connect({ apiKey: tavilyKey })],
+  mcps: [FilesystemMCP.connect({ allowedPaths: ["./content"] })],
   toolPolicy: { readOnly: true, redactSecrets: true },
   budget: { maxCost: 5, maxToolCalls: 20 },
 });

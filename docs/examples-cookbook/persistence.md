@@ -13,7 +13,9 @@ const agent = Agent.create({
   cache: AgentCache.memory(),
 });
 
-const response = await agent.run({ prompt: "Fetch and summarize the AgentCraft README." });
+const response = await agent.run({
+  prompt: "Fetch and summarize the AgentCraft README.",
+});
 console.log(`Cache hits: ${response.cache?.hits}`);
 ```
 
@@ -113,7 +115,9 @@ import { FileArtifactStore } from "@deskcreate/agentcraft";
 
 const store = new FileArtifactStore({ root: ".agentcraft/outputs" });
 
-const response = await agent.run({ prompt: "Write a product spec for feature X." });
+const response = await agent.run({
+  prompt: "Write a product spec for feature X.",
+});
 
 const ref = await store.put({
   type: "document",
@@ -145,7 +149,11 @@ import { SQLiteArtifactStore } from "@deskcreate/agentcraft";
 
 const store = new SQLiteArtifactStore({ path: ".agentcraft/artifacts.db" });
 
-await store.put({ type: "summary", data: { content: "..." }, tags: ["weekly"] });
+await store.put({
+  type: "summary",
+  data: { content: "..." },
+  tags: ["weekly"],
+});
 
 const weekly = await store.list({ tags: ["weekly"], limit: 10 });
 ```

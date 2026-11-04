@@ -31,7 +31,8 @@ import { Agent, Provider } from "@deskcreate/agentcraft";
 const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
-  system: "You are a technical documentation writer. Use precise language, active voice, and short sentences.",
+  system:
+    "You are a technical documentation writer. Use precise language, active voice, and short sentences.",
 });
 
 const result = await agent.run({
@@ -86,7 +87,8 @@ const SentimentSchema = z.object({
 });
 
 const response = await agent.run({
-  prompt: "Classify the sentiment: 'This product completely transformed how our team works.'",
+  prompt:
+    "Classify the sentiment: 'This product completely transformed how our team works.'",
   responseSchema: SentimentSchema,
 });
 
@@ -107,7 +109,9 @@ const agent = Agent.create({
 });
 
 process.stdout.write("Response: ");
-for await (const chunk of agent.stream({ prompt: "Write a haiku about TypeScript." })) {
+for await (const chunk of agent.stream({
+  prompt: "Write a haiku about TypeScript.",
+})) {
   if (chunk.type === "content") {
     process.stdout.write(chunk.text);
   }
@@ -127,7 +131,9 @@ const agent = Agent.create({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-const response = await agent.run({ prompt: "Write a short paragraph about type safety." });
+const response = await agent.run({
+  prompt: "Write a short paragraph about type safety.",
+});
 
 const { inputTokens, outputTokens, total } = response.tokensUsed ?? {};
 const cost = response.costReport;

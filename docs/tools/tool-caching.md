@@ -20,18 +20,20 @@ const agent = Agent.create({
 
 // First run — cache miss, tool executes
 const first = await agent.run({
-  prompt: "Fetch https://api.github.com/repos/microsoft/TypeScript and tell me the star count.",
+  prompt:
+    "Fetch https://api.github.com/repos/microsoft/TypeScript and tell me the star count.",
 });
-console.log(`Cache hits: ${first.cache?.hits}`);           // → 0
-console.log(`Cache writes: ${first.cache?.writes}`);       // → 1
+console.log(`Cache hits: ${first.cache?.hits}`); // → 0
+console.log(`Cache writes: ${first.cache?.writes}`); // → 1
 
 // Second run — cache hit, tool skipped
 const second = await agent.run({
-  prompt: "Fetch https://api.github.com/repos/microsoft/TypeScript and tell me the star count.",
+  prompt:
+    "Fetch https://api.github.com/repos/microsoft/TypeScript and tell me the star count.",
 });
-console.log(`Cache hits: ${second.cache?.hits}`);          // → 1
+console.log(`Cache hits: ${second.cache?.hits}`); // → 1
 console.log(`Tool calls avoided: ${second.cache?.toolCallsAvoided}`); // → 1
-console.log(`Tokens saved: ${second.cache?.estimatedSavedTokens}`);   // → ~150
+console.log(`Tokens saved: ${second.cache?.estimatedSavedTokens}`); // → ~150
 ```
 
 ## How Caching Works
@@ -51,12 +53,12 @@ Whether a tool result can be cached depends on the **cache strategy** and the to
 
 ### By Side Effect Level
 
-| Side effect | `conservative` | `auto` (default) | `aggressive` |
-| --- | --- | --- | --- |
-| `none` | Cached | Cached | Cached |
-| `read` | Only if `safe: true` or `deterministic: true` | Cached | Cached |
-| `external` | Not cached | Not cached | Cached |
-| `write` | Never cached | Never cached | Never cached |
+| Side effect | `conservative`                                | `auto` (default) | `aggressive` |
+| ----------- | --------------------------------------------- | ---------------- | ------------ |
+| `none`      | Cached                                        | Cached           | Cached       |
+| `read`      | Only if `safe: true` or `deterministic: true` | Cached           | Cached       |
+| `external`  | Not cached                                    | Not cached       | Cached       |
+| `write`     | Never cached                                  | Never cached     | Never cached |
 
 ### Absolute Exclusions
 
@@ -77,7 +79,7 @@ const readReferenceDoc = tool("read_reference", {
   description: "Read a stable reference document from the corpus.",
   sideEffect: "read",
   cache: {
-    safe: true,          // explicitly mark as cache-safe
+    safe: true, // explicitly mark as cache-safe
     deterministic: true, // same inputs always produce same output
     ttlMs: 10 * 60_000, // override TTL to 10 minutes for this tool
   },
@@ -91,12 +93,12 @@ const readReferenceDoc = tool("read_reference", {
 });
 ```
 
-| `security.cache` Field | Type | Default | Purpose |
-| --- | --- | --- | --- |
-| `safe` | `boolean` | `false` | Explicitly mark result as safe to cache |
-| `deterministic` | `boolean` | `false` | Same args always produce same result — enables caching in `conservative` strategy |
-| `ttlMs` | `number` | `defaultTtlMs` | TTL override in milliseconds for this tool only |
-| `sensitive` | `boolean` | `false` | Mark result as sensitive — prevents caching entirely |
+| `security.cache` Field | Type      | Default        | Purpose                                                                           |
+| ---------------------- | --------- | -------------- | --------------------------------------------------------------------------------- |
+| `safe`                 | `boolean` | `false`        | Explicitly mark result as safe to cache                                           |
+| `deterministic`        | `boolean` | `false`        | Same args always produce same result — enables caching in `conservative` strategy |
+| `ttlMs`                | `number`  | `defaultTtlMs` | TTL override in milliseconds for this tool only                                   |
+| `sensitive`            | `boolean` | `false`        | Mark result as sensitive — prevents caching entirely                              |
 
 ## Cache Strategy
 
@@ -129,15 +131,15 @@ Every `AgentResponse` includes a `cache` summary:
 ```ts
 const response = await agent.run({ prompt: "..." });
 
-console.log(response.cache?.hits);                 // tool calls served from cache
-console.log(response.cache?.misses);               // tool calls that missed cache
-console.log(response.cache?.writes);               // results written to cache
-console.log(response.cache?.bypassed);             // true if bypass: true was set
-console.log(response.cache?.skippedUnsafe);        // results not cached due to policy
-console.log(response.cache?.stale);                // results returned despite expired TTL
-console.log(response.cache?.corrupt);              // entries that failed deserialization
-console.log(response.cache?.oversized);            // results too large to cache
-console.log(response.cache?.toolCallsAvoided);     // total tool executions skipped
+console.log(response.cache?.hits); // tool calls served from cache
+console.log(response.cache?.misses); // tool calls that missed cache
+console.log(response.cache?.writes); // results written to cache
+console.log(response.cache?.bypassed); // true if bypass: true was set
+console.log(response.cache?.skippedUnsafe); // results not cached due to policy
+console.log(response.cache?.stale); // results returned despite expired TTL
+console.log(response.cache?.corrupt); // entries that failed deserialization
+console.log(response.cache?.oversized); // results too large to cache
+console.log(response.cache?.toolCallsAvoided); // total tool executions skipped
 console.log(response.cache?.estimatedSavedTokens); // estimated token savings
 ```
 
@@ -284,7 +286,12 @@ const getUserSecret = tool("get_user_secret", {
 Monitor cache performance in real time using workspace events:
 
 ```ts
-import { AgentWorkspace, Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
+import {
+  AgentWorkspace,
+  Agent,
+  AgentCache,
+  Provider,
+} from "@deskcreate/agentcraft";
 
 const workspace = AgentWorkspace.create({
   cache: AgentCache.file(".agentcraft/cache", { strategy: "auto" }),
@@ -294,7 +301,9 @@ let totalSavedTokens = 0;
 
 workspace.events.on("cache.hit", ({ toolName, estimatedSavedTokens }) => {
   totalSavedTokens += estimatedSavedTokens ?? 0;
-  console.log(`Cache hit: ${toolName} — saved ~${estimatedSavedTokens ?? 0} tokens`);
+  console.log(
+    `Cache hit: ${toolName} — saved ~${estimatedSavedTokens ?? 0} tokens`,
+  );
 });
 
 workspace.events.on("cache.miss", ({ toolName }) => {

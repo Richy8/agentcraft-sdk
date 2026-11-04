@@ -93,7 +93,7 @@ import { AgentWorkflow, AgentWorkspace } from "@deskcreate/agentcraft";
 import { AgentTeam } from "@deskcreate/agentcraft/team";
 
 const workspace = AgentWorkspace.create({
-  budget: { maxCost: 0.10 }, // shared $0.10 budget across all agents
+  budget: { maxCost: 0.1 }, // shared $0.10 budget across all agents
 });
 
 const team = AgentTeam.create({
@@ -106,7 +106,9 @@ const team = AgentTeam.create({
 });
 
 // Budget is consumed by all three agents combined
-const response = await team.run({ prompt: "Research and write an article on AI agents." });
+const response = await team.run({
+  prompt: "Research and write an article on AI agents.",
+});
 ```
 
 ## Cost Tracking With `cost.updated` Event

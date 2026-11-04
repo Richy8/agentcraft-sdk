@@ -32,7 +32,8 @@ const agent = Agent.create({
   .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
 
 const response = await agent.run({
-  prompt: "Research and draft a LinkedIn post about AI agent caching strategies.",
+  prompt:
+    "Research and draft a LinkedIn post about AI agent caching strategies.",
 });
 console.log(response.content);
 ```

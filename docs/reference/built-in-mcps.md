@@ -53,16 +53,18 @@ console.log(response.content);
 ```ts
 import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
-agent.use(GitHubMCP.connect({
-  token: process.env.GITHUB_PERSONAL_ACCESS_TOKEN!,
-  allowedTools: [
-    "get_pull_request",
-    "get_pull_request_diff",
-    "list_pull_requests",
-    "get_file_contents",
-    "list_issues",
-  ],
-}));
+agent.use(
+  GitHubMCP.connect({
+    token: process.env.GITHUB_PERSONAL_ACCESS_TOKEN!,
+    allowedTools: [
+      "get_pull_request",
+      "get_pull_request_diff",
+      "list_pull_requests",
+      "get_file_contents",
+      "list_issues",
+    ],
+  }),
+);
 ```
 
 Remove write tools (`create_pr`, `create_issue`) to keep the agent read-only.
@@ -72,10 +74,12 @@ Remove write tools (`create_pr`, `create_issue`) to keep the agent read-only.
 ```ts
 import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
 
-agent.use(FilesystemMCP.connect({
-  roots: ["/home/user/projects/myapp/src"],
-  allowedTools: ["read_file", "list_directory", "search_files"],
-}));
+agent.use(
+  FilesystemMCP.connect({
+    roots: ["/home/user/projects/myapp/src"],
+    allowedTools: ["read_file", "list_directory", "search_files"],
+  }),
+);
 ```
 
 ### FirecrawlMCP — Web Research
@@ -83,10 +87,12 @@ agent.use(FilesystemMCP.connect({
 ```ts
 import { FirecrawlMCP } from "@deskcreate/agentcraft/mcp";
 
-agent.use(FirecrawlMCP.connect({
-  apiKey: process.env.FIRECRAWL_API_KEY!,
-  allowedTools: ["scrape", "search"],
-}));
+agent.use(
+  FirecrawlMCP.connect({
+    apiKey: process.env.FIRECRAWL_API_KEY!,
+    allowedTools: ["scrape", "search"],
+  }),
+);
 ```
 
 ### SlackMCP — Channel Monitoring
@@ -94,10 +100,12 @@ agent.use(FirecrawlMCP.connect({
 ```ts
 import { SlackMCP } from "@deskcreate/agentcraft/mcp";
 
-agent.use(SlackMCP.connect({
-  token: process.env.SLACK_BOT_TOKEN!,
-  allowedTools: ["get_channel_history", "list_channels"],
-}));
+agent.use(
+  SlackMCP.connect({
+    token: process.env.SLACK_BOT_TOKEN!,
+    allowedTools: ["get_channel_history", "list_channels"],
+  }),
+);
 ```
 
 ### PostgresMCP — Read-Only SQL
@@ -105,9 +113,11 @@ agent.use(SlackMCP.connect({
 ```ts
 import { PostgresMCP } from "@deskcreate/agentcraft/mcp";
 
-agent.use(PostgresMCP.connect({
-  allowedTools: ["query"],   // exclude "execute" to prevent writes
-}));
+agent.use(
+  PostgresMCP.connect({
+    allowedTools: ["query"], // exclude "execute" to prevent writes
+  }),
+);
 // DATABASE_URL is read from environment by the server
 ```
 
@@ -119,25 +129,35 @@ For any MCP server without a built-in wrapper, use `MCP.connect()` or `MCPAdapte
 import { MCP, MCPAdapter } from "@deskcreate/agentcraft/mcp";
 
 // MCP.connect() — higher-level factory (command, url, or package transport)
-agent.use(MCP.connect({
-  command: "npx",
-  args: ["-y", "@modelcontextprotocol/server-filesystem@0.6.2", "/path/to/dir"],
-  allowedTools: ["read_file", "list_directory"],
-}));
+agent.use(
+  MCP.connect({
+    command: "npx",
+    args: [
+      "-y",
+      "@modelcontextprotocol/server-filesystem@0.6.2",
+      "/path/to/dir",
+    ],
+    allowedTools: ["read_file", "list_directory"],
+  }),
+);
 
 // MCP.connect() — HTTP with bearer auth
-agent.use(MCP.connect({
-  url: "https://mcp.internal.company.com/mcp",
-  auth: { type: "bearer", token: process.env.MCP_TOKEN! },
-  allowedTools: ["search_docs", "get_runbook"],
-}));
+agent.use(
+  MCP.connect({
+    url: "https://mcp.internal.company.com/mcp",
+    auth: { type: "bearer", token: process.env.MCP_TOKEN! },
+    allowedTools: ["search_docs", "get_runbook"],
+  }),
+);
 
 // MCPAdapter — lower-level, direct transport config
-agent.use(MCPAdapter.connect({
-  transport: "http",
-  url: "https://mcp.internal.company.com/mcp",
-  allowedTools: ["search_docs"],
-}));
+agent.use(
+  MCPAdapter.connect({
+    transport: "http",
+    url: "https://mcp.internal.company.com/mcp",
+    allowedTools: ["search_docs"],
+  }),
+);
 ```
 
 See [MCP Custom](../mcp/custom.md) for the full `MCP.connect()` API including `timeoutMs`, `name`, and auth options.

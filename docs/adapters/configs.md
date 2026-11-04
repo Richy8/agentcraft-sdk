@@ -14,7 +14,11 @@ Adapter config tells AgentCraft how to connect and what boundaries to enforce.
 ## Required Config Examples
 
 ```ts
-import { FetchAdapter, TavilySearchAdapter, DatabaseAdapter } from "@deskcreate/agentcraft/adapters";
+import {
+  FetchAdapter,
+  TavilySearchAdapter,
+  DatabaseAdapter,
+} from "@deskcreate/agentcraft/adapters";
 import { GitHubMCP, FilesystemMCP } from "@deskcreate/agentcraft/mcp";
 
 FetchAdapter.connect({

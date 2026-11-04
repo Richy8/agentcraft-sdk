@@ -121,7 +121,10 @@ Structured output is validated only after the full response is received. Tokens 
 
 ```ts
 let fullContent = "";
-for await (const chunk of agent.stream({ prompt: "...", responseSchema: schema })) {
+for await (const chunk of agent.stream({
+  prompt: "...",
+  responseSchema: schema,
+})) {
   if (chunk.delta) fullContent += chunk.delta;
   if (chunk.done && chunk.structuredResponse) {
     console.log("Structured:", chunk.structuredResponse);
@@ -131,13 +134,13 @@ for await (const chunk of agent.stream({ prompt: "...", responseSchema: schema }
 
 ## Provider Support Matrix
 
-| Provider | Native JSON Mode | Prompt-Based Coercion |
-| --- | --- | --- |
-| OpenAI | Yes (`response_format: json_object`) | Yes |
-| Anthropic | Yes | Yes |
-| Gemini | Yes | Yes |
-| Bedrock | Depends on model | Yes |
-| Cohere | Partial | Yes |
+| Provider  | Native JSON Mode                     | Prompt-Based Coercion |
+| --------- | ------------------------------------ | --------------------- |
+| OpenAI    | Yes (`response_format: json_object`) | Yes                   |
+| Anthropic | Yes                                  | Yes                   |
+| Gemini    | Yes                                  | Yes                   |
+| Bedrock   | Depends on model                     | Yes                   |
+| Cohere    | Partial                              | Yes                   |
 
 ## Related
 

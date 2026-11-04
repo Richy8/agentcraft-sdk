@@ -4,25 +4,25 @@
 
 ## `RunBudget` Fields
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `maxCost` | `number` | Unlimited | Maximum estimated or actual model cost in USD for this run. |
-| `maxTokens` | `number` | Unlimited | Maximum total tokens (prompt + completion). |
-| `maxInputTokens` | `number` | Unlimited | Maximum estimated prompt/input tokens. |
-| `maxOutputTokens` | `number` | Unlimited | Maximum estimated completion/output tokens. |
-| `maxToolCalls` | `number` | Unlimited | Maximum number of tool calls in this run. |
-| `costOptions` | `CostOptions` | None | Cost-estimation modifiers such as region, batch, priority, flex, tool calls, and searches. |
-| `cachePolicy.requireCachedFor` | `string[]` | None | Tool names that must resolve from cache instead of executing live. |
-| `mode` | `BudgetMode` | `'fail-closed'` | Budget posture: `'fail-closed'`, `'prefer-cache'`, `'downgrade-model'`, or `'request-approval'`. |
+| Field                          | Type          | Default         | Description                                                                                      |
+| ------------------------------ | ------------- | --------------- | ------------------------------------------------------------------------------------------------ |
+| `maxCost`                      | `number`      | Unlimited       | Maximum estimated or actual model cost in USD for this run.                                      |
+| `maxTokens`                    | `number`      | Unlimited       | Maximum total tokens (prompt + completion).                                                      |
+| `maxInputTokens`               | `number`      | Unlimited       | Maximum estimated prompt/input tokens.                                                           |
+| `maxOutputTokens`              | `number`      | Unlimited       | Maximum estimated completion/output tokens.                                                      |
+| `maxToolCalls`                 | `number`      | Unlimited       | Maximum number of tool calls in this run.                                                        |
+| `costOptions`                  | `CostOptions` | None            | Cost-estimation modifiers such as region, batch, priority, flex, tool calls, and searches.       |
+| `cachePolicy.requireCachedFor` | `string[]`    | None            | Tool names that must resolve from cache instead of executing live.                               |
+| `mode`                         | `BudgetMode`  | `'fail-closed'` | Budget posture: `'fail-closed'`, `'prefer-cache'`, `'downgrade-model'`, or `'request-approval'`. |
 
 ## `BudgetMode`
 
-| Mode | Behavior |
-| --- | --- |
-| `'fail-closed'` | Throws `QuotaExceededError` when the budget is exceeded. Default. |
-| `'prefer-cache'` | Signals that cached results should be preferred; pair with `cachePolicy.requireCachedFor` for strict cache-only tools. |
-| `'downgrade-model'` | Signals routing layers such as `AgentPool` to prefer cheaper models under pressure. |
-| `'request-approval'` | Signals that expensive work should go through an application approval path. |
+| Mode                 | Behavior                                                                                                               |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `'fail-closed'`      | Throws `QuotaExceededError` when the budget is exceeded. Default.                                                      |
+| `'prefer-cache'`     | Signals that cached results should be preferred; pair with `cachePolicy.requireCachedFor` for strict cache-only tools. |
+| `'downgrade-model'`  | Signals routing layers such as `AgentPool` to prefer cheaper models under pressure.                                    |
+| `'request-approval'` | Signals that expensive work should go through an application approval path.                                            |
 
 ## Usage
 
@@ -115,7 +115,7 @@ import { AgentWorkspace } from "@deskcreate/agentcraft";
 
 const workspace = AgentWorkspace.create({
   budget: {
-    maxCost: 0.50,  // shared across all agents in the workspace
+    maxCost: 0.5, // shared across all agents in the workspace
     mode: "fail-closed",
   },
 });

@@ -45,14 +45,14 @@ for (const span of spans) {
 
 Each span has:
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `spanId` | `string` | Unique identifier for this span. |
-| `name` | `string` | Human-readable span name. |
-| `kind` | `string` | Span kind: `llm`, `tool`, `cache`, `run`, etc. |
-| `startedAt` | `number` | Unix ms timestamp. |
-| `status` | `'ok' \| 'error'` | Whether this span completed successfully. |
-| `durationMs` | `number` | How long the span took. |
+| Field        | Type              | Description                                    |
+| ------------ | ----------------- | ---------------------------------------------- |
+| `spanId`     | `string`          | Unique identifier for this span.               |
+| `name`       | `string`          | Human-readable span name.                      |
+| `kind`       | `string`          | Span kind: `llm`, `tool`, `cache`, `run`, etc. |
+| `startedAt`  | `number`          | Unix ms timestamp.                             |
+| `status`     | `'ok' \| 'error'` | Whether this span completed successfully.      |
+| `durationMs` | `number`          | How long the span took.                        |
 
 ## Replay Fixture
 
@@ -62,7 +62,10 @@ Produce a deterministic replay snapshot from a live run:
 const fixture = collector.replayFixture();
 
 // Save for later replay in tests or debugging
-await fs.writeFile("fixtures/run-snapshot.json", JSON.stringify(fixture, null, 2));
+await fs.writeFile(
+  "fixtures/run-snapshot.json",
+  JSON.stringify(fixture, null, 2),
+);
 ```
 
 The fixture captures all LLM responses and tool results, enabling exact replay without API calls.

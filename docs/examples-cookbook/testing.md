@@ -30,7 +30,10 @@ Responses are dequeued in order — one per `run()` call:
 ```ts
 const provider = new DeterministicFakeProvider([
   { content: "First response" },
-  { content: "Second response", tokensUsed: { prompt: 200, completion: 100, total: 300 } },
+  {
+    content: "Second response",
+    tokensUsed: { prompt: 200, completion: 100, total: 300 },
+  },
   { content: "Third response", cost: 0.000045 },
 ]);
 
@@ -58,8 +61,9 @@ const provider = new DeterministicFakeProvider([
   },
 ]);
 
-const agent = Agent.create({ provider })
-  .use(FilesystemMCP.connect({ allowedPaths: ["./"] }));
+const agent = Agent.create({ provider }).use(
+  FilesystemMCP.connect({ allowedPaths: ["./"] }),
+);
 
 const response = await agent.run({ prompt: "Read my config." });
 
@@ -79,7 +83,10 @@ const provider = new DeterministicFakeProvider([
 ]);
 
 const agent = Agent.create({ provider });
-const response = await agent.run({ prompt: "Extract person.", responseSchema: schema });
+const response = await agent.run({
+  prompt: "Extract person.",
+  responseSchema: schema,
+});
 
 expect(response.structuredResponse?.name).toBe("Alice");
 expect(response.structuredResponse?.age).toBe(30);
@@ -108,7 +115,10 @@ it("retries on rate limit", async () => {
 it("throws QuotaExceededError on budget breach", async () => {
   const agent = Agent.create({
     provider: new DeterministicFakeProvider([
-      { content: "...", tokensUsed: { prompt: 10000, completion: 5000, total: 15000 } },
+      {
+        content: "...",
+        tokensUsed: { prompt: 10000, completion: 5000, total: 15000 },
+      },
     ]),
   });
 

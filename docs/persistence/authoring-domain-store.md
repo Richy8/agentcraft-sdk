@@ -31,11 +31,11 @@ export type CustomerProfile = z.infer<typeof CustomerProfileSchema>;
 
 ## Step 2 — Choose a Backend
 
-| Backend | Use when |
-| --- | --- |
-| `fs/promises` (JSON files) | Small data sets, local dev, single instance |
-| SQLite | Medium data, single-node, structured queries |
-| Postgres | Multi-instance, complex queries, production |
+| Backend                    | Use when                                     |
+| -------------------------- | -------------------------------------------- |
+| `fs/promises` (JSON files) | Small data sets, local dev, single instance  |
+| SQLite                     | Medium data, single-node, structured queries |
+| Postgres                   | Multi-instance, complex queries, production  |
 
 ```ts
 import { promises as fs } from "node:fs";

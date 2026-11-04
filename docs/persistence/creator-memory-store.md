@@ -18,11 +18,13 @@ const agent = Agent.create({
 });
 
 // Store facts
-await memory.store({ content: "Brand tone: direct, no buzzwords. Avoid 'leverage' and 'synergy'." });
+await memory.store({
+  content: "Brand tone: direct, no buzzwords. Avoid 'leverage' and 'synergy'.",
+});
 
 // Recall relevant context before a run
 const recalled = await memory.search({ query: "brand voice", topK: 3 });
-const context = recalled.map(r => r.content).join("\n");
+const context = recalled.map((r) => r.content).join("\n");
 
 const response = await agent.run({
   prompt: "Write a LinkedIn post about our new MCP adapter.",

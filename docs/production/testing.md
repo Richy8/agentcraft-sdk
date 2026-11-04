@@ -35,20 +35,23 @@ Accepts a queue of scripted responses. Responses are dequeued in order on each `
 ```ts
 const provider = new DeterministicFakeProvider([
   { content: "First response" },
-  { content: "Second response", tokensUsed: { prompt: 100, completion: 50, total: 150 } },
+  {
+    content: "Second response",
+    tokensUsed: { prompt: 100, completion: 50, total: 150 },
+  },
 ]);
 ```
 
 Each entry can set:
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `content` | `string` | The text the provider returns. |
-| `tokensUsed` | `TokenUsage` | Simulated token counts. |
-| `cost` | `number` | Simulated cost in USD. |
-| `toolCalls` | `ToolCall[]` | Tool calls the provider "decides" to make. |
-| `structuredResponse` | `unknown` | JSON structured output to return. |
-| `error` | `Error` | Error to throw instead of returning a response. |
+| Field                | Type         | Description                                     |
+| -------------------- | ------------ | ----------------------------------------------- |
+| `content`            | `string`     | The text the provider returns.                  |
+| `tokensUsed`         | `TokenUsage` | Simulated token counts.                         |
+| `cost`               | `number`     | Simulated cost in USD.                          |
+| `toolCalls`          | `ToolCall[]` | Tool calls the provider "decides" to make.      |
+| `structuredResponse` | `unknown`    | JSON structured output to return.               |
+| `error`              | `Error`      | Error to throw instead of returning a response. |
 
 ## Testing Tool Calls
 
@@ -62,8 +65,9 @@ const provider = new DeterministicFakeProvider([
   },
 ]);
 
-const agent = Agent.create({ provider })
-  .use(FilesystemMCP.connect({ allowedPaths: ["./"] }));
+const agent = Agent.create({ provider }).use(
+  FilesystemMCP.connect({ allowedPaths: ["./"] }),
+);
 
 const response = await agent.run({ prompt: "Read my config file." });
 expect(response.toolCalls[0].name).toBe("read_file");
@@ -79,11 +83,19 @@ import { z } from "zod";
 const schema = z.object({ summary: z.string(), keywords: z.array(z.string()) });
 
 const provider = new DeterministicFakeProvider([
-  { structuredResponse: { summary: "Caching saves money.", keywords: ["cache", "latency"] } },
+  {
+    structuredResponse: {
+      summary: "Caching saves money.",
+      keywords: ["cache", "latency"],
+    },
+  },
 ]);
 
 const agent = Agent.create({ provider });
-const response = await agent.run({ prompt: "Analyze this.", responseSchema: schema });
+const response = await agent.run({
+  prompt: "Analyze this.",
+  responseSchema: schema,
+});
 
 expect(response.structuredResponse?.summary).toBe("Caching saves money.");
 ```
@@ -102,7 +114,12 @@ const provider = new DeterministicFakeProvider([
 
 const agent = Agent.create({
   provider,
-  retry: { maxAttempts: 2, backoff: "exponential", initialDelay: 100, maxDelay: 1000 },
+  retry: {
+    maxAttempts: 2,
+    backoff: "exponential",
+    initialDelay: 100,
+    maxDelay: 1000,
+  },
 });
 
 const response = await agent.run({ prompt: "Hello" });

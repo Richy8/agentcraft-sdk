@@ -24,27 +24,29 @@ import { createAdapter } from "@deskcreate/agentcraft/adapters";
 const myAdapter = createAdapter({
   name: "my-data-source",
   metadata: {
-    kind: "native-sdk",           // how it's implemented
-    auth: "api-key",              // credential model
+    kind: "native-sdk", // how it's implemented
+    auth: "api-key", // credential model
     trustLevel: "review-required", // tool results should be reviewed
-    sideEffects: ["read"],        // only reads, no writes
-    scopes: ["database", "web"],  // permission domains
+    sideEffects: ["read"], // only reads, no writes
+    scopes: ["database", "web"], // permission domains
     requiredSecrets: ["DATA_API_KEY"], // env vars needed
-    readOnly: true,               // signals non-mutating adapter
+    readOnly: true, // signals non-mutating adapter
   },
-  tools: [/* ... */],
+  tools: [
+    /* ... */
+  ],
 });
 ```
 
-| Field | Values | Purpose |
-| --- | --- | --- |
-| `kind` | `"native-sdk"`, `"mcp-backed"`, `"custom"`, `"placeholder"` | How the adapter is implemented |
-| `auth` | `"none"`, `"api-key"`, `"oauth"`, `"aws"`, `"connection-string"`, `"custom"` | Credential model |
-| `trustLevel` | `"trusted"`, `"review-required"`, `"untrusted"` | Whether tool results need review |
-| `sideEffects` | `Array<"none" \| "read" \| "write" \| "external">` | Maximum side-effect levels |
-| `scopes` | `string[]` | Permission domains (e.g. `"repo"`, `"web"`, `"database"`) |
-| `requiredSecrets` | `string[]` | Environment variables the adapter needs |
-| `readOnly` | `boolean` | Whether the adapter only performs reads |
+| Field             | Values                                                                       | Purpose                                                   |
+| ----------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `kind`            | `"native-sdk"`, `"mcp-backed"`, `"custom"`, `"placeholder"`                  | How the adapter is implemented                            |
+| `auth`            | `"none"`, `"api-key"`, `"oauth"`, `"aws"`, `"connection-string"`, `"custom"` | Credential model                                          |
+| `trustLevel`      | `"trusted"`, `"review-required"`, `"untrusted"`                              | Whether tool results need review                          |
+| `sideEffects`     | `Array<"none" \| "read" \| "write" \| "external">`                           | Maximum side-effect levels                                |
+| `scopes`          | `string[]`                                                                   | Permission domains (e.g. `"repo"`, `"web"`, `"database"`) |
+| `requiredSecrets` | `string[]`                                                                   | Environment variables the adapter needs                   |
+| `readOnly`        | `boolean`                                                                    | Whether the adapter only performs reads                   |
 
 ## Patterns
 
@@ -96,7 +98,9 @@ const agent = Agent.create({
   toolPolicy: {
     // Return true to approve, false to deny
     onApprovalRequired: async ({ tool }) => {
-      const approved = await humanReviewSystem.requestApproval({ toolName: tool.name });
+      const approved = await humanReviewSystem.requestApproval({
+        toolName: tool.name,
+      });
       return approved;
     },
   },
@@ -148,8 +152,8 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
   toolPolicy: {
-    redactSecrets: true,      // strip known secret patterns (API keys, tokens, etc.)
-    maxResultBytes: 50_000,   // prevent large result payloads from bloating context
+    redactSecrets: true, // strip known secret patterns (API keys, tokens, etc.)
+    maxResultBytes: 50_000, // prevent large result payloads from bloating context
   },
 }).use(
   DatabaseAdapter.connect({
@@ -166,7 +170,11 @@ Redaction happens after `execute()` returns but before the result is appended to
 Data fetched from external sources (web pages, user-provided files, API responses) may contain prompt injection attempts. Enable guardrails to detect and strip injected instructions:
 
 ```ts
-import { Agent, Provider, blockPromptInjectionGuardrail } from "@deskcreate/agentcraft";
+import {
+  Agent,
+  Provider,
+  blockPromptInjectionGuardrail,
+} from "@deskcreate/agentcraft";
 import { FetchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
@@ -196,29 +204,35 @@ const auditLog = fs.createWriteStream("adapter-audit.log", { flags: "a" });
 
 // Log every tool call
 workspace.events.on("tool.called", ({ toolName, sideEffectLevel }) => {
-  auditLog.write(JSON.stringify({
-    ts: new Date().toISOString(),
-    event: "tool.called",
-    toolName,
-    sideEffectLevel,
-  }) + "\n");
+  auditLog.write(
+    JSON.stringify({
+      ts: new Date().toISOString(),
+      event: "tool.called",
+      toolName,
+      sideEffectLevel,
+    }) + "\n",
+  );
 });
 
 // Log approval decisions
 workspace.events.on("approval.granted", ({ toolName }) => {
-  auditLog.write(JSON.stringify({
-    ts: new Date().toISOString(),
-    event: "approval.granted",
-    toolName,
-  }) + "\n");
+  auditLog.write(
+    JSON.stringify({
+      ts: new Date().toISOString(),
+      event: "approval.granted",
+      toolName,
+    }) + "\n",
+  );
 });
 
 workspace.events.on("approval.denied", ({ toolName }) => {
-  auditLog.write(JSON.stringify({
-    ts: new Date().toISOString(),
-    event: "approval.denied",
-    toolName,
-  }) + "\n");
+  auditLog.write(
+    JSON.stringify({
+      ts: new Date().toISOString(),
+      event: "approval.denied",
+      toolName,
+    }) + "\n",
+  );
 });
 
 const agent = Agent.create({
@@ -241,7 +255,9 @@ import { AdapterRequirementError } from "@deskcreate/agentcraft";
 const myWebSummary = createAdapter({
   name: "web-summary",
   dependsOn: [{ adapterName: "fetch" }],
-  tools: [/* ... */],
+  tools: [
+    /* ... */
+  ],
 });
 
 // If FetchAdapter is not attached, AdapterRequirementError is thrown

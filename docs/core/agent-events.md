@@ -5,7 +5,12 @@
 ## Quick Start
 
 ```ts
-import { AgentWorkspace, AgentWorkflow, Agent, Provider } from "@deskcreate/agentcraft";
+import {
+  AgentWorkspace,
+  AgentWorkflow,
+  Agent,
+  Provider,
+} from "@deskcreate/agentcraft";
 import { AgentStep } from "@deskcreate/agentcraft/team";
 
 // Create a workspace — events are scoped to the workspace
@@ -13,7 +18,9 @@ const workspace = AgentWorkspace.memory();
 
 // Subscribe to events before running any agents
 workspace.events.on("cost.updated", ({ provider, model, cost, tokensUsed }) => {
-  console.log(`[cost] ${provider}/${model} — $${cost.toFixed(6)} (${tokensUsed.total} tokens)`);
+  console.log(
+    `[cost] ${provider}/${model} — $${cost.toFixed(6)} (${tokensUsed.total} tokens)`,
+  );
 });
 
 workspace.events.on("tool.called", ({ toolName, sideEffectLevel }) => {
@@ -21,7 +28,9 @@ workspace.events.on("tool.called", ({ toolName, sideEffectLevel }) => {
 });
 
 workspace.events.on("cache.hit", ({ toolName, estimatedSavedTokens }) => {
-  console.log(`[cache:hit] ${toolName} — saved ~${estimatedSavedTokens ?? 0} tokens`);
+  console.log(
+    `[cache:hit] ${toolName} — saved ~${estimatedSavedTokens ?? 0} tokens`,
+  );
 });
 
 // All agents in this workspace emit to the shared bus
@@ -46,7 +55,9 @@ workspace.events.on("cache.hit", (event) => {
   // event.toolName            — name of the tool that was cached
   // event.key                 — cache key (hash of toolName + args)
   // event.estimatedSavedTokens — how many tokens were saved by using the cache
-  console.log(`Cache hit: ${event.toolName}, saved ~${event.estimatedSavedTokens ?? 0} tokens`);
+  console.log(
+    `Cache hit: ${event.toolName}, saved ~${event.estimatedSavedTokens ?? 0} tokens`,
+  );
 });
 ```
 
@@ -147,7 +158,9 @@ workspace.events.on("approval.queued", (event) => {
   // event.requestId — unique approval request ID
   // event.reviewer  — assigned reviewer ID (if set)
   // event.expiresAt — ISO timestamp for expiry (if set)
-  console.log(`Queued approval ${event.requestId} — expires: ${event.expiresAt}`);
+  console.log(
+    `Queued approval ${event.requestId} — expires: ${event.expiresAt}`,
+  );
 });
 ```
 
@@ -323,11 +336,21 @@ workspace.events.on("cost.updated", ({ provider, model, cost, tokensUsed }) => {
 
 // Run multiple agents through the same workspace
 const agents = [
-  Agent.create({ model: Provider.openai["gpt-4o-mini"], apiKey: process.env.OPENAI_API_KEY!, workspace }),
-  Agent.create({ model: Provider.anthropic["claude-haiku-4-5"], apiKey: process.env.ANTHROPIC_API_KEY!, workspace }),
+  Agent.create({
+    model: Provider.openai["gpt-4o-mini"],
+    apiKey: process.env.OPENAI_API_KEY!,
+    workspace,
+  }),
+  Agent.create({
+    model: Provider.anthropic["claude-haiku-4-5"],
+    apiKey: process.env.ANTHROPIC_API_KEY!,
+    workspace,
+  }),
 ];
 
-await Promise.all(agents.map((a) => a.run({ prompt: "Summarize agentcraft in one sentence." })));
+await Promise.all(
+  agents.map((a) => a.run({ prompt: "Summarize agentcraft in one sentence." })),
+);
 
 console.log(`Total cost: $${totalCostUsd.toFixed(6)}`);
 console.log(`Total tokens: ${totalTokens}`);
@@ -382,14 +405,18 @@ Track cache performance across a session and report hit rate:
 import { AgentWorkspace } from "@deskcreate/agentcraft";
 
 const workspace = AgentWorkspace.memory();
-let hits = 0, misses = 0, savedTokens = 0;
+let hits = 0,
+  misses = 0,
+  savedTokens = 0;
 
 workspace.events.on("cache.hit", ({ estimatedSavedTokens }) => {
   hits++;
   savedTokens += estimatedSavedTokens ?? 0;
 });
 
-workspace.events.on("cache.miss", () => { misses++; });
+workspace.events.on("cache.miss", () => {
+  misses++;
+});
 
 // After a session:
 function reportCacheEfficiency() {
@@ -454,7 +481,7 @@ import type { AgentEventMap, AgentEventType } from "@deskcreate/agentcraft";
 function onEvent<K extends AgentEventType>(
   workspace: AgentWorkspace,
   event: K,
-  handler: (data: AgentEventMap[K]) => void
+  handler: (data: AgentEventMap[K]) => void,
 ) {
   return workspace.events.on(event, handler);
 }
@@ -462,26 +489,26 @@ function onEvent<K extends AgentEventType>(
 
 ## All Events at a Glance
 
-| Event | Fires when | Key fields |
-| --- | --- | --- |
-| `cache.hit` | Tool result served from cache | `toolName`, `key`, `estimatedSavedTokens` |
-| `cache.miss` | Tool result not in cache | `toolName`, `key` |
-| `cache.write` | Tool result written to cache | `toolName`, `key` |
-| `cost.updated` | LLM call completes | `provider`, `model`, `cost`, `tokensUsed` |
-| `tool.called` | Tool call passes policy check | `toolName`, `sideEffectLevel` |
-| `approval.requested` | Tool queued for approval | `toolName`, `sideEffect` |
-| `approval.granted` | Approval resolved as granted | `toolName` |
-| `approval.denied` | Approval resolved as denied | `toolName` |
-| `approval.queued` | Approval placed in governance queue | `toolName`, `requestId`, `reviewer`, `expiresAt` |
-| `approval.expired` | Approval request timed out | `toolName`, `requestId` |
-| `workflow.step.started` | Workflow step begins | `stepId`, `type` |
-| `workflow.step.completed` | Workflow step ends | `stepId`, `status` |
-| `artifact.read` | Artifact read from store | `type`, `id` |
-| `artifact.write` | Artifact written to store | `type`, `id`, `operation` |
-| `memory.read` | Semantic memory queried | `query`, `scopes`, `count` |
-| `memory.write` | Memory entry added | `id`, `scope`, `operation` |
-| `memory.delete` | Memory entry removed | `id`, `scope` |
-| `memory.blocked` | Memory operation blocked | `operation`, `reason`, `preview` |
+| Event                     | Fires when                          | Key fields                                       |
+| ------------------------- | ----------------------------------- | ------------------------------------------------ |
+| `cache.hit`               | Tool result served from cache       | `toolName`, `key`, `estimatedSavedTokens`        |
+| `cache.miss`              | Tool result not in cache            | `toolName`, `key`                                |
+| `cache.write`             | Tool result written to cache        | `toolName`, `key`                                |
+| `cost.updated`            | LLM call completes                  | `provider`, `model`, `cost`, `tokensUsed`        |
+| `tool.called`             | Tool call passes policy check       | `toolName`, `sideEffectLevel`                    |
+| `approval.requested`      | Tool queued for approval            | `toolName`, `sideEffect`                         |
+| `approval.granted`        | Approval resolved as granted        | `toolName`                                       |
+| `approval.denied`         | Approval resolved as denied         | `toolName`                                       |
+| `approval.queued`         | Approval placed in governance queue | `toolName`, `requestId`, `reviewer`, `expiresAt` |
+| `approval.expired`        | Approval request timed out          | `toolName`, `requestId`                          |
+| `workflow.step.started`   | Workflow step begins                | `stepId`, `type`                                 |
+| `workflow.step.completed` | Workflow step ends                  | `stepId`, `status`                               |
+| `artifact.read`           | Artifact read from store            | `type`, `id`                                     |
+| `artifact.write`          | Artifact written to store           | `type`, `id`, `operation`                        |
+| `memory.read`             | Semantic memory queried             | `query`, `scopes`, `count`                       |
+| `memory.write`            | Memory entry added                  | `id`, `scope`, `operation`                       |
+| `memory.delete`           | Memory entry removed                | `id`, `scope`                                    |
+| `memory.blocked`          | Memory operation blocked            | `operation`, `reason`, `preview`                 |
 
 ## Related
 

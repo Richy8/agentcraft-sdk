@@ -4,34 +4,34 @@ Run config (`AgentRunParams`) is the request-specific layer passed to `agent.run
 
 ## All Fields
 
-| Field                 | Required | Default       | Purpose                                                                          |
-| --------------------- | -------- | ------------- | -------------------------------------------------------------------------------- |
-| `prompt`              | Usually  | None          | User task string.                                                                |
-| `promptFile`          | No       | None          | Path to a `.md` or `.txt` file used as the prompt.                               |
-| `vars`                | No       | `{}`          | Variables injected into `&#123;&#123;varName&#125;&#125;` placeholders in the prompt.                |
-| `system`              | No       | Agent default | Per-run system prompt override.                                                  |
-| `files`               | No       | `[]`          | Array of `AgentFile` (base64 or URL file inputs).                                |
-| `images`              | No       | `[]`          | Array of `AgentImage` for vision inputs.                                         |
-| `audio`               | No       | `[]`          | Array of `AgentAudio` for audio inputs.                                          |
-| `video`               | No       | `[]`          | Array of `AgentVideo` for video inputs.                                          |
-| `responseSchema`      | No       | None          | Zod schema or JSON Schema for structured output.                                 |
-| `structuredOutput`    | No       | None          | `{ retries?, toolFallback? }` — structured output retry settings.                |
-| `responseFormat`      | No       | None          | Low-level response format hint passed to the provider.                           |
-| `tools`               | No       | `[]`          | Per-run tool definitions added on top of adapter tools.                          |
-| `use`        | No       | None          | Adapters attached for this run only.      |
-| `toolPolicy`          | No       | Agent default | Per-run `ToolPolicy` override merged with agent-level policy.                    |
-| `budget`              | No       | Agent default | `RunBudget` — caps tokens, cost, tool calls, and duration.                       |
-| `cache`               | No       | Agent default | `false` to bypass cache, or `{ bypass: true }` to disable for run.               |
-| `memory`              | No       | Workspace     | `false`, a memory store, or bounded retrieval options for this run.              |
-| `trace`               | No       | Agent default | `TraceSink` or `true` to enable tracing for this run.                            |
-| `signal`              | No       | None          | `AbortSignal` to cancel the run.                                                 |
-| `replay`              | No       | None          | Replay a previous `AgentResponse` instead of calling the provider.               |
-| `temperature`         | No       | Agent default | Sampling temperature (0–2).                                                      |
-| `maxTokens`           | No       | Agent default | Max output tokens.                                                               |
-| `topP`                | No       | Agent default | Nucleus sampling probability.                                                    |
-| `frequencyPenalty`    | No       | Agent default | Penalize repeated tokens.                                                        |
-| `presencePenalty`     | No       | Agent default | Penalize tokens already in the output.                                           |
-| `stopSequences`       | No       | `[]`          | Stop generation when any of these strings appear.                                |
+| Field              | Required | Default       | Purpose                                                                               |
+| ------------------ | -------- | ------------- | ------------------------------------------------------------------------------------- |
+| `prompt`           | Usually  | None          | User task string.                                                                     |
+| `promptFile`       | No       | None          | Path to a `.md` or `.txt` file used as the prompt.                                    |
+| `vars`             | No       | `{}`          | Variables injected into `&#123;&#123;varName&#125;&#125;` placeholders in the prompt. |
+| `system`           | No       | Agent default | Per-run system prompt override.                                                       |
+| `files`            | No       | `[]`          | Array of `AgentFile` (base64 or URL file inputs).                                     |
+| `images`           | No       | `[]`          | Array of `AgentImage` for vision inputs.                                              |
+| `audio`            | No       | `[]`          | Array of `AgentAudio` for audio inputs.                                               |
+| `video`            | No       | `[]`          | Array of `AgentVideo` for video inputs.                                               |
+| `responseSchema`   | No       | None          | Zod schema or JSON Schema for structured output.                                      |
+| `structuredOutput` | No       | None          | `{ retries?, toolFallback? }` — structured output retry settings.                     |
+| `responseFormat`   | No       | None          | Low-level response format hint passed to the provider.                                |
+| `tools`            | No       | `[]`          | Per-run tool definitions added on top of adapter tools.                               |
+| `use`              | No       | None          | Adapters attached for this run only.                                                  |
+| `toolPolicy`       | No       | Agent default | Per-run `ToolPolicy` override merged with agent-level policy.                         |
+| `budget`           | No       | Agent default | `RunBudget` — caps tokens, cost, tool calls, and duration.                            |
+| `cache`            | No       | Agent default | `false` to bypass cache, or `{ bypass: true }` to disable for run.                    |
+| `memory`           | No       | Workspace     | `false`, a memory store, or bounded retrieval options for this run.                   |
+| `trace`            | No       | Agent default | `TraceSink` or `true` to enable tracing for this run.                                 |
+| `signal`           | No       | None          | `AbortSignal` to cancel the run.                                                      |
+| `replay`           | No       | None          | Replay a previous `AgentResponse` instead of calling the provider.                    |
+| `temperature`      | No       | Agent default | Sampling temperature (0–2).                                                           |
+| `maxTokens`        | No       | Agent default | Max output tokens.                                                                    |
+| `topP`             | No       | Agent default | Nucleus sampling probability.                                                         |
+| `frequencyPenalty` | No       | Agent default | Penalize repeated tokens.                                                             |
+| `presencePenalty`  | No       | Agent default | Penalize tokens already in the output.                                                |
+| `stopSequences`    | No       | `[]`          | Stop generation when any of these strings appear.                                     |
 
 ## Patterns
 
@@ -124,9 +124,7 @@ import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const response = await agent.run({
   prompt: "Research this topic and draft a blog post.",
-  use: [
-    TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }),
-  ],
+  use: [TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! })],
   budget: { maxToolCalls: 5, maxCost: 0.1 },
 });
 ```

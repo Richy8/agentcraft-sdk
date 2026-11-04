@@ -26,7 +26,8 @@ for await (const chunk of agent.stream({ prompt: "Explain agent caching." })) {
 const stream = agent.stream({
   prompt: "Write a haiku about TypeScript.",
   onChunk: (chunk) => process.stdout.write(chunk.delta ?? ""),
-  onDone: (response) => console.log(`\nDone. Cost: $${response.cost.toFixed(6)}`),
+  onDone: (response) =>
+    console.log(`\nDone. Cost: $${response.cost.toFixed(6)}`),
 });
 
 await stream.collect(); // consume the stream
@@ -97,13 +98,13 @@ for await (const chunk of agent.stream({
 
 ## Provider Support
 
-| Provider | Native Streaming |
-| --- | --- |
-| OpenAI | Yes |
-| Anthropic | Yes |
-| Google Gemini | Yes |
-| AWS Bedrock | Yes |
-| Cohere | Yes |
+| Provider          | Native Streaming    |
+| ----------------- | ------------------- |
+| OpenAI            | Yes                 |
+| Anthropic         | Yes                 |
+| Google Gemini     | Yes                 |
+| AWS Bedrock       | Yes                 |
+| Cohere            | Yes                 |
 | OpenAI-compatible | Depends on endpoint |
 
 ## Related

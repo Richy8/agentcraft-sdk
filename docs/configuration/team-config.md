@@ -4,19 +4,19 @@
 
 ## `AgentTeamConfig`
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `orchestrator` | `Agent` | Yes | The orchestrator agent that plans and delegates. |
-| `members` | `TeamMember[]` | Yes | Named specialist agents available to the orchestrator. |
-| `mode` | `'orchestrator'` | No | Team mode. Currently only `'orchestrator'` is supported. |
-| `workspace` | `AgentWorkspaceInstance` | No | Shared workspace providing cache, adapters, policy, and budget. |
+| Field          | Type                     | Required | Description                                                     |
+| -------------- | ------------------------ | -------- | --------------------------------------------------------------- |
+| `orchestrator` | `Agent`                  | Yes      | The orchestrator agent that plans and delegates.                |
+| `members`      | `TeamMember[]`           | Yes      | Named specialist agents available to the orchestrator.          |
+| `mode`         | `'orchestrator'`         | No       | Team mode. Currently only `'orchestrator'` is supported.        |
+| `workspace`    | `AgentWorkspaceInstance` | No       | Shared workspace providing cache, adapters, policy, and budget. |
 
 ## `TeamMember`
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `role` | `string` | Yes | The role name the orchestrator uses to refer to this agent. |
-| `agent` | `Agent` | Yes | The agent instance. |
+| Field   | Type     | Required | Description                                                 |
+| ------- | -------- | -------- | ----------------------------------------------------------- |
+| `role`  | `string` | Yes      | The role name the orchestrator uses to refer to this agent. |
+| `agent` | `Agent`  | Yes      | The agent instance.                                         |
 
 ## Usage
 
@@ -57,11 +57,11 @@ const response = await team.run({
 
 For dynamic team spawning — letting the orchestrator create specialist agents at runtime:
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `root` | `Agent` | Yes | The root orchestrator agent. |
-| `availableRoles` | `SpawnableRole[]` | Yes | Roles the orchestrator can spawn. |
-| `maxSpawned` | `number` | No | Maximum number of agents spawned per run. Default: `10`. |
+| Field            | Type              | Required | Description                                              |
+| ---------------- | ----------------- | -------- | -------------------------------------------------------- |
+| `root`           | `Agent`           | Yes      | The root orchestrator agent.                             |
+| `availableRoles` | `SpawnableRole[]` | Yes      | Roles the orchestrator can spawn.                        |
+| `maxSpawned`     | `number`          | No       | Maximum number of agents spawned per run. Default: `10`. |
 
 ```ts
 import { AgentTeam } from "@deskcreate/agentcraft/team";
@@ -85,8 +85,8 @@ const team = AgentTeam.spawn({
 
 ## `AgentPoolOptions`
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
+| Field      | Type            | Default         | Description                                      |
+| ---------- | --------------- | --------------- | ------------------------------------------------ |
 | `strategy` | `'round-robin'` | `'round-robin'` | How requests are distributed across pool agents. |
 
 ## AgentPool Usage
@@ -94,10 +94,9 @@ const team = AgentTeam.spawn({
 ```ts
 import { AgentPool } from "@deskcreate/agentcraft";
 
-const pool = AgentPool.create(
-  [agentA, agentB, agentC],
-  { strategy: "round-robin" },
-);
+const pool = AgentPool.create([agentA, agentB, agentC], {
+  strategy: "round-robin",
+});
 
 // Distributed across agents in order
 const [r1, r2, r3] = await Promise.all([

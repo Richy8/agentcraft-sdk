@@ -32,7 +32,12 @@ const reviewAgent = Agent.create({
 const team = AgentTeam.create({
   orchestrator,
   members: [
-    { role: "researcher", agent: researchAgent.use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! })) },
+    {
+      role: "researcher",
+      agent: researchAgent.use(
+        TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }),
+      ),
+    },
     { role: "writer", agent: writerAgent },
     { role: "reviewer", agent: reviewAgent },
   ],

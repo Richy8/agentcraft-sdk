@@ -24,22 +24,46 @@ console.log(response.content);
 import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // OpenAI
-Agent.create({ model: Provider.openai["gpt-4o"], apiKey: process.env.OPENAI_API_KEY! });
-Agent.create({ model: Provider.openai["gpt-4o-mini"], apiKey: process.env.OPENAI_API_KEY! });
+Agent.create({
+  model: Provider.openai["gpt-4o"],
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+});
 
 // Anthropic
-Agent.create({ model: Provider.anthropic["claude-sonnet-4-6"], apiKey: process.env.ANTHROPIC_API_KEY! });
-Agent.create({ model: Provider.anthropic["claude-opus-4-7"], apiKey: process.env.ANTHROPIC_API_KEY! });
-Agent.create({ model: Provider.anthropic["claude-haiku-4-5"], apiKey: process.env.ANTHROPIC_API_KEY! });
+Agent.create({
+  model: Provider.anthropic["claude-sonnet-4-6"],
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+});
+Agent.create({
+  model: Provider.anthropic["claude-opus-4-7"],
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+});
+Agent.create({
+  model: Provider.anthropic["claude-haiku-4-5"],
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+});
 
 // Google Gemini
-Agent.create({ model: Provider.gemini["gemini-2.5-flash"], apiKey: process.env.GOOGLE_API_KEY! });
+Agent.create({
+  model: Provider.gemini["gemini-2.5-flash"],
+  apiKey: process.env.GOOGLE_API_KEY!,
+});
 
 // Groq (fast inference)
-Agent.create({ model: Provider.groq["llama-3.3-70b-versatile"], apiKey: process.env.GROQ_API_KEY! });
+Agent.create({
+  model: Provider.groq["llama-3.3-70b-versatile"],
+  apiKey: process.env.GROQ_API_KEY!,
+});
 
 // Local with Ollama
-Agent.create({ model: Provider.ollama["llama3.2"], baseUrl: "http://localhost:11434/v1" });
+Agent.create({
+  model: Provider.ollama["llama3.2"],
+  baseUrl: "http://localhost:11434/v1",
+});
 
 // OpenAI-compatible endpoint (Together AI, Anyscale, etc.)
 Agent.create({
@@ -58,9 +82,18 @@ import { Agent, AgentPool, Provider } from "@deskcreate/agentcraft";
 
 const pool = AgentPool.create(
   [
-    Agent.create({ model: Provider.openai["gpt-4o-mini"], apiKey: process.env.OPENAI_API_KEY! }),
-    Agent.create({ model: Provider.groq["llama-3.3-70b-versatile"], apiKey: process.env.GROQ_API_KEY! }),
-    Agent.create({ model: Provider.anthropic["claude-haiku-4-5"], apiKey: process.env.ANTHROPIC_API_KEY! }),
+    Agent.create({
+      model: Provider.openai["gpt-4o-mini"],
+      apiKey: process.env.OPENAI_API_KEY!,
+    }),
+    Agent.create({
+      model: Provider.groq["llama-3.3-70b-versatile"],
+      apiKey: process.env.GROQ_API_KEY!,
+    }),
+    Agent.create({
+      model: Provider.anthropic["claude-haiku-4-5"],
+      apiKey: process.env.ANTHROPIC_API_KEY!,
+    }),
   ],
   { strategy: "cost" },
 );
@@ -80,8 +113,14 @@ import { Agent, AgentPool, Provider } from "@deskcreate/agentcraft";
 
 const pool = AgentPool.create(
   [
-    Agent.create({ model: Provider.anthropic["claude-opus-4-7"], apiKey: process.env.ANTHROPIC_API_KEY! }),
-    Agent.create({ model: Provider.openai["gpt-4o"], apiKey: process.env.OPENAI_API_KEY! }),
+    Agent.create({
+      model: Provider.anthropic["claude-opus-4-7"],
+      apiKey: process.env.ANTHROPIC_API_KEY!,
+    }),
+    Agent.create({
+      model: Provider.openai["gpt-4o"],
+      apiKey: process.env.OPENAI_API_KEY!,
+    }),
   ],
   {
     strategy: "quality",
@@ -108,9 +147,18 @@ import { Agent, AgentPool, Provider } from "@deskcreate/agentcraft";
 
 const pool = AgentPool.create(
   [
-    Agent.create({ model: Provider.openai["gpt-4o-mini"], apiKey: process.env.OPENAI_API_KEY! }),
-    Agent.create({ model: Provider.anthropic["claude-sonnet-4-6"], apiKey: process.env.ANTHROPIC_API_KEY! }),
-    Agent.create({ model: Provider.groq["llama-3.3-70b-versatile"], apiKey: process.env.GROQ_API_KEY! }),
+    Agent.create({
+      model: Provider.openai["gpt-4o-mini"],
+      apiKey: process.env.OPENAI_API_KEY!,
+    }),
+    Agent.create({
+      model: Provider.anthropic["claude-sonnet-4-6"],
+      apiKey: process.env.ANTHROPIC_API_KEY!,
+    }),
+    Agent.create({
+      model: Provider.groq["llama-3.3-70b-versatile"],
+      apiKey: process.env.GROQ_API_KEY!,
+    }),
   ],
   { strategy: "round-robin" },
 );
@@ -131,8 +179,14 @@ import { Agent, AgentPool, Provider } from "@deskcreate/agentcraft";
 
 const pool = AgentPool.create(
   [
-    Agent.create({ model: Provider.openai["gpt-4o"], apiKey: process.env.OPENAI_API_KEY! }),
-    Agent.create({ model: Provider.openai["gpt-4o-mini"], apiKey: process.env.OPENAI_API_KEY! }),
+    Agent.create({
+      model: Provider.openai["gpt-4o"],
+      apiKey: process.env.OPENAI_API_KEY!,
+    }),
+    Agent.create({
+      model: Provider.openai["gpt-4o-mini"],
+      apiKey: process.env.OPENAI_API_KEY!,
+    }),
   ],
   {
     strategy: "quality",

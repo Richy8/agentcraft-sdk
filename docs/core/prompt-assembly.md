@@ -36,8 +36,8 @@ console.log(response.content);
 // → "Release 1.4.0 brings..."
 
 // Inspect what the assembler did
-console.log(response.promptProvenance?.source);           // → "file"
-console.log(response.promptProvenance?.assembled);         // → true
+console.log(response.promptProvenance?.source); // → "file"
+console.log(response.promptProvenance?.assembled); // → true
 console.log(response.measurement?.estimatedPromptTokens); // → 312
 ```
 
@@ -46,25 +46,26 @@ console.log(response.measurement?.estimatedPromptTokens); // → 312
 Prompt files are plain text with any extension (`.prompt`, `.txt`, `.md`). Three placeholder types are supported:
 
 ```handlebars
-Write a concise release note for {{product}} v{{version}}.
+Write a concise release note for
+{{product}}
+v{{version}}. Audience:
+{{audience}}
+Brand voice:
+{{config.brand.voice}}
+Release channel:
+{{config.release.channel}}
 
-Audience: {{audience}}
-Brand voice: {{config.brand.voice}}
-Release channel: {{config.release.channel}}
-
-Include:
-- One headline sentence
-- Three value bullets
-- One migration note if breaking changes exist
+Include: - One headline sentence - Three value bullets - One migration note if
+breaking changes exist
 ```
 
 ### Placeholder Types
 
-| Syntax | Source | Description |
-| --- | --- | --- |
-| `&#123;&#123;variable&#125;&#125;` | `vars` | Runtime injection — user data, task input |
-| `&#123;&#123;config.path&#125;&#125;` | `assembly.config` | App/tenant config — nested dot paths supported |
-| `&#123;&#123;include path&#125;&#125;` | Filesystem | Pulls in another file relative to the current file |
+| Syntax                                 | Source            | Description                                        |
+| -------------------------------------- | ----------------- | -------------------------------------------------- |
+| `&#123;&#123;variable&#125;&#125;`     | `vars`            | Runtime injection — user data, task input          |
+| `&#123;&#123;config.path&#125;&#125;`  | `assembly.config` | App/tenant config — nested dot paths supported     |
+| `&#123;&#123;include path&#125;&#125;` | Filesystem        | Pulls in another file relative to the current file |
 
 ### Array Variables
 
@@ -120,7 +121,7 @@ const response = await agent.run({
 
 // Provenance shows the file and that assembly ran
 console.log(response.promptProvenance?.promptFile); // → "prompts/release-note/main.prompt"
-console.log(response.promptProvenance?.assembled);  // → true
+console.log(response.promptProvenance?.assembled); // → true
 ```
 
 Includes are deduplicated — the same partial is never resolved twice, even if included from multiple files.
@@ -129,17 +130,17 @@ Includes are deduplicated — the same partial is never resolved twice, even if 
 
 All prompt assembly options live on `agent.run()`. There is no agent-level default for `promptFile` — set it per run.
 
-| Field | Required | Default | Purpose |
-| --- | --- | --- | --- |
-| `prompt` | One of `prompt` / `promptFile` | — | Inline prompt string |
-| `promptFile` | One of `prompt` / `promptFile` | — | Path to the entry prompt file |
-| `vars` | No | `{}` | Runtime `&#123;&#123;variable&#125;&#125;` replacements |
-| `assembly.config` | No | `{}` | App/tenant `&#123;&#123;config.path&#125;&#125;` replacements |
-| `assembly.strict` | No | `false` | Throw on unresolved `&#123;&#123;variable&#125;&#125;` placeholders |
-| `assembly.minify` | No | `true` | Strip redundant whitespace before sending |
-| `assembly.maxPartialDepth` | No | `10` | Maximum `&#123;&#123;include&#125;&#125;` nesting depth |
-| `assembly.rootDir` | No | Prompt file's directory | Boundary directory for file reads |
-| `assembly.allowOutsideRoot` | No | `false` | Allow includes outside `rootDir` |
+| Field                       | Required                       | Default                 | Purpose                                                             |
+| --------------------------- | ------------------------------ | ----------------------- | ------------------------------------------------------------------- |
+| `prompt`                    | One of `prompt` / `promptFile` | —                       | Inline prompt string                                                |
+| `promptFile`                | One of `prompt` / `promptFile` | —                       | Path to the entry prompt file                                       |
+| `vars`                      | No                             | `{}`                    | Runtime `&#123;&#123;variable&#125;&#125;` replacements             |
+| `assembly.config`           | No                             | `{}`                    | App/tenant `&#123;&#123;config.path&#125;&#125;` replacements       |
+| `assembly.strict`           | No                             | `false`                 | Throw on unresolved `&#123;&#123;variable&#125;&#125;` placeholders |
+| `assembly.minify`           | No                             | `true`                  | Strip redundant whitespace before sending                           |
+| `assembly.maxPartialDepth`  | No                             | `10`                    | Maximum `&#123;&#123;include&#125;&#125;` nesting depth             |
+| `assembly.rootDir`          | No                             | Prompt file's directory | Boundary directory for file reads                                   |
+| `assembly.allowOutsideRoot` | No                             | `false`                 | Allow includes outside `rootDir`                                    |
 
 ## Patterns
 
@@ -155,7 +156,11 @@ try {
     assembly: { strict: true },
   });
 } catch (err) {
-  if (err instanceof Error && "code" in err && err.code === "PROMPT_ASSEMBLY_ERROR") {
+  if (
+    err instanceof Error &&
+    "code" in err &&
+    err.code === "PROMPT_ASSEMBLY_ERROR"
+  ) {
     // → "Unresolved variable: {{author}} at line 3"
     console.error(err.message);
   }
@@ -275,12 +280,12 @@ console.log(result.prompt);
 // → "Write a concise release note for AgentCraft v1.4.0..."
 
 // Full assembly report
-console.log(result.stats.partialsCount);     // → 3 (included partials)
-console.log(result.stats.varsReplaced);      // → 4
-console.log(result.stats.configReplaced);    // → 2
-console.log(result.stats.charsBefore);       // → 1842
-console.log(result.stats.charsAfter);        // → 1601 (after minify)
-console.log(result.stats.estimatedTokens);   // → 401
+console.log(result.stats.partialsCount); // → 3 (included partials)
+console.log(result.stats.varsReplaced); // → 4
+console.log(result.stats.configReplaced); // → 2
+console.log(result.stats.charsBefore); // → 1842
+console.log(result.stats.charsAfter); // → 1601 (after minify)
+console.log(result.stats.estimatedTokens); // → 401
 ```
 
 ### Inline Assembly
@@ -311,28 +316,28 @@ Inline mode does not support `&#123;&#123;include&#125;&#125;` — use `promptFi
 
 ## Response Fields
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `response.promptProvenance.source` | `"inline" \| "file"` | How the prompt was supplied |
-| `response.promptProvenance.promptFile` | `string \| undefined` | Entry file path if `promptFile` was used |
-| `response.promptProvenance.assembled` | `boolean` | Whether assembly ran |
-| `response.measurement.promptChars` | `number` | Characters in the assembled prompt |
-| `response.measurement.estimatedPromptTokens` | `number` | Rough token estimate (chars ÷ 4) |
-| `response.measurement.promptMinified` | `boolean` | Whether minification ran |
+| Field                                        | Type                  | Description                              |
+| -------------------------------------------- | --------------------- | ---------------------------------------- |
+| `response.promptProvenance.source`           | `"inline" \| "file"`  | How the prompt was supplied              |
+| `response.promptProvenance.promptFile`       | `string \| undefined` | Entry file path if `promptFile` was used |
+| `response.promptProvenance.assembled`        | `boolean`             | Whether assembly ran                     |
+| `response.measurement.promptChars`           | `number`              | Characters in the assembled prompt       |
+| `response.measurement.estimatedPromptTokens` | `number`              | Rough token estimate (chars ÷ 4)         |
+| `response.measurement.promptMinified`        | `boolean`             | Whether minification ran                 |
 
 ## `AssemblyStats` Reference
 
 When using `PromptAssembler` directly, `result.stats` contains:
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `mode` | `"file" \| "inline"` | Assembly mode used |
-| `partialsCount` | `number` | Unique files resolved via `&#123;&#123;include&#125;&#125;` |
-| `varsReplaced` | `number` | `&#123;&#123;variable&#125;&#125;` placeholders replaced |
-| `configReplaced` | `number` | `&#123;&#123;config.*&#125;&#125;` placeholders replaced |
-| `charsBefore` | `number` | Character count before minification |
-| `charsAfter` | `number` | Character count after minification |
-| `estimatedTokens` | `number` | Token estimate (only set when `measureTokens: true`) |
+| Field             | Type                 | Description                                                 |
+| ----------------- | -------------------- | ----------------------------------------------------------- |
+| `mode`            | `"file" \| "inline"` | Assembly mode used                                          |
+| `partialsCount`   | `number`             | Unique files resolved via `&#123;&#123;include&#125;&#125;` |
+| `varsReplaced`    | `number`             | `&#123;&#123;variable&#125;&#125;` placeholders replaced    |
+| `configReplaced`  | `number`             | `&#123;&#123;config.*&#125;&#125;` placeholders replaced    |
+| `charsBefore`     | `number`             | Character count before minification                         |
+| `charsAfter`      | `number`             | Character count after minification                          |
+| `estimatedTokens` | `number`             | Token estimate (only set when `measureTokens: true`)        |
 
 ## Cookbook
 
@@ -358,7 +363,11 @@ for (const file of entryFiles) {
     });
     console.log(`✓ ${file}`);
   } catch (err) {
-    if (err instanceof Error && "code" in err && err.code === "PROMPT_ASSEMBLY_ERROR") {
+    if (
+      err instanceof Error &&
+      "code" in err &&
+      err.code === "PROMPT_ASSEMBLY_ERROR"
+    ) {
       console.error(`✗ ${file}: ${err.message}`);
       failures++;
     }
@@ -379,7 +388,8 @@ const agent = Agent.create({
   model: Provider.openai["gpt-4o"],
   apiKey: process.env.OPENAI_API_KEY!,
   // System prompt is set at agent level
-  system: "You are a senior technical writer who specializes in API documentation.",
+  system:
+    "You are a senior technical writer who specializes in API documentation.",
 });
 
 // Each run uses a different file-based user prompt

@@ -49,8 +49,8 @@ const agent = Agent.create({
   retry: {
     maxAttempts: 4,
     backoff: "exponential",
-    initialDelay: 500,  // ms
-    maxDelay: 15_000,   // ms
+    initialDelay: 500, // ms
+    maxDelay: 15_000, // ms
   },
 });
 
@@ -70,10 +70,14 @@ async function runWithRetry(prompt: string, maxAttempts = 3) {
     try {
       return await agent.run({ prompt });
     } catch (err) {
-      if (err instanceof Error && isRetryableError(err) && attempt < maxAttempts) {
+      if (
+        err instanceof Error &&
+        isRetryableError(err) &&
+        attempt < maxAttempts
+      ) {
         const delay = Math.min(500 * 2 ** attempt, 15_000);
         console.log(`Attempt ${attempt} failed, retrying in ${delay}ms...`);
-        await new Promise(r => setTimeout(r, delay));
+        await new Promise((r) => setTimeout(r, delay));
         lastError = err;
       } else {
         throw err;
@@ -148,17 +152,17 @@ try {
 
 ## Error Hierarchy Quick Reference
 
-| Error | Retryable | When |
-| --- | --- | --- |
-| `ProviderError` | Sometimes | Unexpected provider failure |
-| `RateLimitError` | Yes | Rate limited — check `retryAfterSeconds` |
-| `AuthenticationError` | No | Invalid API key |
-| `ServiceUnavailableError` | Yes | Provider 5xx or network down |
-| `QuotaExceededError` | No | Budget or account quota exhausted |
-| `RetryExhaustedError` | No | All retry attempts failed |
-| `ToolExecutionError` | Depends | Tool `execute()` threw |
-| `ContentPolicyError` | No | Provider rejected prompt |
-| `ContextWindowError` | No | Prompt exceeds model context |
+| Error                     | Retryable | When                                     |
+| ------------------------- | --------- | ---------------------------------------- |
+| `ProviderError`           | Sometimes | Unexpected provider failure              |
+| `RateLimitError`          | Yes       | Rate limited — check `retryAfterSeconds` |
+| `AuthenticationError`     | No        | Invalid API key                          |
+| `ServiceUnavailableError` | Yes       | Provider 5xx or network down             |
+| `QuotaExceededError`      | No        | Budget or account quota exhausted        |
+| `RetryExhaustedError`     | No        | All retry attempts failed                |
+| `ToolExecutionError`      | Depends   | Tool `execute()` threw                   |
+| `ContentPolicyError`      | No        | Provider rejected prompt                 |
+| `ContextWindowError`      | No        | Prompt exceeds model context             |
 
 ## Related
 

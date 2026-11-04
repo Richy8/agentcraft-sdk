@@ -91,10 +91,10 @@ prompts/
 
 ## Assembly Modes
 
-| Mode | Behavior |
-| --- | --- |
-| `file` | Loads one prompt file and resolves <code v-pre>{{include ...}}</code> partials |
-| `inline` | Assembles an inline prompt with variable/config injection |
+| Mode     | Behavior                                                                       |
+| -------- | ------------------------------------------------------------------------------ |
+| `file`   | Loads one prompt file and resolves <code v-pre>{{include ...}}</code> partials |
+| `inline` | Assembles an inline prompt with variable/config injection                      |
 
 ```ts
 const assembled = await assembler.assemble({
@@ -107,11 +107,13 @@ const assembled = await assembler.assemble({
 ## Inline vs File Prompts
 
 Use file prompts when:
+
 - The prompt is longer than ~200 characters
 - The prompt is reused across multiple agents or runs
 - The prompt benefits from version control alongside the code
 
 Use inline strings when:
+
 - The prompt is short and specific to one run
 - The prompt is dynamically constructed at runtime
 

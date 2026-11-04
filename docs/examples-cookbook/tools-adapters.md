@@ -16,7 +16,8 @@ const agent = Agent.create({
 }).use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
 
 const response = await agent.run({
-  prompt: "Search for the latest TypeScript 5.x release notes and summarize what changed.",
+  prompt:
+    "Search for the latest TypeScript 5.x release notes and summarize what changed.",
   budget: { maxToolCalls: 3 },
 });
 console.log(response.content);
@@ -33,13 +34,16 @@ import { FetchAdapter } from "@deskcreate/agentcraft/adapters";
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
-}).use(FetchAdapter.connect({
-  allowedDomains: ["developer.mozilla.org", "tc39.es"],
-  maxResponseBytes: 100_000,
-}));
+}).use(
+  FetchAdapter.connect({
+    allowedDomains: ["developer.mozilla.org", "tc39.es"],
+    maxResponseBytes: 100_000,
+  }),
+);
 
 const response = await agent.run({
-  prompt: "Fetch https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise and explain the `Promise.allSettled` method.",
+  prompt:
+    "Fetch https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise and explain the `Promise.allSettled` method.",
 });
 console.log(response.content);
 ```
@@ -56,9 +60,11 @@ const agent = Agent.create({
   model: Provider.anthropic["claude-sonnet-4-6"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
   toolPolicy: { readOnly: true },
-}).use(FilesystemMCP.connect({
-  allowedPaths: ["./src"],
-}));
+}).use(
+  FilesystemMCP.connect({
+    allowedPaths: ["./src"],
+  }),
+);
 
 const response = await agent.run({
   prompt: "Read src/agent/agent.ts and explain the run() method signature.",
@@ -84,12 +90,15 @@ const agent = Agent.create({
     },
     maxResultBytes: 20_000,
   },
-}).use(FilesystemMCP.connect({
-  allowedPaths: ["./content"],
-}));
+}).use(
+  FilesystemMCP.connect({
+    allowedPaths: ["./content"],
+  }),
+);
 
 const response = await agent.run({
-  prompt: "Write a blog post about semantic caching to ./content/semantic-caching.md.",
+  prompt:
+    "Write a blog post about semantic caching to ./content/semantic-caching.md.",
   budget: { maxToolCalls: 4 },
 });
 console.log(response.content);
@@ -137,7 +146,8 @@ const agent = Agent.create({
 }).use(FirecrawlMCP.connect({ apiKey: process.env.FIRECRAWL_API_KEY! }));
 
 const response = await agent.run({
-  prompt: "Scrape the pricing page at https://example.com/pricing and extract all plan names and prices as structured JSON.",
+  prompt:
+    "Scrape the pricing page at https://example.com/pricing and extract all plan names and prices as structured JSON.",
   budget: { maxToolCalls: 3 },
 });
 console.log(response.content);
@@ -160,13 +170,16 @@ const agent = Agent.create({
       return tool.name === "slack_post_message";
     },
   },
-}).use(SlackMCP.connect({
-  botToken: process.env.SLACK_BOT_TOKEN!,
-  teamId: process.env.SLACK_TEAM_ID!,
-}));
+}).use(
+  SlackMCP.connect({
+    botToken: process.env.SLACK_BOT_TOKEN!,
+    teamId: process.env.SLACK_TEAM_ID!,
+  }),
+);
 
 const response = await agent.run({
-  prompt: "Post a message to #engineering about the Q3 roadmap review meeting on Tuesday at 2pm.",
+  prompt:
+    "Post a message to #engineering about the Q3 roadmap review meeting on Tuesday at 2pm.",
 });
 console.log(response.content);
 ```
@@ -186,14 +199,17 @@ const agent = Agent.create({
     readOnly: true,
     maxResultBytes: 100_000,
   },
-}).use(DatabaseAdapter.connect({
-  connectionString: process.env.DATABASE_URL!,
-  readOnly: true,
-  rowLimit: 100,
-}));
+}).use(
+  DatabaseAdapter.connect({
+    connectionString: process.env.DATABASE_URL!,
+    readOnly: true,
+    rowLimit: 100,
+  }),
+);
 
 const response = await agent.run({
-  prompt: "How many users signed up in the last 7 days? Break it down by plan tier.",
+  prompt:
+    "How many users signed up in the last 7 days? Break it down by plan tier.",
 });
 console.log(response.content);
 ```

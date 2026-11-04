@@ -20,16 +20,16 @@ Each module has a focused responsibility and its own test file. The public `Agen
 
 ## Hardened Module Status
 
-| Module | What it does | Where to test |
-| --- | --- | --- |
-| `agent-runtime.ts` | Delegates run and stream execution paths | `src/agent/__tests__/agent.test.ts` |
-| `structured-output-flow.ts` | JSON-mode vs. tool-fallback structured output | `src/agent/__tests__/structured-output.test.ts` |
-| `attachment-manager.ts` | `.use()` validation, dependency checks, conflict detection | `src/agent/adapters/__tests__/attachment.test.ts` |
-| `lifecycle-manager.ts` | Adapter init/cleanup in correct order | `src/agent/adapters/__tests__/lifecycle.test.ts` |
-| `run-scope.ts` | Run-scoped adapter isolation per `.run()` call | `src/agent/adapters/__tests__/run-scope.test.ts` |
-| `agent/tools/*` | Tool selection, caching, policy enforcement, tracing | `src/agent/tools/__tests__/` |
-| `agent/cache/backends/*` | Backend-specific cache behavior | `src/agent/cache/__tests__/` |
-| `agent/memory/*` | Memory store integration and vector recall | `src/agent/memory/__tests__/` |
+| Module                      | What it does                                               | Where to test                                     |
+| --------------------------- | ---------------------------------------------------------- | ------------------------------------------------- |
+| `agent-runtime.ts`          | Delegates run and stream execution paths                   | `src/agent/__tests__/agent.test.ts`               |
+| `structured-output-flow.ts` | JSON-mode vs. tool-fallback structured output              | `src/agent/__tests__/structured-output.test.ts`   |
+| `attachment-manager.ts`     | `.use()` validation, dependency checks, conflict detection | `src/agent/adapters/__tests__/attachment.test.ts` |
+| `lifecycle-manager.ts`      | Adapter init/cleanup in correct order                      | `src/agent/adapters/__tests__/lifecycle.test.ts`  |
+| `run-scope.ts`              | Run-scoped adapter isolation per `.run()` call             | `src/agent/adapters/__tests__/run-scope.test.ts`  |
+| `agent/tools/*`             | Tool selection, caching, policy enforcement, tracing       | `src/agent/tools/__tests__/`                      |
+| `agent/cache/backends/*`    | Backend-specific cache behavior                            | `src/agent/cache/__tests__/`                      |
+| `agent/memory/*`            | Memory store integration and vector recall                 | `src/agent/memory/__tests__/`                     |
 
 ## Inspecting Runtime Behavior
 
@@ -43,7 +43,9 @@ const response = await agent.run({
 });
 
 const { promptTokens, completionTokens, total } = response.tokensUsed ?? {};
-console.log(`Prompt: ${promptTokens}, Completion: ${completionTokens}, Total: ${total}`);
+console.log(
+  `Prompt: ${promptTokens}, Completion: ${completionTokens}, Total: ${total}`,
+);
 
 const measurement = response.measurement;
 console.log("Estimated prompt tokens:", measurement?.estimatedPromptTokens);
@@ -75,8 +77,12 @@ const response = await agent.run({
 const report = response.costReport;
 if (report) {
   console.log(`Total: $${report.totalCost.toFixed(4)}`);
-  console.log(`Input tokens: ${report.inputTokens} @ $${report.inputCostPerMToken}/M`);
-  console.log(`Output tokens: ${report.outputTokens} @ $${report.outputCostPerMToken}/M`);
+  console.log(
+    `Input tokens: ${report.inputTokens} @ $${report.inputCostPerMToken}/M`,
+  );
+  console.log(
+    `Output tokens: ${report.outputTokens} @ $${report.outputCostPerMToken}/M`,
+  );
 }
 ```
 
@@ -100,7 +106,9 @@ const agent = Agent.create({
   traceSink,
 });
 
-const response = await agent.run({ prompt: "Search for TypeScript best practices." });
+const response = await agent.run({
+  prompt: "Search for TypeScript best practices.",
+});
 
 for (const span of spans) {
   console.log(`${span.name}: ${span.status}`);

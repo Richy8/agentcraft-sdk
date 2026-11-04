@@ -77,31 +77,31 @@ const response = await agent.run({
 
 ## Span Kinds
 
-| Kind | What it represents |
-| --- | --- |
-| `agent` | The full `agent.run()` call |
-| `model` | A single LLM API request |
-| `tool` | A single tool execution |
-| `mcp` | An MCP server interaction |
-| `adapter` | Adapter setup or execution |
-| `team` | A multi-agent team span |
-| `retry` | A retry attempt |
-| `guardrail` | A guardrail check |
+| Kind        | What it represents          |
+| ----------- | --------------------------- |
+| `agent`     | The full `agent.run()` call |
+| `model`     | A single LLM API request    |
+| `tool`      | A single tool execution     |
+| `mcp`       | An MCP server interaction   |
+| `adapter`   | Adapter setup or execution  |
+| `team`      | A multi-agent team span     |
+| `retry`     | A retry attempt             |
+| `guardrail` | A guardrail check           |
 
 ## Span Attributes
 
 Spans include a stable envelope plus operation-specific attributes:
 
-| Attribute | Description |
-| --- | --- |
-| `runId` | Unique run ID |
-| `spanId` | Unique span ID |
-| `parentSpanId` | Parent span ID when nested |
-| `name` | Span name |
-| `kind` | Span kind such as `agent`, `model`, `tool`, or `guardrail` |
-| `startedAt` / `endedAt` | ISO timestamps |
-| `status` | `ok` or `error` |
-| `attributes` | Optional operation-specific metadata |
+| Attribute               | Description                                                |
+| ----------------------- | ---------------------------------------------------------- |
+| `runId`                 | Unique run ID                                              |
+| `spanId`                | Unique span ID                                             |
+| `parentSpanId`          | Parent span ID when nested                                 |
+| `name`                  | Span name                                                  |
+| `kind`                  | Span kind such as `agent`, `model`, `tool`, or `guardrail` |
+| `startedAt` / `endedAt` | ISO timestamps                                             |
+| `status`                | `ok` or `error`                                            |
+| `attributes`            | Optional operation-specific metadata                       |
 
 ## Connecting to OTel Collectors
 

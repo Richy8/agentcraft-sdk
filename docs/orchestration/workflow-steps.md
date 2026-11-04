@@ -4,15 +4,15 @@
 
 ## Step Types at a Glance
 
-| Step | Factory | Purpose |
-| --- | --- | --- |
-| `AgentStep` | `AgentStep(config)` | Run a single agent with a prompt |
-| `TeamStep` | `TeamStep(config)` | Run an `AgentTeam` as one step |
-| `ToolStep` | `ToolStep(config)` | Call a specific adapter tool directly |
-| `ApprovalStep` | `ApprovalStep(config)` | Gate execution on human or programmatic approval |
-| `ConditionStep` | `ConditionStep(config)` | Branch to different steps based on a predicate |
-| `ParallelStep` | `ParallelStep(config)` | Run multiple steps concurrently |
-| `CustomStep` | `CustomStep(config)` | Execute arbitrary async application logic |
+| Step            | Factory                 | Purpose                                          |
+| --------------- | ----------------------- | ------------------------------------------------ |
+| `AgentStep`     | `AgentStep(config)`     | Run a single agent with a prompt                 |
+| `TeamStep`      | `TeamStep(config)`      | Run an `AgentTeam` as one step                   |
+| `ToolStep`      | `ToolStep(config)`      | Call a specific adapter tool directly            |
+| `ApprovalStep`  | `ApprovalStep(config)`  | Gate execution on human or programmatic approval |
+| `ConditionStep` | `ConditionStep(config)` | Branch to different steps based on a predicate   |
+| `ParallelStep`  | `ParallelStep(config)`  | Run multiple steps concurrently                  |
+| `CustomStep`    | `CustomStep(config)`    | Execute arbitrary async application logic        |
 
 ## Import
 
@@ -36,11 +36,11 @@ Every step receives a `WorkflowContext` as its execution context:
 
 ```ts
 interface WorkflowContext<TInput = unknown> {
-  readonly input: TInput;                         // Validated workflow input
+  readonly input: TInput; // Validated workflow input
   readonly steps: Record<string, WorkflowStepResult>; // All completed step results
-  readonly workspace: AgentWorkspaceInstance;     // Shared cache, adapters, budget
-  readonly store: ArtifactStore | undefined;      // Artifact persistence store
-  readonly runId: string;                         // Unique run identifier
+  readonly workspace: AgentWorkspaceInstance; // Shared cache, adapters, budget
+  readonly store: ArtifactStore | undefined; // Artifact persistence store
+  readonly runId: string; // Unique run identifier
 }
 ```
 
@@ -65,7 +65,12 @@ AgentStep({
 **Dynamic prompt using prior step output:**
 
 ```ts
-import { Agent, AgentStep, AgentWorkflow, Provider } from "@deskcreate/agentcraft";
+import {
+  Agent,
+  AgentStep,
+  AgentWorkflow,
+  Provider,
+} from "@deskcreate/agentcraft";
 import { z } from "zod";
 
 const researcher = Agent.create({
@@ -84,7 +89,8 @@ const workflow = AgentWorkflow.create({
     AgentStep({
       id: "research",
       agent: researcher,
-      prompt: (ctx) => `Research the topic: ${ctx.input.topic}. Produce key facts and citations.`,
+      prompt: (ctx) =>
+        `Research the topic: ${ctx.input.topic}. Produce key facts and citations.`,
     }),
     AgentStep({
       id: "write",
@@ -105,12 +111,13 @@ import { z } from "zod";
 AgentStep({
   id: "classify",
   agent,
-  prompt: "Classify the sentiment of this review as positive, negative, or neutral.",
+  prompt:
+    "Classify the sentiment of this review as positive, negative, or neutral.",
   responseSchema: z.object({
     sentiment: z.enum(["positive", "negative", "neutral"]),
     confidence: z.number().min(0).max(1),
   }),
-})
+});
 ```
 
 ## TeamStep
@@ -148,7 +155,8 @@ const workflow = AgentWorkflow.create({
     AgentStep({
       id: "publish",
       agent: publisherAgent,
-      prompt: (ctx) => `Publish this content: ${ctx.steps["editorial"]?.output}`,
+      prompt: (ctx) =>
+        `Publish this content: ${ctx.steps["editorial"]?.output}`,
     }),
   ],
 });
@@ -172,7 +180,9 @@ ToolStep({
 import { ToolStep } from "@deskcreate/agentcraft";
 import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 
-const searchAdapter = TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! });
+const searchAdapter = TavilySearchAdapter.connect({
+  apiKey: process.env.TAVILY_API_KEY!,
+});
 
 const workflow = AgentWorkflow.create({
   steps: [
@@ -185,7 +195,8 @@ const workflow = AgentWorkflow.create({
     AgentStep({
       id: "summarize",
       agent,
-      prompt: (ctx) => `Summarize these search results: ${JSON.stringify(ctx.steps["search"]?.output)}`,
+      prompt: (ctx) =>
+        `Summarize these search results: ${JSON.stringify(ctx.steps["search"]?.output)}`,
     }),
   ],
 });
@@ -213,9 +224,10 @@ import { ApprovalStep } from "@deskcreate/agentcraft";
 
 ApprovalStep({
   id: "cost-gate",
-  description: "Proceed with expensive research only if estimated cost is within budget.",
+  description:
+    "Proceed with expensive research only if estimated cost is within budget.",
   approve: (ctx) => {
-    const researchOutput = ctx.steps["initial-scan"]?.output as string ?? "";
+    const researchOutput = (ctx.steps["initial-scan"]?.output as string) ?? "";
     // Only proceed if previous step output is non-trivial
     return researchOutput.length > 100;
   },
@@ -225,7 +237,7 @@ ApprovalStep({
   onRejected: async (ctx, reason) => {
     console.warn(`[${ctx.runId}] Rejected: ${reason}`);
   },
-})
+});
 ```
 
 **Human-in-the-loop via ApprovalQueue:**
@@ -242,7 +254,7 @@ ApprovalStep({
     return queue.request({ toolName: "publish", context: ctx.steps });
   },
   timeoutMs: 5 * 60 * 1000, // 5 minute timeout
-})
+});
 ```
 
 ## ConditionStep
@@ -281,7 +293,7 @@ ConditionStep({
       prompt: (ctx) => `Review SEO for: ${ctx.steps["blog-writer"]?.output}`,
     }),
   ],
-})
+});
 ```
 
 ## ParallelStep
@@ -306,26 +318,31 @@ ParallelStep({
     AgentStep({
       id: "linkedin-draft",
       agent: socialAgent,
-      prompt: (ctx) => `/write-linkedin-post Write a LinkedIn post about: ${ctx.input.topic}`,
+      prompt: (ctx) =>
+        `/write-linkedin-post Write a LinkedIn post about: ${ctx.input.topic}`,
     }),
     AgentStep({
       id: "twitter-draft",
       agent: socialAgent,
-      prompt: (ctx) => `/write-x-post Write an X/Twitter post about: ${ctx.input.topic}`,
+      prompt: (ctx) =>
+        `/write-x-post Write an X/Twitter post about: ${ctx.input.topic}`,
     }),
     AgentStep({
       id: "newsletter-draft",
       agent: newsletterAgent,
-      prompt: (ctx) => `/write-newsletter Write a newsletter teaser about: ${ctx.input.topic}`,
+      prompt: (ctx) =>
+        `/write-newsletter Write a newsletter teaser about: ${ctx.input.topic}`,
     }),
   ],
-})
+});
 ```
 
 Outputs from a `ParallelStep` are keyed by each child `stepId`:
 
 ```ts
-const parallelOutputs = result.steps.find(s => s.stepId === "multi-channel")?.output;
+const parallelOutputs = result.steps.find(
+  (s) => s.stepId === "multi-channel",
+)?.output;
 // → { "linkedin-draft": "...", "twitter-draft": "...", "newsletter-draft": "..." }
 ```
 
@@ -355,17 +372,17 @@ CustomStep({
     });
     return { saved: true };
   },
-})
+});
 ```
 
 ## Retry Configuration
 
 `AgentStep`, `TeamStep`, `ToolStep`, and `CustomStep` support a `retry` option:
 
-| Field | Type | Default | Purpose |
-| --- | --- | --- | --- |
-| `attempts` | `number` | `1` | Total number of attempts (1 = no retry) |
-| `delayMs` | `number` | `0` | Milliseconds to wait between retries |
+| Field      | Type     | Default | Purpose                                 |
+| ---------- | -------- | ------- | --------------------------------------- |
+| `attempts` | `number` | `1`     | Total number of attempts (1 = no retry) |
+| `delayMs`  | `number` | `0`     | Milliseconds to wait between retries    |
 
 ```ts
 AgentStep({
@@ -373,22 +390,22 @@ AgentStep({
   agent,
   prompt: "Fetch and summarize the latest release notes.",
   retry: { attempts: 3, delayMs: 500 },
-})
+});
 ```
 
 ## WorkflowStepResult Fields
 
 Each step result stored in `ctx.steps` and returned in `WorkflowResult.steps`:
 
-| Field | Type | Purpose |
-| --- | --- | --- |
-| `stepId` | `string` | Unique step identifier |
-| `status` | `"completed" \| "failed" \| "skipped" \| "awaiting_approval"` | Final step status |
-| `output` | `unknown` | Step return value (available to later steps) |
-| `error` | `string \| undefined` | Error message if status is `"failed"` |
-| `durationMs` | `number` | Execution time in milliseconds |
-| `cost` | `number \| undefined` | Estimated cost for agent/team steps |
-| `tokensUsed` | `TokenUsage \| undefined` | Token breakdown for agent/team steps |
+| Field        | Type                                                          | Purpose                                      |
+| ------------ | ------------------------------------------------------------- | -------------------------------------------- |
+| `stepId`     | `string`                                                      | Unique step identifier                       |
+| `status`     | `"completed" \| "failed" \| "skipped" \| "awaiting_approval"` | Final step status                            |
+| `output`     | `unknown`                                                     | Step return value (available to later steps) |
+| `error`      | `string \| undefined`                                         | Error message if status is `"failed"`        |
+| `durationMs` | `number`                                                      | Execution time in milliseconds               |
+| `cost`       | `number \| undefined`                                         | Estimated cost for agent/team steps          |
+| `tokensUsed` | `TokenUsage \| undefined`                                     | Token breakdown for agent/team steps         |
 
 ## Step ID Conventions
 
@@ -396,10 +413,14 @@ If you do not provide an `id`, the factory generates one (e.g. `agent-3f2a1b`). 
 
 ```ts
 // Bad: auto-generated ID not stable
-AgentStep({ agent, prompt: "Research the topic." })
+AgentStep({ agent, prompt: "Research the topic." });
 
 // Good: explicit ID for downstream reference
-AgentStep({ id: "research", agent, prompt: (ctx) => `Research: ${ctx.input.topic}` })
+AgentStep({
+  id: "research",
+  agent,
+  prompt: (ctx) => `Research: ${ctx.input.topic}`,
+});
 // Later: ctx.steps["research"]?.output
 ```
 

@@ -37,12 +37,12 @@ const agent = Agent.create({
 
 Accepts an array of cache entries to pre-load. Each entry has:
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `toolName` | `string` | Yes | Name of the tool whose result is being cached. |
-| `args` | `Record<string, unknown>` | Yes | The exact arguments the tool would receive. |
-| `result` | `unknown` | Yes | The result to serve from cache on a hit. |
-| `ttlMs` | `number` | No | How long the entry is valid. Defaults to the cache's global TTL. |
+| Field      | Type                      | Required | Description                                                      |
+| ---------- | ------------------------- | -------- | ---------------------------------------------------------------- |
+| `toolName` | `string`                  | Yes      | Name of the tool whose result is being cached.                   |
+| `args`     | `Record<string, unknown>` | Yes      | The exact arguments the tool would receive.                      |
+| `result`   | `unknown`                 | Yes      | The result to serve from cache on a hit.                         |
+| `ttlMs`    | `number`                  | No       | How long the entry is valid. Defaults to the cache's global TTL. |
 
 ## `cache.hitRate()`
 
@@ -91,8 +91,8 @@ Serve stale results while revalidating in the background:
 ```ts
 const cache = AgentCache.file(".agentcraft/cache", {
   strategy: "stale-while-revalidate",
-  ttlMs: 60_000,        // serve results for 1 minute
-  staleTtlMs: 300_000,  // keep serving stale for up to 5 minutes while refreshing
+  ttlMs: 60_000, // serve results for 1 minute
+  staleTtlMs: 300_000, // keep serving stale for up to 5 minutes while refreshing
 });
 ```
 

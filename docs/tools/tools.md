@@ -230,9 +230,9 @@ const response = await agent.run({
   tools: [lookupOrder],
 });
 
-console.log(response.selection?.exposedTools);    // → ["lookup_order"]
+console.log(response.selection?.exposedTools); // → ["lookup_order"]
 console.log(response.selection?.executedToolCalls); // → 1
-console.log(response.toolCalls);                  // full tool call log
+console.log(response.toolCalls); // full tool call log
 ```
 
 ## Raw `ToolDefinition` (Without the Helper)

@@ -22,19 +22,19 @@ AgentCraft configuration is layered. Create-time config defines the agent perman
 
 ## Choose The Right Config
 
-| Config area            | Use it for                                          | Required?        | Deep dive                                              |
-| ---------------------- | --------------------------------------------------- | ---------------- | ------------------------------------------------------ |
-| Agent config           | Provider, model, cache, defaults                    | Yes              | [Agent Config](./agent-config.md)                      |
-| Run config             | Prompt, inputs, budgets, output schema              | Yes, per run     | [Run Config](./run-config.md)                          |
-| Tool policy config     | Approvals, read-only gates, max calls, guardrails   | No               | [Tool Policy Config](./tool-policy-config.md)          |
-| Adapter config         | File, fetch, GitHub, Slack, Playwright, DB, email   | No               | [Adapter Config](./adapter-config.md)                  |
-| MCP config             | External MCP servers via wrappers or generic stdio  | No               | [MCP Config](./mcp-config.md)                          |
-| Cache config           | Memory, file, SQLite, Postgres, Redis backends      | No               | [Cache Config](./cache-config.md)                      |
-| Structured output      | Zod schema, mode (json / md / text), strict         | No               | [Structured Output Config](./structured-output-config.md) |
-| Workspace config       | Shared cache/store/memory for teams and workflows   | No               | [Workspace Config](./workspace-config.md)              |
-| Workflow config        | Step graphs, input contracts, review hooks          | No               | [Workflow Config](./workflow-config.md)                 |
-| Prompt assembly config | File-based prompts, variables, partials, config     | No               | [Prompt Assembly Config](./prompt-assembly-config.md)  |
-| Environment variables  | API keys, integration flags, test switches          | Provider-specific| [Environment Variables](./environment-variables.md)    |
+| Config area            | Use it for                                         | Required?         | Deep dive                                                 |
+| ---------------------- | -------------------------------------------------- | ----------------- | --------------------------------------------------------- |
+| Agent config           | Provider, model, cache, defaults                   | Yes               | [Agent Config](./agent-config.md)                         |
+| Run config             | Prompt, inputs, budgets, output schema             | Yes, per run      | [Run Config](./run-config.md)                             |
+| Tool policy config     | Approvals, read-only gates, max calls, guardrails  | No                | [Tool Policy Config](./tool-policy-config.md)             |
+| Adapter config         | File, fetch, GitHub, Slack, Playwright, DB, email  | No                | [Adapter Config](./adapter-config.md)                     |
+| MCP config             | External MCP servers via wrappers or generic stdio | No                | [MCP Config](./mcp-config.md)                             |
+| Cache config           | Memory, file, SQLite, Postgres, Redis backends     | No                | [Cache Config](./cache-config.md)                         |
+| Structured output      | Zod schema, mode (json / md / text), strict        | No                | [Structured Output Config](./structured-output-config.md) |
+| Workspace config       | Shared cache/store/memory for teams and workflows  | No                | [Workspace Config](./workspace-config.md)                 |
+| Workflow config        | Step graphs, input contracts, review hooks         | No                | [Workflow Config](./workflow-config.md)                   |
+| Prompt assembly config | File-based prompts, variables, partials, config    | No                | [Prompt Assembly Config](./prompt-assembly-config.md)     |
+| Environment variables  | API keys, integration flags, test switches         | Provider-specific | [Environment Variables](./environment-variables.md)       |
 
 ## Minimal Setup
 
@@ -65,7 +65,8 @@ const agent = Agent.create({
   cache: AgentCache.file("./.agentcraft/cache", { strategy: "auto" }),
   toolPolicy: {
     readOnly: false,
-    onApprovalRequired: async ({ tool }) => ["write_file", "send_email"].includes(tool.name),
+    onApprovalRequired: async ({ tool }) =>
+      ["write_file", "send_email"].includes(tool.name),
     maxResultBytes: 20_000,
     redactSecrets: true,
   },
@@ -73,7 +74,7 @@ const agent = Agent.create({
 
 const response = await agent.run({
   prompt: "Draft a release summary for v2.0.",
-  budget: { maxToolCalls: 8, maxCost: 0.10 },
+  budget: { maxToolCalls: 8, maxCost: 0.1 },
 });
 console.log(response.content);
 ```
@@ -83,7 +84,13 @@ console.log(response.content);
 Adds structured output, observability, and a file artifact store.
 
 ```ts
-import { Agent, AgentCache, AgentReports, FileArtifactStore, Provider } from "@deskcreate/agentcraft";
+import {
+  Agent,
+  AgentCache,
+  AgentReports,
+  FileArtifactStore,
+  Provider,
+} from "@deskcreate/agentcraft";
 import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 import { z } from "zod";
 
@@ -99,8 +106,7 @@ const agent = Agent.create({
     redactSecrets: true,
   },
   traceSink: tracer,
-})
-  .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
+}).use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
 
 const response = await agent.run({
   prompt: "Research TypeScript agent frameworks and summarize the landscape.",
@@ -136,7 +142,7 @@ import { AgentWorkspace, AgentCache } from "@deskcreate/agentcraft";
 const workspace = AgentWorkspace.create({
   cache: AgentCache.file(".agentcraft/cache"),
   toolPolicy: { readOnly: true, redactSecrets: true },
-  budget: { maxCost: 2.00, maxToolCalls: 50 },
+  budget: { maxCost: 2.0, maxToolCalls: 50 },
 });
 
 // Pass to AgentTeam.create({ workspace, ... }) or
@@ -147,9 +153,9 @@ See [Workspace Config](./workspace-config.md) for the full config table and fact
 
 ## Common Mistakes
 
-| Mistake | Fix |
-| ------- | ---- |
-| Passing `apiKey` directly in code | Use `process.env.YOUR_KEY!` and add the key to `.env` |
+| Mistake                                          | Fix                                                                 |
+| ------------------------------------------------ | ------------------------------------------------------------------- |
+| Passing `apiKey` directly in code                | Use `process.env.YOUR_KEY!` and add the key to `.env`               |
 | Using `readOnly: true` but expecting file writes | Set `readOnly: false` and gate write tools via `onApprovalRequired` |
-| Omitting `budget` in production | Always set `maxCost` or `maxToolCalls` for long agentic pipelines |
-| Forgetting to `await agent.run(...)` | `agent.run()` is async; always await the result |
+| Omitting `budget` in production                  | Always set `maxCost` or `maxToolCalls` for long agentic pipelines   |
+| Forgetting to `await agent.run(...)`             | `agent.run()` is async; always await the result                     |

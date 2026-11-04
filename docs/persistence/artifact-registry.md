@@ -4,12 +4,12 @@
 
 ## Purpose
 
-| Use case | How the registry helps |
-| --- | --- |
-| Validate structured agent output | Pass `ArtifactRegistry.lookup("CampaignBrief")` as `responseSchema` after registering it |
-| Type-safe store writes | `FileArtifactStore({ validateSchemas: true })` validates registered types on `put()` and `updateByType()` |
-| Custom artifact types | Register project-owned Zod schemas without modifying AgentCraft |
-| Schema introspection | `ArtifactRegistry.list()` enumerates currently registered type names |
+| Use case                         | How the registry helps                                                                                    |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Validate structured agent output | Pass `ArtifactRegistry.lookup("CampaignBrief")` as `responseSchema` after registering it                  |
+| Type-safe store writes           | `FileArtifactStore({ validateSchemas: true })` validates registered types on `put()` and `updateByType()` |
+| Custom artifact types            | Register project-owned Zod schemas without modifying AgentCraft                                           |
+| Schema introspection             | `ArtifactRegistry.list()` enumerates currently registered type names                                      |
 
 ## Quick Start
 
@@ -42,12 +42,12 @@ console.log(response.structuredResponse);
 
 ## API
 
-| Method | Returns | Purpose |
-| --- | --- | --- |
-| `ArtifactRegistry.lookup(name)` | `ZodSchema \| undefined` | Return the schema for a type name. Returns `undefined` if not registered. |
-| `ArtifactRegistry.register(name, schema)` | `void` | Register a schema. Throws if the name already exists. |
-| `ArtifactRegistry.list()` | `string[]` | All currently registered type names. |
-| `ArtifactRegistry.deregister(name)` | `boolean` | Remove a registered schema. Returns `false` when the name is unknown. |
+| Method                                    | Returns                  | Purpose                                                                   |
+| ----------------------------------------- | ------------------------ | ------------------------------------------------------------------------- |
+| `ArtifactRegistry.lookup(name)`           | `ZodSchema \| undefined` | Return the schema for a type name. Returns `undefined` if not registered. |
+| `ArtifactRegistry.register(name, schema)` | `void`                   | Register a schema. Throws if the name already exists.                     |
+| `ArtifactRegistry.list()`                 | `string[]`               | All currently registered type names.                                      |
+| `ArtifactRegistry.deregister(name)`       | `boolean`                | Remove a registered schema. Returns `false` when the name is unknown.     |
 
 ## Store-Level Schema Validation
 
@@ -57,12 +57,15 @@ Enable `validateSchemas: true` on the artifact store to validate registered type
 import { ArtifactRegistry, FileArtifactStore } from "@deskcreate/agentcraft";
 import { z } from "zod";
 
-ArtifactRegistry.register("SupportTicket", z.object({
-  type: z.literal("SupportTicket"),
-  subject: z.string(),
-  severity: z.enum(["low", "medium", "high", "critical"]),
-  status: z.enum(["open", "in-progress", "resolved"]).default("open"),
-}));
+ArtifactRegistry.register(
+  "SupportTicket",
+  z.object({
+    type: z.literal("SupportTicket"),
+    subject: z.string(),
+    severity: z.enum(["low", "medium", "high", "critical"]),
+    status: z.enum(["open", "in-progress", "resolved"]).default("open"),
+  }),
+);
 
 const store = FileArtifactStore({
   root: "./.artifacts",

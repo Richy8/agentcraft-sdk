@@ -16,16 +16,16 @@ const suite = AgentEval.suite({
 });
 ```
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `name` | `string` | Yes | Human-readable suite name. Appears in reports. |
-| `defaults` | `SuiteDefaults` | No | Default budget applied to every case unless overridden. |
+| Field      | Type            | Required | Description                                             |
+| ---------- | --------------- | -------- | ------------------------------------------------------- |
+| `name`     | `string`        | Yes      | Human-readable suite name. Appears in reports.          |
+| `defaults` | `SuiteDefaults` | No       | Default budget applied to every case unless overridden. |
 
 ### `SuiteDefaults`
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `maxCostUsd` | `number` | Maximum cost per case. |
+| Field            | Type     | Description              |
+| ---------------- | -------- | ------------------------ |
+| `maxCostUsd`     | `number` | Maximum cost per case.   |
 | `maxTotalTokens` | `number` | Maximum tokens per case. |
 
 ## Case Config
@@ -42,25 +42,25 @@ suite.case({
 });
 ```
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `name` | `string` | Yes | Case name. Appears in reports. |
-| `prompt` | `string` | Yes | The prompt to send to the agent. |
-| `assertions` | `Assertion[]` | Yes | One or more assertions to check against the response. |
-| `budget` | `RunBudget` | No | Per-case budget override. |
-| `systemPrompt` | `string` | No | System prompt override for this case. |
+| Field          | Type          | Required | Description                                           |
+| -------------- | ------------- | -------- | ----------------------------------------------------- |
+| `name`         | `string`      | Yes      | Case name. Appears in reports.                        |
+| `prompt`       | `string`      | Yes      | The prompt to send to the agent.                      |
+| `assertions`   | `Assertion[]` | Yes      | One or more assertions to check against the response. |
+| `budget`       | `RunBudget`   | No       | Per-case budget override.                             |
+| `systemPrompt` | `string`      | No       | System prompt override for this case.                 |
 
 ## Assertion Types
 
-| Type | Fields | Passes when |
-| --- | --- | --- |
-| `contains` | `value: string` | Response text contains the string. |
-| `notContains` | `value: string` | Response text does not contain the string. |
-| `matches` | `pattern: RegExp` | Response text matches the regex. |
-| `jsonPath` | `path: string`, `expected: unknown` | Structured response at JSON path equals expected. |
-| `toolCalled` | `name: string` | The named tool was called during the run. |
-| `skillActivated` | `name: string` | The named skill activated during the run. |
-| `cacheHitRateAtLeast` | `rate: number` | Cache hit rate is ≥ the given rate (0–1). |
+| Type                  | Fields                              | Passes when                                       |
+| --------------------- | ----------------------------------- | ------------------------------------------------- |
+| `contains`            | `value: string`                     | Response text contains the string.                |
+| `notContains`         | `value: string`                     | Response text does not contain the string.        |
+| `matches`             | `pattern: RegExp`                   | Response text matches the regex.                  |
+| `jsonPath`            | `path: string`, `expected: unknown` | Structured response at JSON path equals expected. |
+| `toolCalled`          | `name: string`                      | The named tool was called during the run.         |
+| `skillActivated`      | `name: string`                      | The named skill activated during the run.         |
+| `cacheHitRateAtLeast` | `rate: number`                      | Cache hit rate is ≥ the given rate (0–1).         |
 
 ```ts
 suite.case({
@@ -91,7 +91,9 @@ const report = await AgentEval.run({
 });
 
 console.log(`Status: ${report.status}`); // 'passed' | 'failed'
-console.log(`${report.results.filter(r => r.status === "passed").length}/${report.results.length} passed`);
+console.log(
+  `${report.results.filter((r) => r.status === "passed").length}/${report.results.length} passed`,
+);
 ```
 
 ## `EvalReport` Shape

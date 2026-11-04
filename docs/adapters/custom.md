@@ -289,9 +289,11 @@ import { createAdapter, tool } from "@deskcreate/agentcraft/adapters";
 const summarizeDoc = tool("summarize_doc", {
   description: "Summarize a document from a fetch result.",
   sideEffect: "read",
-  params: { url: { type: "string", description: "URL of document to summarize." } },
+  params: {
+    url: { type: "string", description: "URL of document to summarize." },
+  },
   run: async ({ url }) => {
-    const content = await fetch(url).then(r => r.text());
+    const content = await fetch(url).then((r) => r.text());
     return { url, wordCount: content.split(" ").length };
   },
 });

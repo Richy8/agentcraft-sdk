@@ -1,41 +1,41 @@
 # Workflow Config
 
-`AgentWorkflow.create(config)` defines a repeatable process graph. `workflow.run(options)` executes one run with validated input and optional persisted state. The workflow config separates the *definition* (what steps exist, what workspace they share) from the *run* (what input triggers this execution).
+`AgentWorkflow.create(config)` defines a repeatable process graph. `workflow.run(options)` executes one run with validated input and optional persisted state. The workflow config separates the _definition_ (what steps exist, what workspace they share) from the _run_ (what input triggers this execution).
 
 ## Purpose
 
-| Area             | Config field                    | Related page                                           |
-| ---------------- | ------------------------------- | ------------------------------------------------------ |
-| Ordered process  | `steps`                         | [AgentWorkflow](../orchestration/agent-workflow.md)    |
-| Shared resources | `workspace`                     | [AgentWorkspace](../orchestration/agent-workspace.md)  |
-| Input contract   | `input`                         | [Structured Output](../core/structured-output.md)      |
-| Review hooks     | `onStepComplete`, `onStepError` | [Observability](../core/observability-replay.md)       |
-| Artifact store   | `workspace.store`               | [ArtifactStore](../persistence/artifact-store.md)      |
+| Area             | Config field                    | Related page                                          |
+| ---------------- | ------------------------------- | ----------------------------------------------------- |
+| Ordered process  | `steps`                         | [AgentWorkflow](../orchestration/agent-workflow.md)   |
+| Shared resources | `workspace`                     | [AgentWorkspace](../orchestration/agent-workspace.md) |
+| Input contract   | `input`                         | [Structured Output](../core/structured-output.md)     |
+| Review hooks     | `onStepComplete`, `onStepError` | [Observability](../core/observability-replay.md)      |
+| Artifact store   | `workspace.store`               | [ArtifactStore](../persistence/artifact-store.md)     |
 
 ## Workflow Definition Config
 
-| Field            | Required | Default                   | Purpose                                                              |
-| ---------------- | -------- | ------------------------- | -------------------------------------------------------------------- |
-| `steps`          | Yes      | None                      | Ordered `WorkflowStep[]`. Executed in sequence unless using parallel.|
-| `workspace`      | No       | `AgentWorkspace.memory()` | Shared runtime context: cache, store, memory, tool policy.           |
-| `input`          | No       | None                      | Zod schema for run input validation. Throws on mismatch.             |
-| `id`             | No       | Auto-generated UUID       | Workflow identifier. Used in stored `WorkflowRun` artifacts.         |
-| `onStepComplete` | No       | None                      | `(stepId, result, ctx) => void`. Called after each step succeeds.    |
-| `onStepError`    | No       | None                      | `(stepId, error, ctx) => void`. Called after a step throws.          |
+| Field            | Required | Default                   | Purpose                                                               |
+| ---------------- | -------- | ------------------------- | --------------------------------------------------------------------- |
+| `steps`          | Yes      | None                      | Ordered `WorkflowStep[]`. Executed in sequence unless using parallel. |
+| `workspace`      | No       | `AgentWorkspace.memory()` | Shared runtime context: cache, store, memory, tool policy.            |
+| `input`          | No       | None                      | Zod schema for run input validation. Throws on mismatch.              |
+| `id`             | No       | Auto-generated UUID       | Workflow identifier. Used in stored `WorkflowRun` artifacts.          |
+| `onStepComplete` | No       | None                      | `(stepId, result, ctx) => void`. Called after each step succeeds.     |
+| `onStepError`    | No       | None                      | `(stepId, error, ctx) => void`. Called after a step throws.           |
 
 ## Run Options
 
-| Field         | Required | Default  | Purpose                                                         |
-| ------------- | -------- | -------- | --------------------------------------------------------------- |
-| `input`       | Yes      | None     | Workflow input. Validated against the `input` Zod schema.       |
-| `_resumeFrom` | Internal | None     | Internal resume state used by `workflow.resume()`.              |
+| Field         | Required | Default | Purpose                                                   |
+| ------------- | -------- | ------- | --------------------------------------------------------- |
+| `input`       | Yes      | None    | Workflow input. Validated against the `input` Zod schema. |
+| `_resumeFrom` | Internal | None    | Internal resume state used by `workflow.resume()`.        |
 
 ## Resume Options
 
-| Field             | Required | Default | Purpose                                                   |
-| ----------------- | -------- | ------- | --------------------------------------------------------- |
-| `runArtifactId`   | Yes      | None    | ID of a previously persisted `WorkflowRun` artifact.      |
-| `workspace.store` | Yes      | None    | The same artifact store used during the original run.     |
+| Field             | Required | Default | Purpose                                               |
+| ----------------- | -------- | ------- | ----------------------------------------------------- |
+| `runArtifactId`   | Yes      | None    | ID of a previously persisted `WorkflowRun` artifact.  |
+| `workspace.store` | Yes      | None    | The same artifact store used during the original run. |
 
 ## Minimal Workflow
 
@@ -57,7 +57,7 @@ const workflow = AgentWorkflow.create({
 });
 
 const result = await workflow.run({ input: { topic: "agent caching" } });
-console.log(result.status);  // "completed"
+console.log(result.status); // "completed"
 ```
 
 ## Agent Step In A Workflow
@@ -112,19 +112,20 @@ const workflow = AgentWorkflow.create({
   workspace,
   steps: [
     CustomStep({ id: "step-a", run: async () => "result-a" }),
-    CustomStep({ id: "step-b", run: async (ctx) => {
-      const a = ctx.steps["step-a"]?.output;
-      return `step-b used: ${a}`;
-    }}),
+    CustomStep({
+      id: "step-b",
+      run: async (ctx) => {
+        const a = ctx.steps["step-a"]?.output;
+        return `step-b used: ${a}`;
+      },
+    }),
   ],
 });
 
 const result = await workflow.run({ input: {} });
 
 // List persisted runs from the store
-const runs = workspace.store
-  ? await workspace.store.query("WorkflowRun")
-  : [];
+const runs = workspace.store ? await workspace.store.query("WorkflowRun") : [];
 console.log(result.runId, runs.length);
 ```
 
@@ -195,12 +196,12 @@ Resuming requires `workspace.store` — the workflow reads the stored step outpu
 
 Every step `run` function receives a `WorkflowContext`:
 
-| Field       | Type                                 | Purpose                                               |
-| ----------- | ------------------------------------ | ----------------------------------------------------- |
-| `input`     | `TInput`                             | The validated input passed to `workflow.run()`.       |
-| `steps`     | `Record<string, WorkflowStepResult>` | Results of completed steps, keyed by step ID.         |
-| `workspace` | `AgentWorkspaceInstance`             | Shared workspace with cache, store, memory.           |
-| `store`     | `ArtifactStore \| undefined`         | Shortcut to `workspace.store`.                        |
-| `runId`     | `string`                             | Unique ID for this workflow run.                      |
+| Field       | Type                                 | Purpose                                         |
+| ----------- | ------------------------------------ | ----------------------------------------------- |
+| `input`     | `TInput`                             | The validated input passed to `workflow.run()`. |
+| `steps`     | `Record<string, WorkflowStepResult>` | Results of completed steps, keyed by step ID.   |
+| `workspace` | `AgentWorkspaceInstance`             | Shared workspace with cache, store, memory.     |
+| `store`     | `ArtifactStore \| undefined`         | Shortcut to `workspace.store`.                  |
+| `runId`     | `string`                             | Unique ID for this workflow run.                |
 
 More variants: [AgentWorkflow](../orchestration/agent-workflow.md), [Workflow Steps](../orchestration/workflow-steps.md), and [orchestration cookbook](../examples-cookbook/orchestration.md).

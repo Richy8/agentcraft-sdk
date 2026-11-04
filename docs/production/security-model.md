@@ -216,7 +216,7 @@ Test that your tool policy and adapter scoping are enforced:
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
-import { DeterministicFakeProvider } from "@deskcreate/agentcraft/testing";
+import { DeterministicFakeProvider } from "@deskcreate/agentcraft";
 
 test("agent cannot read outside allowedPaths", async () => {
   const agent = Agent.create({

@@ -293,3 +293,5 @@ npm run benchmark:mock                      # cost/cache benchmark (mocked)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Security Policy](SECURITY.md)
 - [GitHub Discussions](https://github.com/Richy8/agentcraft-sdk/discussions)
+
+Built and maintained by [Efemena Elvis Ariawhorai](https://github.com/Richy8).

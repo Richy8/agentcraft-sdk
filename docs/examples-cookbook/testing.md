@@ -6,7 +6,7 @@ Writing tests for agents without live API calls.
 
 ```ts
 import { Agent } from "@deskcreate/agentcraft";
-import { DeterministicFakeProvider } from "@deskcreate/agentcraft/testing";
+import { DeterministicFakeProvider } from "@deskcreate/agentcraft";
 import { describe, it, expect } from "vitest";
 
 describe("agent", () => {

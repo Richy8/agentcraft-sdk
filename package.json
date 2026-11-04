@@ -4,7 +4,7 @@
   "description": "Production-grade TypeScript agent runtime with provider routing, tools, MCP, workflows, structured output, streaming, budgets, caching, durable artifacts, and observability.",
   "type": "module",
   "license": "MIT",
-  "author": "AgentCraft contributors",
+  "author": "Efemena Elvis Ariawhorai (https://github.com/Richy8)",
   "keywords": [
     "ai",
     "agent",

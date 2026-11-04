@@ -12,6 +12,7 @@ const allowedPackageImports = new Set([
   "@deskcreate/agentcraft/adapters",
   "@deskcreate/agentcraft/mcp",
   "@deskcreate/agentcraft/team",
+  "@deskcreate/agentcraft/skills",
 ]);
 const stalePublicApiPatterns = [
   {

@@ -44,7 +44,9 @@ import { Agent, Provider } from "@deskcreate/agentcraft";
 import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
 import { AgentTeam } from "@deskcreate/agentcraft/team";
 import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
+```
 
+```text
 // ✗ Incorrect — internal path, no stability guarantee
 import { Agent } from "@deskcreate/agentcraft/src/agent/agent";
 ```

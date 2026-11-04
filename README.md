@@ -1,8 +1,8 @@
 # AgentCraft
 
-[![npm version](https://img.shields.io/npm/v/agentcraft)](https://www.npmjs.com/package/agentcraft)
+[![npm version](https://img.shields.io/npm/v/@deskcreate/agentcraft)](https://www.npmjs.com/package/@deskcreate/agentcraft)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/agentcraft-ai/agentcraft/actions/workflows/ci.yml/badge.svg)](https://github.com/agentcraft-ai/agentcraft/actions/workflows/ci.yml)
+[![CI](https://github.com/Richy8/agentcraft-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/Richy8/agentcraft-sdk/actions/workflows/ci.yml)
 [![Node >= 20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
 
 Production-grade TypeScript agent runtime with provider routing, tools, MCP, skills, workflows, structured output, streaming, budgets, and observability.
@@ -112,4 +112,6 @@ INTEGRATION_TESTS=true npm run test:int:light
 - [Contributing](CONTRIBUTING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Security Policy](SECURITY.md)
-- [GitHub Discussions](https://github.com/agentcraft-ai/agentcraft/discussions)
+- [GitHub Discussions](https://github.com/Richy8/agentcraft-sdk/discussions)
+
+Built and maintained by [Efemena Elvis Ariawhorai](https://github.com/Richy8).

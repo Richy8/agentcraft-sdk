@@ -80,4 +80,4 @@ Avoid past-tense messages such as `Added` or `Fixed`.
 
 Use GitHub Discussions for design questions, usage help, and roadmap proposals:
 
-https://github.com/agentcraft-ai/agentcraft/discussions
+https://github.com/Richy8/agentcraft-sdk/discussions

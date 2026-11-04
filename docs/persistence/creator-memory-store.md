@@ -1,58 +1,76 @@
-# Creator Memory Store
+# Semantic Memory for Agents
 
-Creator memory stores brand voice, audience notes, prior performance learnings, and recurring preferences. It is what keeps a creator workflow from starting cold every time.
+For persistent cross-run memory, use `AgentMemory`. It supports local, Qdrant, Pinecone, and Supabase vector backends.
 
-## Purpose
-
-| Memory type          | Good example                      | Tool                           | Related page                                    |
-| -------------------- | --------------------------------- | ------------------------------ | ----------------------------------------------- |
-| Brand voice          | Preferred tone and banned phrases | `FileSystemCreatorMemoryStore` | [Brand Voice](../creator/skills.md)             |
-| Audience notes       | ICP, objections, reader maturity  | `CreatorMemoryStore`           | [Creator Memory](../creator/memory.md)          |
-| Performance learning | Topics that worked                | `AnalyticsHistoryStore`        | [Analytics Store](./analytics-history-store.md) |
-| External memory      | MCP memory graph                  | `MemoryMCP`                    | [Built-In MCP](../mcp/built-in.md)              |
-
-## Usage
+## Quick Start
 
 ```ts
-import {
-  Agent,
-  FileSystemCreatorMemoryStore,
-  Provider,
-} from "@deskcreate/agentcraft";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { Agent, AgentMemory, Provider } from "@deskcreate/agentcraft";
 
-// Constructor takes a root directory path (created if missing)
-const memory = new FileSystemCreatorMemoryStore("./.agentcraft/creator-memory");
+const memory = AgentMemory.create({
+  backend: "local",
+  scope: "session",
+});
 
 const agent = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-}).use(CreatorPacks.social({ memory: true }));
+  model: Provider.anthropic["claude-sonnet-4-6"],
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+});
+
+// Store facts
+await memory.store({
+  content: "Brand tone: direct, no buzzwords. Avoid 'leverage' and 'synergy'.",
+});
+
+// Recall relevant context before a run
+const recalled = await memory.search({ query: "brand voice", topK: 3 });
+const context = recalled.map((r) => r.content).join("\n");
 
 const response = await agent.run({
-  prompt: "Draft a social post using our brand voice.",
+  prompt: "Write a LinkedIn post about our new MCP adapter.",
+  system: context,
 });
+
 console.log(response.content);
 ```
 
-## Configuration
+## Persistent Backends
 
-| Option              | Required       | Default | Purpose                            |
-| ------------------- | -------------- | ------- | ---------------------------------- |
-| `filePath`          | For file store | None    | Durable memory file.               |
-| `memory`            | No             | `false` | Pack-level memory enablement.      |
-| `readOnlyByDefault` | No             | `false` | Prevents accidental memory writes. |
-| `cache`             | No             | `false` | Reuses stable memory context.      |
-
-## Local Examples
-
-Use memory for a brand voice pass:
+### Qdrant
 
 ```ts
-await agent.run({
-  prompt:
-    "/brand-voice Rewrite this post to match our concise technical voice.",
+const memory = AgentMemory.create({
+  backend: "qdrant",
+  url: process.env.QDRANT_URL!,
+  apiKey: process.env.QDRANT_API_KEY,
+  collectionName: "agent-memory",
 });
 ```
 
-More variants: [Creator Memory and Analytics](../creator/analytics.md).
+### Pinecone
+
+```ts
+const memory = AgentMemory.create({
+  backend: "pinecone",
+  apiKey: process.env.PINECONE_API_KEY!,
+  indexName: "agent-memory",
+  namespace: "default",
+});
+```
+
+### Supabase
+
+```ts
+const memory = AgentMemory.create({
+  backend: "supabase",
+  url: process.env.SUPABASE_URL!,
+  serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  tableName: "agent_memory",
+});
+```
+
+## Related
+
+- [Semantic Memory](./semantic-memory.md) — full `AgentMemory` reference
+- [Artifact Store](./artifact-store.md) — structured typed artifact persistence
+- [Authoring a Domain Store](./authoring-domain-store.md) — build custom domain-specific stores

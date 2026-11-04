@@ -97,4 +97,33 @@ describe('AgentTeam', () => {
     expect(vi.mocked(orchestrator.run).mock.calls[0]?.[0].prompt).toContain('planner/executor/reviewer');
     expect(vi.mocked(orchestrator.run).mock.calls[0]?.[0].prompt).toContain('Parallel member results');
   });
+
+  it('returns an aggregate team cost report and applies role budget mode', async () => {
+    const orchestrator = mockAgent('orchestrator', 'final', 0.2);
+    const writer = mockAgent('writer', 'draft', 0.3);
+    const team = AgentTeam.create({
+      orchestrator,
+      executionHint: 'parallel',
+      roleBudgets: {
+        writer: { maxToolCalls: 2, mode: 'prefer-cache' },
+        orchestrator: { maxTokens: 10_000, mode: 'downgrade-model' },
+      },
+      members: [{ role: 'writer', agent: writer }],
+    });
+
+    const result = await team.run({ prompt: 'Draft this' });
+
+    expect(result.costReport).toMatchObject({
+      scope: 'team',
+      costs: { actualModelCost: 0.5 },
+      tokens: { actual: { total: 4 } },
+    });
+    expect(vi.mocked(writer.run).mock.calls[0]?.[0].budget).toMatchObject({
+      maxToolCalls: 2,
+      mode: 'prefer-cache',
+    });
+    expect(vi.mocked(orchestrator.run).mock.calls[0]?.[0].budget).toMatchObject({
+      mode: 'downgrade-model',
+    });
+  });
 });

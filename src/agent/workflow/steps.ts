@@ -32,6 +32,7 @@ export function AgentStep(config: AgentStepConfig): WorkflowStep {
         const prompt = typeof config.prompt === 'function' ? await config.prompt(ctx) : config.prompt;
         const response = await config.agent.run({
           prompt,
+          ...(ctx.workspace.budget !== undefined && { budget: ctx.workspace.budget }),
           ...(config.toolPolicy !== undefined && { toolPolicy: config.toolPolicy }),
           ...(config.responseSchema !== undefined && { responseSchema: config.responseSchema }),
         });
@@ -204,11 +205,7 @@ export function CustomStep(config: CustomStepConfig): WorkflowStep {
 }
 
 function applyWorkspaceToAgent(agent: Agent, workspace: AgentWorkspaceInstance): void {
-  if (workspace.cache) agent.setCache(workspace.cache);
-  agent.setEventEmitter(workspace.events);
-  agent.mergeToolPolicy(workspace.toolPolicy);
-  for (const adapter of workspace.adapters) agent.use(adapter);
-  for (const mcp of workspace.mcps) agent.use(mcp);
+  agent.applyWorkspace(workspace);
 }
 
 async function withRetry<T>(retry: RetryStepConfig | undefined, run: () => T | Promise<T>): Promise<T> {

@@ -29,15 +29,16 @@ console.log(`Tokens: ${response.tokensUsed.total}`);
 
 All budget fields are passed inside `budget` in `agent.run()`. All are optional.
 
-| Field                          | Default | When enforced         | Purpose                                                             |
-| ------------------------------ | ------- | --------------------- | ------------------------------------------------------------------- |
-| `maxToolCalls`                 | No cap  | During run            | Throws after this many tool calls are executed.                     |
-| `maxTokens`                    | No cap  | Pre-flight + post-run | Total token budget (prompt + completion).                           |
-| `maxInputTokens`               | No cap  | Pre-flight            | Cap on estimated prompt tokens.                                     |
-| `maxOutputTokens`              | No cap  | Pre-flight            | Cap on estimated completion tokens.                                 |
-| `maxCost`                      | No cap  | Pre-flight + post-run | Abort if estimated or actual cost exceeds this value.               |
-| `costOptions`                  | None    | Pre-flight            | Modifiers: `region`, `batch`, `priority`, `flex`, tool/search fees. |
-| `cachePolicy.requireCachedFor` | None    | During run            | Tool names that must have a cached result — throws if not.          |
+| Field                          | Default       | When enforced         | Purpose                                                                                  |
+| ------------------------------ | ------------- | --------------------- | ---------------------------------------------------------------------------------------- |
+| `maxToolCalls`                 | No cap        | During run            | Throws after this many tool calls are executed.                                          |
+| `maxTokens`                    | No cap        | Pre-flight + post-run | Total token budget (prompt + completion).                                                |
+| `maxInputTokens`               | No cap        | Pre-flight            | Cap on estimated prompt tokens.                                                          |
+| `maxOutputTokens`              | No cap        | Pre-flight            | Cap on estimated completion tokens.                                                      |
+| `maxCost`                      | No cap        | Pre-flight + post-run | Abort if estimated or actual cost exceeds this value.                                    |
+| `costOptions`                  | None          | Pre-flight            | Modifiers: `region`, `batch`, `priority`, `flex`, tool/search fees.                      |
+| `cachePolicy.requireCachedFor` | None          | During run            | Tool names that must have a cached result — throws if not.                               |
+| `mode`                         | `fail-closed` | Pre-flight            | Budget posture: `fail-closed`, `prefer-cache`, `downgrade-model`, or `request-approval`. |
 
 ## Cost Estimation
 
@@ -63,7 +64,7 @@ import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // Instance method — uses the agent's already-configured model
 const agent = Agent.create({
-  model: Provider.anthropic["claude-3-5-haiku-20241022"],
+  model: Provider.anthropic["claude-haiku-4-5"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 
@@ -84,6 +85,44 @@ console.log(`Estimated cost: $${estimate.estimatedCost.toFixed(4)}`);
 | `tokens.completion` | `number`  | Estimated completion (output) tokens.                    |
 | `tokens.total`      | `number`  | Total estimated tokens.                                  |
 | `stalePricing`      | `boolean` | `true` if pricing data is older than 90 days or unknown. |
+
+## Cost Reports
+
+Every run, team, and workflow can expose a `costReport`. Use it when you need one place to compare provider token spend, estimated tool/search spend, cache savings, and pricing freshness.
+
+```ts
+const response = await agent.run({
+  prompt: "Research and draft a short article plan.",
+  budget: {
+    mode: "prefer-cache",
+    maxCost: 0.03,
+    maxToolCalls: 3,
+    costOptions: { toolCalls: 1, searches: 1 },
+  },
+});
+
+console.log(response.costReport?.costs.actualModelCost);
+console.log(response.costReport?.costs.toolCostEstimate);
+console.log(response.costReport?.costs.searchCostEstimate);
+console.log(response.costReport?.costs.cacheSavingsEstimate);
+console.log(response.costReport?.stalePricing);
+```
+
+`budget.mode` is intentionally explicit:
+
+- `fail-closed`: stop when the estimate or actual usage exceeds the cap.
+- `prefer-cache`: use with `budget.cachePolicy.requireCachedFor` when a live tool call should only happen after a cache warm-up.
+- `downgrade-model`: signal to `AgentPool` orchestration that a cheaper model should be preferred under budget pressure.
+- `request-approval`: surface an approval path in your app before continuing expensive work.
+
+Pricing metadata can be checked before publishing cost claims:
+
+```ts
+import { createPricingStalenessReport } from "@deskcreate/agentcraft";
+
+const pricing = createPricingStalenessReport();
+console.log(pricing.staleModels);
+```
 
 ## Patterns
 
@@ -237,6 +276,58 @@ const response = await agent.run({
 console.log(response.content);
 console.log(`Cache hits: ${response.cache?.hits}`);
 ```
+
+## Run Measurement
+
+Every `agent.run()` response includes lightweight measurement metadata that helps compare flat prompts, adapter-enhanced prompts, and cached replays without exposing hidden prompts.
+
+```ts
+const response = await agent.run({
+  prompt: "Write a cache-aware article plan.",
+  budget: { maxCost: 0.02 },
+});
+
+console.log(response.measurement?.assembledPromptChars);
+console.log(response.measurement?.estimatedPromptTokens);
+console.log(response.measurement?.exposedToolCount);
+console.log(response.cache?.summary?.hitRate);
+```
+
+For repeatable before/after checks, use the benchmark helpers from the root package:
+
+```ts
+import {
+  runAgentBenchmark,
+  writeAgentBenchmarkReport,
+} from "@deskcreate/agentcraft";
+
+const report = await runAgentBenchmark({
+  name: "Prompt cost comparison",
+  prompt: "Create a Medium article plan about token waste.",
+  variants: [
+    {
+      name: "flat",
+      kind: "flat",
+      run: () => flatAgent.run({ prompt }),
+    },
+    {
+      name: "with adapters",
+      kind: "adapter",
+      run: () => agentWithAdapters.run({ prompt }),
+    },
+  ],
+});
+
+await writeAgentBenchmarkReport(report, "reports/blog-cost-comparison.md");
+```
+
+For the built-in light live benchmark, keep the run bounded:
+
+```bash
+INTEGRATION_TESTS=true AGENTCRAFT_LIVE_BENCHMARKS=true AGENTCRAFT_LIVE_PROVIDERS=openai npm run benchmark:live:light
+```
+
+The report is written to `reports/agentcraft-live-cost-cache-benchmark.md` and separates measured provider cost from tool/search estimates. It includes a flat-prompt baseline so you can compare different adapter configurations and cache strategies.
 
 ### Cost Options (Region, Batch, Priority)
 

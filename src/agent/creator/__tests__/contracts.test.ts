@@ -4,16 +4,15 @@ import {
   AudienceProfileSchema,
   CapabilityExpressionSchema,
   CreatorArtifactSchema,
-  CreatorSkillManifestSchema,
+  CreatorTraitManifestSchema,
   validateCreatorPack,
-  validateCreatorSkillManifest,
+  validateCreatorTraitManifest,
 } from '../types.js';
-import { AgentCache } from '../../cache.js';
-import { CreatorPacks } from '../../packs/index.js';
+import { AgentCache } from '../../cache/index.js';
 
 describe('creator contracts', () => {
-  it('validates complete skill manifests and rejects incomplete ones', () => {
-    const manifest = validateCreatorSkillManifest({
+  it('validates complete trait manifests and rejects incomplete ones', () => {
+    const manifest = validateCreatorTraitManifest({
       name: 'blog-writer',
       directive: 'blog',
       category: 'creation',
@@ -33,7 +32,7 @@ describe('creator contracts', () => {
     });
 
     expect(manifest.name).toBe('blog-writer');
-    expect(() => CreatorSkillManifestSchema.parse({ name: 'broken' })).toThrow();
+    expect(() => CreatorTraitManifestSchema.parse({ name: 'broken' })).toThrow();
   });
 
   it('validates base and specialized artifacts', () => {
@@ -68,10 +67,24 @@ describe('creator contracts', () => {
   });
 
   it('keeps pack and cache contracts typed without wiring runtime behavior', () => {
-    const pack: CreatorPack = CreatorPacks.blog({ contentRoot: 'content' });
+    const pack: CreatorPack = {
+      type: 'creator-pack',
+      name: 'blog',
+      description: 'Blog content creation pack',
+      manifest: {
+        name: 'blog',
+        description: 'Blog content creation pack',
+        traits: ['blog-writer'],
+        requiredCapabilities: [],
+        optionalCapabilities: [],
+        configFields: [],
+        sideEffectRisk: 'none',
+      },
+      attachments: [],
+    };
     const cache: AgentCacheController = AgentCache.disabled();
 
-    expect(validateCreatorPack(pack).manifest.skills).toContain('blog-writer');
+    expect(validateCreatorPack(pack).manifest.traits).toContain('blog-writer');
     expect(cache.config.type).toBe('disabled');
   });
 });

@@ -1,40 +1,32 @@
 # Creator Analytics
 
-Creator analytics stores performance reports, experiment plans, and experiment outcomes so future planning can use observed results.
+`FileSystemAnalyticsHistoryStore` and `AnalyticsAdapter` were removed in **v0.3.0**.
 
-## Quick Start
+For structured reporting and experiment tracking, use [AgentReports](../production/agent-reports.md) and [ArtifactStore](../persistence/artifact-store.md) directly.
 
 ```ts
-import { Agent, Provider } from "@deskcreate/agentcraft";
-import { AnalyticsAdapter } from "@deskcreate/agentcraft/adapters";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
-import { FileSystemAnalyticsHistoryStore } from "@deskcreate/agentcraft";
+import { Agent, Provider, MemoryArtifactStore } from "@deskcreate/agentcraft";
+import { AgentReports } from "@deskcreate/agentcraft";
 
-const analytics = new FileSystemAnalyticsHistoryStore(".agentcraft/analytics");
+const store = new MemoryArtifactStore();
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
-})
-  .use(CreatorPacks.analytics())
-  .use(AnalyticsAdapter.connect({ historyStore: analytics }));
+});
 
 const response = await agent.run({
-  prompt: "Analyze content performance for the last 30 days.",
+  prompt: "Summarize the top 3 learnings from Q1 content experiments.",
 });
+
+// Save the result as a typed artifact
+await store.save({
+  type: "analysis-report",
+  content: response.content,
+  metadata: { period: "Q1-2026" },
+});
+
 console.log(response.content);
 ```
 
-## Config
-
-| Field               | Default                     | Purpose                                      |
-| ------------------- | --------------------------- | -------------------------------------------- |
-| `root`              | `content/analytics-history` | Filesystem history root.                     |
-| `PerformanceReport` | Schema-validated            | Stores observed metrics and recommendations. |
-| `ExperimentPlan`    | Schema-validated            | Stores hypothesis and decision rule.         |
-| `ExperimentResult`  | Adds `observedAt`           | Stores outcome and decision.                 |
-
-## More
-
-- [Analytics History Store](../persistence/analytics-history-store.md)
-- [Analytics Pack](./packs/analytics.md)
+See [ArtifactStore](../persistence/artifact-store.md) for file, memory, and SQLite backends.

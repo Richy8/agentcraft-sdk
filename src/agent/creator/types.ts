@@ -45,7 +45,7 @@ export const CapabilityExpressionSchema = z.union([
   z.object({ allOf: z.array(z.string().min(1)).min(1) }),
 ]);
 
-export const CreatorSkillManifestSchema = z.object({
+export const CreatorTraitManifestSchema = z.object({
   name: z.string().min(1),
   directive: z.string().min(1),
   category: CreatorCategorySchema,
@@ -70,7 +70,7 @@ export type CreatorSideEffectRisk = z.infer<typeof CreatorSideEffectRiskSchema>;
 export type CreatorOutputOwner = z.infer<typeof CreatorOutputOwnerSchema>;
 export type CreatorSkillReadiness = z.infer<typeof CreatorSkillReadinessSchema>;
 export type CapabilityExpression = z.infer<typeof CapabilityExpressionSchema>;
-export type CreatorSkillManifest = z.infer<typeof CreatorSkillManifestSchema>;
+export type CreatorTraitManifest = z.infer<typeof CreatorTraitManifestSchema>;
 
 export const ArtifactProvenanceSchema = z.object({
   kind: z.enum(["user", "tool", "file", "model"]),
@@ -346,7 +346,7 @@ export type AdapterCapability = z.infer<typeof AdapterCapabilitySchema>;
 export const CreatorPackSchema = z.object({
   name: z.string().min(1),
   description: z.string().min(1),
-  skills: z.array(z.string().min(1)),
+  traits: z.array(z.string().min(1)),
   requiredCapabilities: z.array(CapabilityExpressionSchema),
   optionalCapabilities: z.array(CapabilityExpressionSchema),
   configFields: z.array(z.string().min(1)),
@@ -368,19 +368,27 @@ export interface CreatorPackConfig {
   readonly readOnlyByDefault?: boolean;
   readonly memory?: boolean | { readonly filePath?: string };
   readonly cache?: boolean | "auto" | "aggressive";
-  readonly skillActivation?: "always" | "auto" | "directive-only";
   readonly toolSelection?: "all" | "auto";
   readonly budget?: RunBudget;
 }
 
 export interface AgentCacheConfig {
-  readonly type: "disabled" | "file" | "memory";
+  readonly type: "disabled" | "file" | "memory" | "redis" | "postgres" | "sqlite" | "custom";
   readonly root?: string;
   readonly strategy?: "conservative" | "auto" | "aggressive";
   readonly defaultTtlMs?: number;
   readonly namespace?: string;
   readonly version?: string;
   readonly maxEntryBytes?: number;
+  readonly keyPrefix?: string;
+  readonly tableName?: string;
+  readonly connection?: string;
+  readonly locking?: {
+    readonly enabled?: boolean;
+    readonly ttlMs?: number;
+    readonly waitMs?: number;
+    readonly pollIntervalMs?: number;
+  };
 }
 
 export interface AgentCacheController {
@@ -395,6 +403,7 @@ export interface AgentCacheController {
   delete?(key: string): Promise<boolean>;
   clear?(): Promise<void>;
   pruneExpired?(): Promise<number>;
+  withLock?<T>(key: string, run: () => Promise<T>): Promise<T>;
 }
 
 export interface AgentCacheLookup {
@@ -414,10 +423,10 @@ export function isCreatorPack(value: unknown): value is CreatorPack {
   );
 }
 
-export function validateCreatorSkillManifest(
-  manifest: CreatorSkillManifest,
-): CreatorSkillManifest {
-  return CreatorSkillManifestSchema.parse(manifest);
+export function validateCreatorTraitManifest(
+  manifest: CreatorTraitManifest,
+): CreatorTraitManifest {
+  return CreatorTraitManifestSchema.parse(manifest);
 }
 
 export function validateCreatorPack(pack: CreatorPack): CreatorPack {
@@ -444,7 +453,7 @@ export function findMissingCapabilityExpressions(
 }
 
 export function assertCreatorSkillCapabilities(
-  manifest: CreatorSkillManifest,
+  manifest: CreatorTraitManifest,
   availableCapabilities: ReadonlySet<string>,
 ): void {
   const missing = findMissingCapabilityExpressions(
@@ -462,6 +471,6 @@ export function assertCreatorSkillCapabilities(
     .join("; ");
 
   throw new Error(
-    `Creator skill '${manifest.name}' is missing required capabilities: ${rendered}`,
+    `Creator trait '${manifest.name}' is missing required capabilities: ${rendered}`,
   );
 }

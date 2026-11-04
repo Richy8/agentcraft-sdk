@@ -1,46 +1,49 @@
 # Creator Adapters
 
-Creator adapters provide the tools creator skills naturally need.
+The creator-specific adapters (`CreatorResourcesAdapter`, `AnalyticsAdapter`, `PublishingAdapter`, `SeoAdapter`, `CitationManagerAdapter`, `LinkCheckerAdapter`) were removed in **v0.3.0**.
 
-## Adapter Map
+For content workflows, use the general-purpose adapters:
 
-| Adapter                   | Tools                                                              | Used for                                 |
-| ------------------------- | ------------------------------------------------------------------ | ---------------------------------------- |
-| `CitationManagerAdapter`  | `save_citation`, `read_citation`                                   | Source notes, claim maps, fact checks.   |
-| `LinkCheckerAdapter`      | `check_link`                                                       | Publish QA, SEO review.                  |
-| `SeoAdapter`              | `get_serp_results`, `get_keyword_metrics`                          | SERP briefs, SEO strategy.               |
-| `CreatorResourcesAdapter` | `read_brand_voice`, `search_content_corpus`, `list_creator_assets` | Brand voice, prior work, assets.         |
-| `PublishingAdapter`       | `create_publish_draft`, `publish_content`                          | Draft/publish workflows, approval-gated. |
-| `AnalyticsAdapter`        | `read_content_metrics`                                             | Performance analysis, experiments.       |
+| Adapter               | Use for                           |
+| --------------------- | --------------------------------- |
+| `FetchAdapter`        | Fetch web content, API responses  |
+| `TavilySearchAdapter` | Web search and research           |
+| `DatabaseAdapter`     | Read from Postgres, MySQL, SQLite |
 
-## Example
+For brand voice and content rules, define a `Skill` with your tone guide:
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import {
-  CitationManagerAdapter,
-  LinkCheckerAdapter,
-  SeoAdapter,
-} from "@deskcreate/agentcraft/adapters";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { Skill } from "@deskcreate/agentcraft/skills";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
+
+const brandVoice = Skill.define({
+  name: "brand-voice",
+  description: "Applies our tone: practical, evidence-led, no filler phrases.",
+  instructions: `
+Write in an active, confident voice. Lead with the claim, not the context.
+Avoid: "In today's world", "It is worth noting", "game-changing".
+Prefer specific numbers and named systems over vague adjectives.
+  `.trim(),
+});
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
 })
-  .use(CreatorPacks.blog())
-  .use(CitationManagerAdapter.connect({ root: "content/citations" }))
-  .use(LinkCheckerAdapter.connect())
-  .use(SeoAdapter.connect());
+  .use(brandVoice)
+  .use(TavilySearchAdapter.connect({ apiKey: process.env.TAVILY_API_KEY! }));
 
 const response = await agent.run({
-  prompt: "Write and SEO-review a blog post about AI agents.",
+  prompt:
+    "Research and draft a LinkedIn post about AI agent caching strategies.",
 });
 console.log(response.content);
 ```
 
-## More
+## Related
 
-- [Built-In Adapters Reference](../reference/built-in-adapters.md)
-- [Creator Memory](./memory.md)
-- [Creator Analytics](./analytics.md)
+- [Creator Overview](./overview.md)
+- [Adapters Overview](../adapters/overview.md)
+- [Skills Overview](../skills/overview.md)
+- [Semantic Memory](../persistence/semantic-memory.md)

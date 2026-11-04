@@ -1,3 +1,9 @@
+/**
+ * Shared provider base class.
+ *
+ * Concrete providers supply raw API calls; this class owns retry behavior and
+ * provider-agnostic tool loops so individual LLM adapters remain substitutable.
+ */
 import {
   RateLimitError,
   RetryExhaustedError,
@@ -9,6 +15,7 @@ import type { ModelConfig } from '../types/config.types.js';
 import type { Logger } from '../types/logger.js';
 import type { LLMCallParams, LLMResponse, StreamChunk, ToolCallResult } from '../types/provider.types.js';
 import type { ResolvedRetryStrategy } from '../types/retry.types.js';
+import { validateToolArguments } from '../tools/validation.js';
 import { sleep } from '../utils/sleep.js';
 
 const MAX_TOOL_LOOPS = 5;
@@ -42,6 +49,7 @@ export abstract class BaseLLMProvider {
         return { ...response, latency: Date.now() - startTime };
       } catch (error) {
         lastError = error as Error;
+        if (params.signal?.aborted) throw lastError;
         if (!isRetryableError(lastError) || attempt >= this.retryStrategy.maxAttempts) break;
         await sleep(this.calcBackoff(attempt, lastError));
       }
@@ -63,6 +71,7 @@ export abstract class BaseLLMProvider {
         return { ...response, latency: Date.now() - startTime };
       } catch (error) {
         lastError = error as Error;
+        if (params.signal?.aborted) throw lastError;
         if (!isRetryableError(lastError) || attempt >= this.retryStrategy.maxAttempts) break;
         await sleep(this.calcBackoff(attempt, lastError));
       }
@@ -105,6 +114,8 @@ export abstract class BaseLLMProvider {
   ): AsyncGenerator<StreamChunk, LLMResponse, unknown> {
     let loopCount = 0;
     let current = await this.callAPIWithTools(params, tools);
+    // Thread accumulated conversation state forward so each follow-up sees the full history.
+    let accumulatedParams = params;
 
     while (current.toolCalls && current.toolCalls.length > 0 && loopCount < MAX_TOOL_LOOPS) {
       loopCount++;
@@ -120,7 +131,11 @@ export abstract class BaseLLMProvider {
 
         try {
           const args = JSON.parse(toolCall.arguments) as Record<string, unknown>;
-          validateToolArguments(tool, args);
+          validateToolArguments(
+            tool,
+            args,
+            (issue) => new ToolExecutionError(issue.message, issue.context)
+          );
           const output = await tool.execute(args);
           const result = {
             toolCallId: toolCall.id,
@@ -145,8 +160,8 @@ export abstract class BaseLLMProvider {
         arguments: current.toolCalls![index]!.arguments,
       }));
 
-      const followUp = this.buildFollowUpParams(params, current._raw ?? current, toolResults);
-      current = await this.callAPIWithTools(followUp, tools);
+      accumulatedParams = this.buildFollowUpParams(accumulatedParams, current._raw ?? current, toolResults);
+      current = await this.callAPIWithTools(accumulatedParams, tools);
     }
 
     return current;
@@ -170,6 +185,8 @@ export abstract class BaseLLMProvider {
   ): Promise<LLMResponse> {
     let loopCount = 0;
     let current = await this.callAPIWithTools(params, tools);
+    // Thread accumulated conversation state forward so each follow-up sees the full history.
+    let accumulatedParams = params;
 
     while (current.toolCalls && current.toolCalls.length > 0 && loopCount < MAX_TOOL_LOOPS) {
       loopCount++;
@@ -184,7 +201,11 @@ export abstract class BaseLLMProvider {
             }
 
             const args = JSON.parse(toolCall.arguments) as Record<string, unknown>;
-            validateToolArguments(tool, args);
+            validateToolArguments(
+              tool,
+              args,
+              (issue) => new ToolExecutionError(issue.message, issue.context)
+            );
             const output = await tool.execute(args);
             return {
               toolCallId: toolCall.id,
@@ -208,46 +229,10 @@ export abstract class BaseLLMProvider {
         arguments: current.toolCalls![index]!.arguments,
       }));
 
-      const followUp = this.buildFollowUpParams(params, current._raw ?? current, toolResults);
-      current = await this.callAPIWithTools(followUp, tools);
+      accumulatedParams = this.buildFollowUpParams(accumulatedParams, current._raw ?? current, toolResults);
+      current = await this.callAPIWithTools(accumulatedParams, tools);
     }
 
     return current;
-  }
-}
-
-function validateToolArguments(tool: ToolDefinition, args: Record<string, unknown>): void {
-  for (const required of tool.parameters.required) {
-    if (args[required] === undefined) {
-      throw new ToolExecutionError(`Tool '${tool.name}' missing required argument '${required}'`, {
-        toolName: tool.name,
-        argument: required,
-      });
-    }
-  }
-
-  for (const [name, schema] of Object.entries(tool.parameters.properties)) {
-    const value = args[name];
-    if (value === undefined) continue;
-    const type = schema.type;
-    const valid =
-      (type === 'array' && Array.isArray(value)) ||
-      (type === 'object' && value !== null && typeof value === 'object' && !Array.isArray(value)) ||
-      (type !== 'array' && type !== 'object' && typeof value === type);
-
-    if (!valid) {
-      throw new ToolExecutionError(`Tool '${tool.name}' argument '${name}' must be ${type}`, {
-        toolName: tool.name,
-        argument: name,
-        expectedType: type,
-      });
-    }
-
-    if (schema.enum && !schema.enum.includes(String(value))) {
-      throw new ToolExecutionError(`Tool '${tool.name}' argument '${name}' must be one of: ${schema.enum.join(', ')}`, {
-        toolName: tool.name,
-        argument: name,
-      });
-    }
   }
 }

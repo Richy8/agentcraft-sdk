@@ -5,8 +5,7 @@ Use this path when your application has a capability that should be exposed as o
 ## Start With
 
 - Example: [Custom Adapter](../../examples.md#custom-adapter)
-- Scenario: [Adapter Skill Workflow](../../examples.md#adapter-skill-workflow)
-- Config: [Tools And Guardrails](../config/tools-and-guardrails.md), [Adapters, MCP, And Skills](../config/adapters-mcp-skills.md)
+- Config: [Tools And Guardrails](../config/tools-and-guardrails.md), [Adapters And MCP](../config/adapters-mcp-skills.md)
 - Guide: [Adapter Authoring](../adapter-authoring.md)
 - API: [createAdapter](/api/functions/adapters.createAdapter.html), [tool](/api/functions/adapters.tool.html)
 

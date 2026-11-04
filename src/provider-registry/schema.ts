@@ -13,19 +13,7 @@ const baseProviderSchema = z.object({
 });
 
 const openaiCompatCloudSchema = baseProviderSchema.extend({
-  provider: z.enum([
-    'openai',
-    'groq',
-    'mistral',
-    'together',
-    'fireworks',
-    'perplexity',
-    'openrouter',
-    'anyscale',
-    'novita',
-    'xai',
-    'cerebras',
-  ]),
+  provider: z.enum(['openai', 'groq', 'mistral', 'xai', 'cohere', 'together', 'fireworks', 'anyscale', 'novita', 'openrouter']),
   apiKey: z.string().min(1),
   baseUrl: z.string().url().optional(),
 });
@@ -33,8 +21,8 @@ const openaiCompatCloudSchema = baseProviderSchema.extend({
 const azureSchema = baseProviderSchema.extend({
   provider: z.literal('azure'),
   apiKey: z.string().min(1),
-  endpoint: z.string().url(),
-  deployment: z.string().min(1),
+  baseUrl: z.string().url(),
+  deployment: z.string().optional(),
   apiVersion: z.string().optional(),
 });
 
@@ -59,11 +47,6 @@ const geminiSchema = baseProviderSchema.extend({
   apiKey: z.string().min(1),
 });
 
-const cohereSchema = baseProviderSchema.extend({
-  provider: z.literal('cohere'),
-  apiKey: z.string().min(1),
-});
-
 const bedrockSchema = baseProviderSchema.extend({
   provider: z.literal('bedrock'),
   region: z.string().min(1),
@@ -84,7 +67,6 @@ export const ProviderConfigSchema = z.discriminatedUnion('provider', [
   deepseekSchema,
   anthropicSchema,
   geminiSchema,
-  cohereSchema,
   bedrockSchema,
   vertexaiSchema,
 ]);

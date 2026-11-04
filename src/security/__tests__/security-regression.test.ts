@@ -1,11 +1,7 @@
-import { mkdtemp, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ConfigurationError, RetryExhaustedError, ToolExecutionError } from '../../errors/index.js';
 import { DeterministicFakeProvider } from '../../testing/fake-provider.js';
 import { FetchAdapter } from '../../agent/adapters/fetch.adapter.js';
-import { FileSystemAdapter } from '../../agent/adapters/filesystem.adapter.js';
 import { MCPAdapter } from '../../agent/adapters/mcp.adapter.js';
 import { runToolWithPolicy } from '../../agent/adapters/tool-policy.js';
 import { tool } from '../../agent/adapters/types.js';
@@ -13,17 +9,8 @@ import { blockPromptInjectionGuardrail } from '../../agent/guardrails.js';
 import type { ToolDefinition } from '../../protocols/types.js';
 
 describe('security regression suite', () => {
-  it('blocks path traversal from the filesystem adapter', async () => {
-    const root = await mkdtemp(path.join(tmpdir(), 'agentcraft-fs-'));
-    const adapter = FileSystemAdapter.connect({ rootPath: root });
-    const readFile = (await adapter.getTools?.())?.find((item) => item.name === 'read_file');
-
-    await expect(readFile?.execute({ path: '../secret.txt' })).rejects.toThrow(ToolExecutionError);
-  });
-
   it('blocks prompt injection guardrail matches', async () => {
-    const guardedTool = tool({
-      name: 'read_page',
+    const guardedTool = tool('read_page', {
       description: 'Read page',
       params: { content: { type: 'string', description: 'content' } },
       run: async ({ content }) => content,
@@ -39,8 +26,7 @@ describe('security regression suite', () => {
   });
 
   it('redacts tool argument and result secrets', async () => {
-    const secretTool = tool({
-      name: 'secret_echo',
+    const secretTool = tool('secret_echo', {
       description: 'Echo secrets',
       params: { token: { type: 'string', description: 'token' } },
       run: async ({ token }) => ({ token, value: 'Bearer sk-secret123456' }),
@@ -64,10 +50,10 @@ describe('security regression suite', () => {
   });
 
   it('blocks destructive tools without explicit approval', async () => {
-    const destructive = tool({
-      name: 'delete_everything',
+    const destructive = tool('delete_everything', {
       description: 'Delete data',
-      security: { sideEffect: 'write', requiresConfirmation: true },
+      sideEffect: 'write',
+      requiresConfirmation: true,
       params: {},
       run: async () => 'deleted',
     });
@@ -76,8 +62,7 @@ describe('security regression suite', () => {
   });
 
   it('blocks oversized tool output', async () => {
-    const noisy = tool({
-      name: 'noisy',
+    const noisy = tool('noisy', {
       description: 'Large output',
       params: {},
       run: async () => 'x'.repeat(100),
@@ -115,22 +100,5 @@ describe('security regression suite', () => {
     const fetchUrl = (await adapter.getTools?.())?.find((item) => item.name === 'fetch_url');
 
     await expect(fetchUrl?.execute({ url: 'http://169.254.169.254/latest/meta-data' })).rejects.toThrow(ToolExecutionError);
-  });
-
-  it('blocks unsafe file extensions', async () => {
-    const root = await mkdtemp(path.join(tmpdir(), 'agentcraft-ext-'));
-    const adapter = FileSystemAdapter.connect({ rootPath: root, allowedExtensions: ['.md'] });
-    const writeSafe = (await adapter.getTools?.())?.find((item) => item.name === 'write_file');
-
-    await expect(writeSafe?.execute({ path: 'script.sh', content: 'echo unsafe' })).rejects.toThrow(ToolExecutionError);
-  });
-
-  it('blocks read-only adapter writes', async () => {
-    const root = await mkdtemp(path.join(tmpdir(), 'agentcraft-ro-'));
-    await writeFile(path.join(root, 'note.md'), 'hello', 'utf8');
-    const adapter = FileSystemAdapter.connect({ rootPath: root, readOnly: true });
-    const writeSafe = (await adapter.getTools?.())?.find((item) => item.name === 'write_file');
-
-    await expect(writeSafe?.execute({ path: 'note.md', content: 'changed' })).rejects.toThrow(ToolExecutionError);
   });
 });

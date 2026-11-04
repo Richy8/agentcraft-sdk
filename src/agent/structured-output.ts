@@ -27,14 +27,16 @@ export interface StructuredOutputResult {
 export function parseAndValidateStructuredOutput(content: string, schema: StructuredOutputSchema): StructuredOutputResult {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(content);
+    parsed = JSON.parse(stripCodeFences(content));
   } catch (error) {
     throw new ToolExecutionError(`Structured output was not valid JSON: ${(error as Error).message}`);
   }
 
   if (isZodLike(schema)) {
     const result = schema.safeParse(parsed);
-    if (!result.success) throw new ToolExecutionError(`Structured output failed schema validation: ${result.error.message ?? 'invalid value'}`);
+    if (!result.success) {
+      throw new ToolExecutionError(`Structured output failed schema validation: ${result.error.message ?? 'invalid value'}`);
+    }
     return { value: result.data, attempts: 1 };
   }
 
@@ -85,4 +87,11 @@ function matchesType(value: unknown, type: NonNullable<JsonSchema['type']>): boo
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/** Strip markdown code fences (```json ... ``` or ``` ... ```) from model output. */
+function stripCodeFences(content: string): string {
+  const trimmed = content.trim();
+  const match = trimmed.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```\s*$/);
+  return match?.[1]?.trim() ?? trimmed;
 }

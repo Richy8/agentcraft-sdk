@@ -1,2 +1,11 @@
-export * from './agent/mcp-servers/index.js';
-
+export { GitHubMCP } from './agent/mcp-servers/github.mcp.js';
+export { SlackMCP } from './agent/mcp-servers/slack.mcp.js';
+export { PostgresMCP } from './agent/mcp-servers/postgres.mcp.js';
+export { SupabaseMCP } from './agent/mcp-servers/supabase.mcp.js';
+export { FilesystemMCP } from './agent/mcp-servers/filesystem.mcp.js';
+export { BraveSearchMCP } from './agent/mcp-servers/brave-search.mcp.js';
+export { FirecrawlMCP } from './agent/mcp-servers/firecrawl.mcp.js';
+export { FetchMCP } from './agent/mcp-servers/fetch.mcp.js';
+export { MCP } from './agent/mcp-servers/connect.js';
+export type { MCPAuth, MCPConnectConfig } from './agent/mcp-servers/connect.js';
+export { MCPAdapter } from './agent/adapters/mcp.adapter.js';

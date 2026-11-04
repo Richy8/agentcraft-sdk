@@ -52,4 +52,4 @@ MCP outputs can contain stale, malicious, or prompt-injection content. Treat the
 - [MCP GitHub Agent](../examples.md#mcp-github-agent)
 - [Custom MCP Connection](../examples.md#custom-mcp-connection)
 - [Built-In MCP Skill Memory](../examples.md#built-in-mcp-skill-memory)
-- [Customer Ops Workflow](../examples.md#customer-ops-workflow)
+- [Custom MCP Connection](../examples.md#custom-mcp-connection)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AgentCache } from "../agent/cache.js";
+import { AgentCache } from "../agent/cache/index.js";
 
 describe("AgentCache.memory()", () => {
   it("returns a cache controller with type memory", () => {

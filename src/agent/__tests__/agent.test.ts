@@ -2,8 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { Agent } from '../agent.js';
 import { AgentPool } from '../agent-pool.js';
 import { Provider } from '../provider-catalog.js';
+import { AgentCache } from '../cache/index.js';
+import { createPricingStalenessReport } from '../budgets.js';
 import { FetchAdapter, SeoAdapter } from '../adapters/index.js';
-import { BlogWriterSkill, ResearchSynthesisSkill } from '../skills/index.js';
 import {
   ConfigurationError,
   QuotaExceededError,
@@ -387,12 +388,87 @@ describe('Agent', () => {
       QuotaExceededError
     );
   });
+
+  it('returns a run cost report with model, tool, search, cache, and stale-pricing fields', async () => {
+    const agent = Agent.create({
+      model: Provider.ollama['llama3.2'],
+      cache: AgentCache.memory(),
+    });
+    const provider = (
+      agent as unknown as { unifiedProvider: { callWithTools: ReturnType<typeof vi.fn> } }
+    ).unifiedProvider;
+    provider.callWithTools = vi.fn(async (_params, tools): Promise<LLMResponse> => {
+      await tools[0]!.execute({});
+      return {
+        success: true,
+        content: 'ok',
+        tokensUsed: { prompt: 10, completion: 5, total: 15 },
+        finishReason: 'stop',
+        cost: 0.01,
+      };
+    });
+
+    const result = await agent.run({
+      prompt: 'search',
+      tools: [
+        {
+          name: 'web_search',
+          description: 'Search',
+          parameters: { type: 'object', properties: {}, required: [] },
+          security: { sideEffect: 'read' },
+          execute: async () => ({ ok: true }),
+        },
+      ],
+      budget: { mode: 'fail-closed', costOptions: { toolCalls: 1, searches: 1 } },
+    });
+
+    expect(result.costReport).toMatchObject({
+      scope: 'run',
+      provider: 'ollama',
+      model: 'llama3.2',
+      tokens: { actual: { prompt: 10, completion: 5, total: 15 } },
+      costs: {
+        actualModelCost: 0.01,
+        toolCostEstimate: expect.any(Number),
+        searchCostEstimate: expect.any(Number),
+        cacheSavingsEstimate: expect.any(Number),
+      },
+      budgetMode: 'fail-closed',
+    });
+  });
+
+  it('reports pricing metadata staleness for catalog certification', () => {
+    const report = createPricingStalenessReport({
+      now: new Date('2026-05-16T00:00:00.000Z'),
+      thresholdDays: 90,
+      catalog: {
+        'openai:fresh': {
+          ...Agent.inspect(Provider.openai['gpt-4o']),
+          pricingMetadata: { updatedAt: '2026-05-01' },
+        },
+        'openai:old': {
+          ...Agent.inspect(Provider.openai['gpt-4o-mini']),
+          pricingMetadata: { updatedAt: '2025-01-01' },
+        },
+      },
+    });
+
+    expect(report).toMatchObject({
+      totalModels: 2,
+      freshModels: 1,
+      staleModels: 1,
+    });
+    expect(report.entries.find((entry) => entry.model === 'openai:old')).toMatchObject({
+      stale: true,
+      reason: 'expired',
+    });
+  });
 });
 
 describe('AgentPool', () => {
   it('validates fallback exclusion and name lookup', () => {
     const primary = Agent.create({ model: Provider.ollama['llama3.2'], name: 'primary' });
-    const fallback = Agent.create({ model: Provider.lmstudio.default, name: 'fallback' });
+    const fallback = Agent.create({ model: Provider.ollama['llama3.2'], name: 'fallback' });
 
     expect(() => AgentPool.create([primary], { strategy: 'cost', fallback: primary })).toThrow(
       ConfigurationError
@@ -404,7 +480,7 @@ describe('AgentPool', () => {
 
   it('includes per-request fees when ranking cost strategy', async () => {
     const perplexity = Agent.create({
-      model: Provider.perplexity['sonar-pro'],
+      model: Provider.groq['llama-3.1-8b-instant'],
       apiKey: 'key',
       name: 'search',
     });
@@ -458,144 +534,9 @@ describe('AgentPool', () => {
         fallbackMode: 'all',
       }).run({
         prompt: 'hi',
-        budget: { maxCost: 0.01 },
+        budget: { maxCost: 0.01, mode: 'downgrade-model' },
       })
     ).resolves.toMatchObject({ content: 'cheap' });
-  });
-
-  it('preserves skill activation and tool selection config after validation', () => {
-    const agent = Agent.create({
-      model: Provider.ollama['llama3.2'],
-      skillActivation: 'auto',
-      toolSelection: 'auto',
-    });
-
-    expect(agent).toBeDefined();
-  });
-
-  it('keeps all skill prompt injection as the default behavior', async () => {
-    const agent = Agent.create({ model: Provider.ollama['llama3.2'] }).use(BlogWriterSkill.create());
-    const spy = vi.spyOn(agent as unknown as { collectTools: () => Promise<unknown[]> }, 'collectTools').mockResolvedValue([]);
-    vi.spyOn(agent as unknown as { callModelWithStructuredOutput: (...args: unknown[]) => Promise<unknown> }, 'callModelWithStructuredOutput').mockResolvedValue({
-      raw: {
-        success: true,
-        content: 'ok',
-        tokensUsed: { prompt: 1, completion: 1, total: 2 },
-        finishReason: 'stop',
-      },
-    });
-
-    const response = await agent.run({ prompt: 'hello' });
-    expect(response.content).toBe('ok');
-    expect(response.selection?.skillActivation).toBe('always');
-    expect(response.selection?.activeSkills).toContain('blog-writer');
-    expect(spy).toHaveBeenCalled();
-  });
-
-  it('supports directive-only activation and auto tool selection deterministically', async () => {
-    const agent = Agent.create({
-      model: Provider.ollama['llama3.2'],
-      skillActivation: 'directive-only',
-      toolSelection: 'auto',
-    })
-      .use(ResearchSynthesisSkill.create())
-      .use(FetchAdapter.connect({ allowedDomains: ['example.com'] }))
-      .use(SeoAdapter.connect());
-
-    const tools = await (
-      agent as unknown as { collectTools: (params: { prompt: string }) => Promise<Array<{ name: string }>> }
-    ).collectTools({ prompt: '/research-synthesis use web fetch' });
-
-    expect(tools.map((tool) => tool.name)).toContain('fetch_url');
-    expect(tools.map((tool) => tool.name)).not.toContain('get_serp_results');
-  });
-
-  it('auto-activates only prompt-relevant skills instead of every attached creator skill', async () => {
-    const agent = Agent.create({
-      model: Provider.ollama['llama3.2'],
-      skillActivation: 'auto',
-    })
-      .use(BlogWriterSkill.create())
-      .use(ResearchSynthesisSkill.create());
-    const provider = (
-      agent as unknown as {
-        unifiedProvider: {
-          call: ReturnType<typeof vi.fn>;
-          callWithTools: ReturnType<typeof vi.fn>;
-        };
-      }
-    ).unifiedProvider;
-    const response: LLMResponse = {
-      success: true,
-      content: 'ok',
-      tokensUsed: { prompt: 1, completion: 1, total: 2 },
-      finishReason: 'stop',
-    };
-    provider.call = vi.fn(async () => response);
-    provider.callWithTools = vi.fn(async () => response);
-
-    const result = await agent.run({ prompt: 'Write a practical blog draft about cache strategy.' });
-
-    expect(result.selection?.activeSkills).toContain('blog-writer');
-    expect(result.selection?.activeSkills).not.toContain('research-synthesis');
-  });
-
-  it('auto-activates creator skills through domain aliases without requiring slash directives', async () => {
-    const agent = Agent.create({
-      model: Provider.ollama['llama3.2'],
-      skillActivation: 'auto',
-    })
-      .use(BlogWriterSkill.create())
-      .use(ResearchSynthesisSkill.create());
-    const provider = (
-      agent as unknown as { unifiedProvider: { call: ReturnType<typeof vi.fn> } }
-    ).unifiedProvider;
-    provider.call = vi.fn(async (): Promise<LLMResponse> => ({
-      success: true,
-      content: 'ok',
-      tokensUsed: { prompt: 1, completion: 1, total: 2 },
-      finishReason: 'stop',
-    }));
-
-    const result = await agent.run({
-      prompt: 'Create a compact Medium article plan about reducing token waste.',
-    });
-
-    expect(result.selection?.activeSkills).toContain('blog-writer');
-    expect(result.selection?.activeSkills).not.toContain('research-synthesis');
-  });
-
-  it('supports per-run skills without adding them to the global agent scope', async () => {
-    const agent = Agent.create({
-      model: Provider.ollama['llama3.2'],
-      skillActivation: 'auto',
-    });
-    const provider = (
-      agent as unknown as {
-        unifiedProvider: {
-          call: ReturnType<typeof vi.fn>;
-          callWithTools: ReturnType<typeof vi.fn>;
-        };
-      }
-    ).unifiedProvider;
-    const response: LLMResponse = {
-      success: true,
-      content: 'ok',
-      tokensUsed: { prompt: 1, completion: 1, total: 2 },
-      finishReason: 'stop',
-    };
-    provider.call = vi.fn(async () => response);
-    provider.callWithTools = vi.fn(async () => response);
-
-    const scoped = await agent.run({
-      prompt: 'Write a blog draft about agent cost control.',
-      use: BlogWriterSkill.create(),
-    });
-    const plain = await agent.run({ prompt: 'Write a blog draft about agent cost control.' });
-
-    expect(scoped.selection?.activeSkills).toContain('blog-writer');
-    expect(plain.selection?.activeSkills).not.toContain('blog-writer');
-    expect(agent.getAttachedAdapters().map((adapter) => adapter.name)).not.toContain('blog-writer');
   });
 
   it('initializes adapters attached after a previous run on the next run', async () => {

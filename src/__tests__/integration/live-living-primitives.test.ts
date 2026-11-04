@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { afterAll, describe, expect, it } from "vitest";
 import { Agent } from "../../agent/agent.js";
 import { tool, createAdapter } from "../../agent/adapters/types.js";
-import { AgentCache } from "../../agent/cache.js";
+import { AgentCache } from "../../agent/cache/index.js";
 import { Provider } from "../../agent/provider-catalog.js";
 import { AgentWorkspace } from "../../agent/workspace.js";
 import {
@@ -62,10 +62,9 @@ describe("live living-systems primitives smoke tests", () => {
         artifactWrites: 0,
       };
       const store = MemoryArtifactStore();
-      const probeTool = tool({
-        name: "get_living_primitives_probe",
+      const probeTool = tool("get_living_primitives_probe", {
         description: "Return the exact living-primitives smoke-test payload.",
-        security: { sideEffect: "read" },
+        sideEffect: "read",
         params: {},
         run: async () => {
           toolExecutions += 1;

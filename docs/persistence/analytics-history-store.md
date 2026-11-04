@@ -1,62 +1,52 @@
 # Analytics History Store
 
-Analytics history stores performance snapshots and experiment outcomes so future creator workflows can learn from what happened after publishing.
+`FileSystemAnalyticsHistoryStore` and `AnalyticsAdapter` were removed in **v0.3.0**.
 
-## Purpose
-
-| Data              | Used by                | Tool                                   | Related page                                    |
-| ----------------- | ---------------------- | -------------------------------------- | ----------------------------------------------- |
-| Traffic snapshots | `performance-analysis` | `AnalyticsAdapter`                     | [Analytics Pack](../creator/packs/analytics.md) |
-| Experiment result | `experiment-planner`   | `FileSystemAnalyticsHistoryStore`      | [Creator Analytics](../creator/analytics.md)    |
-| Content calendar  | `content-calendar`     | `GoogleSheetsAdapter`, `NotionAdapter` | [Adapters](../adapters/built-in.md)             |
-| Decision notes    | Future briefs          | `CreatorMemoryStore`                   | [Memory Store](./creator-memory-store.md)       |
-
-## Usage
+For tracking performance data across agent runs, use `ArtifactStore` with a typed schema:
 
 ```ts
-import {
-  Agent,
-  FileSystemAnalyticsHistoryStore,
-  Provider,
-} from "@deskcreate/agentcraft";
-import { AnalyticsAdapter } from "@deskcreate/agentcraft/adapters";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
+import { Agent, FileArtifactStore, Provider } from "@deskcreate/agentcraft";
+import { z } from "zod";
 
-// Constructor takes a root directory path (created if missing)
-const history = new FileSystemAnalyticsHistoryStore(
-  "./.agentcraft/analytics-history",
-);
+const PerformanceReport = z.object({
+  postId: z.string(),
+  publishedAt: z.string(),
+  impressions: z.number(),
+  clicks: z.number(),
+  notes: z.string().optional(),
+});
+
+const store = new FileArtifactStore({ root: ".agentcraft/analytics" });
+
+// Save a report
+await store.write("performance-report", {
+  id: "post-2025-06-01",
+  data: PerformanceReport.parse({
+    postId: "post-2025-06-01",
+    publishedAt: "2025-06-01T10:00:00Z",
+    impressions: 8400,
+    clicks: 320,
+    notes: "Highest CTR this quarter",
+  }),
+});
+
+// Read back and inject into agent context
+const report = await store.read("performance-report", "post-2025-06-01");
 
 const agent = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-})
-  .use(AnalyticsAdapter.connect({ historyStore: history }))
-  .use(CreatorPacks.analytics({ memory: true }));
-
-const response = await agent.run({
-  prompt: "Review these post metrics and decide what we should publish next.",
+  model: Provider.anthropic["claude-sonnet-4-6"],
+  apiKey: process.env.ANTHROPIC_API_KEY!,
 });
-console.log(response.content);
+
+const analysis = await agent.run({
+  prompt: `Analyze this performance report and recommend what to write next.\n\n${JSON.stringify(report?.data, null, 2)}`,
+});
+
+console.log(analysis.content);
 ```
 
-## Configuration
+## Related
 
-| Option          | Required       | Default       | Purpose                             |
-| --------------- | -------------- | ------------- | ----------------------------------- |
-| `filePath`      | For file store | None          | Durable analytics file.             |
-| `cache`         | No             | `false`       | Reuses expensive snapshots.         |
-| `budget`        | No             | Agent default | Bounds report generation.           |
-| `toolSelection` | No             | `auto`        | Avoids unnecessary analytics reads. |
-
-## Local Examples
-
-Ask for decisions, not just metrics:
-
-```ts
-await agent.run({
-  prompt: "Review these post metrics and decide what we should publish next.",
-});
-```
-
-More variants: [production cookbook](../examples-cookbook/production.md).
+- [Artifact Store](./artifact-store.md) — generic typed persistence
+- [Semantic Memory](./semantic-memory.md) — cross-run vector memory
+- [Creator Overview](../creator/overview.md)

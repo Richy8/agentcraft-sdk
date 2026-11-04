@@ -25,20 +25,18 @@ export class TavilySearchAdapter {
       name: this.adapterName,
       metadata: { kind: 'native-sdk', auth: 'api-key', trustLevel: 'review-required', sideEffects: ['read', 'external'], scopes: ['web_search'], requiredSecrets: ['TAVILY_API_KEY'], readOnly: true },
       tools: [
-        tool({
-          name: 'web_search',
+        tool('web_search', {
           description: 'Search the web with Tavily.',
-          security: { sideEffect: 'external', scopes: ['web:search'] },
+          sideEffect: 'external',
           params: { query: { type: 'string', description: 'Search query.' }, maxResults: { type: 'number', description: 'Maximum results.', required: false } },
           run: async ({ query, maxResults }) =>
             run('web_search', (signal) =>
               postJson(apiBaseUrl, '/search', { api_key: config.apiKey, query, search_depth: config.searchDepth ?? 'basic', max_results: maxResults ?? config.maxResults ?? 5 }, signal)
             ),
         }),
-        tool({
-          name: 'get_page_content',
+        tool('get_page_content', {
           description: 'Extract page content with Tavily.',
-          security: { sideEffect: 'external', scopes: ['web:read'] },
+          sideEffect: 'external',
           params: { url: { type: 'string', description: 'URL to extract.' } },
           run: async ({ url }) => run('get_page_content', (signal) => postJson(apiBaseUrl, '/extract', { api_key: config.apiKey, urls: [url] }, signal)),
         }),

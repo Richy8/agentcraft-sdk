@@ -17,19 +17,15 @@ These examples are intentionally commented. They are meant to teach the package 
 
 - Local/private execution: `local-ollama-private.ts`
 - Prompt assembly: `prompt-assembly.ts`
-- Filesystem safety: `filesystem-safe-agent.ts`
-- Browser automation: `browser-automation.ts`
 - Read-only database analysis: `database-readonly.ts`
-- GitHub native adapter: `github-review-agent.ts`
 - GitHub MCP: `mcp-github-agent.ts`
 - Custom MCP connection: `custom-mcp-connection.ts`
 - Built-in MCP + memory skill: `built-in-mcp-skill-memory.ts`
 - Research skill: `research-agent.ts`
 - Creator packs: `creator-pack-workflow.ts`
-- Creator memory and analytics history: `creator-memory-analytics.ts`
+- Cost, cache, and prompt compression: `cost-cache-compression.ts`
 - Custom skills: `custom-skills.ts`
 - Adapter + skill workflow: `adapter-skill-workflow.ts`
-- Customer operations workflow: `customer-ops-workflow.ts`
 - Cost admission control: `cost-budgeting.ts`
 - Custom adapter authoring: `custom-adapter.ts`
 - Model catalog and cost previews: `model-catalog-and-cost.ts`
@@ -64,3 +60,6 @@ Common string/enum-style config values used across examples:
 - Creator pack `skillActivation`: `always`, `auto`, or `directive-only`.
 - Creator pack `toolSelection`: `all` or `auto`.
 - Agent cache `strategy`: `conservative`, `auto`, or `aggressive`.
+- Budget `mode`: `fail-closed`, `prefer-cache`, `downgrade-model`, or `request-approval`.
+- Prompt compression: `none`, `safe`, `balanced`, or `aggressive`.
+- Artifact store `validateSchemas`: `true` or `false`.

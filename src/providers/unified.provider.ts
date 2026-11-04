@@ -22,7 +22,7 @@ export class UnifiedProvider extends BaseLLMProvider {
     try {
       const client = this.protocol.createClient(this.config, this.definition);
       const request = this.protocol.formatRequest(params, this.config);
-      const raw = await this.protocol.callRaw(client, request);
+      const raw = await this.protocol.callRaw(client, request, params);
       const result = this.protocol.extractResponse(raw, params);
       return this.definition.costFactor === 0 ? { ...result, cost: 0 } : result;
     } catch (err) {
@@ -38,7 +38,7 @@ export class UnifiedProvider extends BaseLLMProvider {
         ? this.protocol.formatRequestWithTools(params, this.config, nativeTools)
         : { ...(this.protocol.formatRequest(params, this.config) as object), tools: nativeTools };
 
-      const raw = await this.protocol.callRaw(client, request);
+      const raw = await this.protocol.callRaw(client, request, params);
       const toolCalls = this.protocol.extractToolCalls(raw);
       const result = this.protocol.extractResponse(raw, params);
       const response = toolCalls.length > 0 ? { ...result, toolCalls } : result;

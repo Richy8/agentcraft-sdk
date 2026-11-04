@@ -22,10 +22,8 @@ import {
   FileArtifactStore,
   Provider,
 } from "@deskcreate/agentcraft";
-import {
-  FileSystemAdapter,
-  TavilySearchAdapter,
-} from "@deskcreate/agentcraft/adapters";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
+import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
 import { AgentTeam } from "@deskcreate/agentcraft/team";
 
 const openaiKey = process.env.OPENAI_API_KEY ?? "";
@@ -34,10 +32,8 @@ const tavilyKey = process.env.TAVILY_API_KEY ?? "";
 const workspace = AgentWorkspace.create({
   cache: AgentCache.file(".cache", { strategy: "auto", namespace: "acme" }),
   store: FileArtifactStore({ root: ".artifacts" }),
-  adapters: [
-    FileSystemAdapter.connect({ rootPath: "./content", readOnly: true }),
-    TavilySearchAdapter.connect({ apiKey: tavilyKey }),
-  ],
+  adapters: [TavilySearchAdapter.connect({ apiKey: tavilyKey })],
+  mcps: [FilesystemMCP.connect({ allowedPaths: ["./content"] })],
   toolPolicy: { readOnly: true, redactSecrets: true },
   budget: { maxCost: 5, maxToolCalls: 20 },
 });
@@ -64,16 +60,17 @@ console.log(response.content);
 
 ## Configuration
 
-| Field / Option | Required | Default | Purpose                                                          |
-| -------------- | -------- | ------- | ---------------------------------------------------------------- |
-| `cache`        | No       | None    | Shared cache controller for agents in the workspace.             |
-| `store`        | No       | None    | Shared `ArtifactStore` reference passed into workflow context.   |
-| `adapters`     | No       | `[]`    | Adapters attached to every agent provisioned from the workspace. |
-| `mcps`         | No       | `[]`    | MCP adapters initialized once and shared across agents.          |
-| `toolPolicy`   | No       | None    | Workspace-level default `ToolPolicy`.                            |
-| `budget`       | No       | None    | Default `RunBudget` merged before per-role budgets.              |
-| `traceSink`    | No       | None    | Shared trace sink for OpenTelemetry-compatible observability.    |
-| `logger`       | No       | Runtime | Shared logger.                                                   |
+| Field / Option | Required | Default | Purpose                                                            |
+| -------------- | -------- | ------- | ------------------------------------------------------------------ |
+| `cache`        | No       | None    | Shared cache controller for agents in the workspace.               |
+| `store`        | No       | None    | Shared `ArtifactStore` reference passed into workflow context.     |
+| `adapters`     | No       | `[]`    | Adapters attached to every agent provisioned from the workspace.   |
+| `mcps`         | No       | `[]`    | MCP adapters initialized once and shared across agents.            |
+| `toolPolicy`   | No       | None    | Workspace-level default `ToolPolicy`.                              |
+| `budget`       | No       | None    | Default `RunBudget` merged before per-role budgets.                |
+| `traceSink`    | No       | None    | Shared trace sink for OpenTelemetry-compatible observability.      |
+| `logger`       | No       | Runtime | Shared logger.                                                     |
+| `metrics`      | Built in | Zeroed  | Snapshot/reset counters for cost, tokens, cache, tools, artifacts. |
 
 ## Factory Variants
 
@@ -107,6 +104,7 @@ workspace.events.on("approval.requested", ({ toolName }) => {
 | ------------------------- | ------------------------------------------ | -------------------- |
 | `cache.hit`               | `toolName`, `key`, `estimatedSavedTokens?` | Agent tool cache     |
 | `cache.miss`              | `toolName`, `key`                          | Agent tool cache     |
+| `cache.write`             | `toolName`, `key`                          | Agent tool cache     |
 | `cost.updated`            | `model`, `provider`, `cost`, `tokensUsed`  | Agent response       |
 | `tool.called`             | `toolName`, `sideEffectLevel?`             | Tool execution       |
 | `approval.requested`      | `toolName`, `sideEffect?`                  | Tool policy          |
@@ -116,6 +114,28 @@ workspace.events.on("approval.requested", ({ toolName }) => {
 | `workflow.step.completed` | `stepId`, `status`                         | AgentWorkflow        |
 | `artifact.read`           | `type`, `id`                               | Workflow resume      |
 | `artifact.write`          | `type`, `id`, `operation`                  | Workflow persistence |
+
+## Metrics Snapshot
+
+Use `workspace.metrics.snapshot()` when you want aggregate counters across a team, workflow, or long-running app session.
+
+```ts
+const before = workspace.metrics.snapshot();
+
+const result = await team.run({
+  prompt: "Create and review a launch post.",
+});
+
+const after = workspace.metrics.snapshot();
+
+console.log(result.content);
+console.log(after.cost - before.cost);
+console.log(after.tokensUsed.total - before.tokensUsed.total);
+console.log(after.cache.hits - before.cache.hits);
+console.log(after.toolCalls - before.toolCalls);
+```
+
+`workspace.metrics.reset()` clears the counters when you want a fresh measurement window.
 
 ## Local Examples
 

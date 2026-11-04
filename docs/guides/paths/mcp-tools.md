@@ -6,7 +6,7 @@ Use this path when you want an agent to call tools exposed by an MCP server.
 
 - Built-in wrapper example: [MCP GitHub Agent](../../examples.md#mcp-github-agent)
 - Direct connection example: [Custom MCP Connection](../../examples.md#custom-mcp-connection)
-- Config: [Adapters, MCP, And Skills](../config/adapters-mcp-skills.md)
+- Config: [Adapters And MCP](../config/adapters-mcp-skills.md)
 - Security: [MCP Production Security Checklist](../mcp-security-checklist.md)
 - API: [MCPAdapter](/api/classes/index.MCPAdapter.html)
 

@@ -1,75 +1,175 @@
 # Built-In MCP Wrappers Reference
 
-Built-in MCP wrappers are convenience factories over `MCPAdapter.connect(...)`. They provide package metadata, default transport choices, required secret names, scopes, and side-effect labels. You still decide which tools/resources are exposed.
+Built-in MCP wrappers are convenience factories over `MCPAdapter.connect(...)`. They provide pinned package metadata, default transport, required secret names, side-effect labels, and scopes. You still decide which tools and resources the agent can call via `allowedTools` and `allowedResources`.
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
 
 const agent = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
+  model: Provider.anthropic["claude-sonnet-4-6"],
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+  toolPolicy: { readOnly: true },
 }).use(
   GitHubMCP.connect({
     token: process.env.GITHUB_PERSONAL_ACCESS_TOKEN!,
-    allowedTools: ["get_file_contents", "list_issues"],
+    allowedTools: ["get_pull_request", "get_file_contents", "list_issues"],
   }),
 );
 
-const response = await agent.run({ prompt: "List open issues in my repo." });
+const response = await agent.run({
+  prompt: "Review PR #88 for type safety issues.",
+});
 console.log(response.content);
 ```
 
+## Shared Config (All Wrappers)
+
+| Option             | Required | Default          | Purpose                                                            |
+| ------------------ | -------- | ---------------- | ------------------------------------------------------------------ |
+| `allowedTools`     | No       | All server tools | Array of tool names to expose. Strongly recommended in production. |
+| `allowedResources` | No       | All resources    | Array of resource URIs allowed for resource-capable servers.       |
+| `roots`            | No       | Unrestricted     | Filesystem/workspace root paths for scoped servers.                |
+| `metadata`         | No       | Wrapper defaults | Extra trust, package, and side-effect labels.                      |
+| `onTrace`          | No       | No-op            | Callback receiving lifecycle trace events for observability.       |
+
 ## Wrapper Catalog
 
-| Wrapper          | Adapter name       | Transport | Required secrets                                | Side effects        | Scopes             |
-| ---------------- | ------------------ | --------- | ----------------------------------------------- | ------------------- | ------------------ |
-| `GitHubMCP`      | `github-mcp`       | stdio     | `GITHUB_PERSONAL_ACCESS_TOKEN`                  | read/write/external | repo               |
-| `LinearMCP`      | `linear-mcp`       | stdio     | `LINEAR_API_KEY`                                | read/write/external | issues             |
-| `JiraMCP`        | `jira-mcp`         | stdio     | `JIRA_EMAIL`, `JIRA_API_TOKEN`, `JIRA_BASE_URL` | read/write/external | issues, projects   |
-| `SentryMCP`      | `sentry-mcp`       | dual      | `SENTRY_AUTH_TOKEN`                             | read/external       | events, projects   |
-| `PlaywrightMCP`  | `playwright-mcp`   | stdio     | None                                            | read/write/external | browser            |
-| `BrowserbaseMCP` | `browserbase-mcp`  | stdio     | `BROWSERBASE_API_KEY`, `BROWSERBASE_PROJECT_ID` | read/write/external | browser            |
-| `ApifyMCP`       | `apify-mcp`        | dual      | `APIFY_TOKEN`                                   | read/write/external | actors, datasets   |
-| `FirecrawlMCP`   | `firecrawl-mcp`    | stdio     | `FIRECRAWL_API_KEY`                             | read/external       | web                |
-| `FetchMCP`       | `fetch-mcp`        | stdio     | None                                            | read/external       | web                |
-| `BraveSearchMCP` | `brave-search-mcp` | stdio     | `BRAVE_API_KEY`                                 | read/external       | web_search         |
-| `SupabaseMCP`    | `supabase-mcp`     | stdio     | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF` | read/write/external | database, storage  |
-| `PostgresMCP`    | `postgres-mcp`     | stdio     | `DATABASE_URL`                                  | read/write          | database           |
-| `NeonMCP`        | `neon-mcp`         | http      | `Authorization`                                 | read/write/external | database, projects |
-| `QdrantMCP`      | `qdrant-mcp`       | stdio     | `QDRANT_URL`, `QDRANT_API_KEY`                  | read/write/external | vectors            |
-| `AirtableMCP`    | `airtable-mcp`     | stdio     | `AIRTABLE_API_KEY`, `AIRTABLE_BASE_ID`          | read/write/external | records            |
-| `FilesystemMCP`  | `filesystem-mcp`   | stdio     | None                                            | read/write          | filesystem         |
-| `MemoryMCP`      | `memory-mcp`       | stdio     | None                                            | read/write          | memory             |
-| `SlackMCP`       | `slack-mcp`        | stdio     | `SLACK_BOT_TOKEN`, `SLACK_TEAM_ID`              | read/write/external | messages           |
-| `GmailMCP`       | `gmail-mcp`        | stdio     | `GMAIL_CREDENTIALS`                             | read/write/external | email              |
-| `ResendMCP`      | `resend-mcp`       | dual      | `RESEND_API_KEY`                                | read/write/external | email              |
-| `NotionMCP`      | `notion-mcp`       | stdio     | `NOTION_TOKEN`                                  | read/write/external | pages, databases   |
-| `FigmaMCP`       | `figma-mcp`        | stdio     | `FIGMA_API_KEY`                                 | read/external       | design             |
-| `CloudflareMCP`  | `cloudflare-mcp`   | stdio     | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | read/write/external | cloud              |
-| `RailwayMCP`     | `railway-mcp`      | stdio     | `RAILWAY_API_TOKEN`                             | read/write/external | deployments        |
-| `RenderMCP`      | `render-mcp`       | stdio     | `RENDER_API_KEY`                                | read/write/external | deployments        |
-| `VercelMCP`      | `vercel-mcp`       | http      | `Authorization`                                 | read/write/external | deployments        |
-| `ElevenLabsMCP`  | `elevenlabs-mcp`   | stdio     | `ELEVENLABS_API_KEY`                            | read/write/external | audio              |
-| `Context7MCP`    | `context7-mcp`     | dual      | None                                            | read/external       | documentation      |
-| `StripeMCP`      | `stripe-mcp`       | dual      | `STRIPE_SECRET_KEY`                             | read/write/external | payments           |
+| Wrapper          | Transport | Required secrets                                 | Side effects        | Scope      |
+| ---------------- | --------- | ------------------------------------------------ | ------------------- | ---------- |
+| `GitHubMCP`      | stdio     | `GITHUB_TOKEN` or `GITHUB_PERSONAL_ACCESS_TOKEN` | read/write/external | repo       |
+| `FirecrawlMCP`   | stdio     | `FIRECRAWL_API_KEY`                              | read/external       | web        |
+| `FetchMCP`       | stdio     | None                                             | read/external       | web        |
+| `BraveSearchMCP` | stdio     | `BRAVE_API_KEY`                                  | read/external       | web_search |
+| `SupabaseMCP`    | stdio     | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`  | read/write/external | database   |
+| `PostgresMCP`    | stdio     | `DATABASE_URL`                                   | read/write          | database   |
+| `FilesystemMCP`  | stdio     | None                                             | read/write          | filesystem |
+| `SlackMCP`       | stdio     | `SLACK_BOT_TOKEN`, `SLACK_TEAM_ID`               | read/write/external | messages   |
 
-## Required And Optional Config
+## Per-Wrapper Examples
 
-| Config                  | Required                                              | Default                                         | Purpose                                                                            |
-| ----------------------- | ----------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Credentials             | Required when listed above                            | None                                            | Usually passed as token/API key or read by wrapper from env, depending on wrapper. |
-| `allowedTools`          | Optional, recommended                                 | Server tools are discoverable unless restricted | Exposes only approved MCP tools.                                                   |
-| `allowedResources`      | Optional, recommended for resource servers            | Unrestricted by wrapper                         | Restricts MCP resources.                                                           |
-| `roots`                 | Optional, recommended for filesystem/resource servers | Unrestricted by wrapper                         | Limits filesystem/resource scope.                                                  |
-| `metadata`              | Optional                                              | Wrapper metadata                                | Adds trust, package, and security labels.                                          |
-| `onTrace` / audit hooks | Optional                                              | No-op                                           | Sends lifecycle events to app telemetry.                                           |
+### GitHubMCP — Read-Only Code Review
+
+```ts
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
+
+agent.use(
+  GitHubMCP.connect({
+    token: process.env.GITHUB_PERSONAL_ACCESS_TOKEN!,
+    allowedTools: [
+      "get_pull_request",
+      "get_pull_request_diff",
+      "list_pull_requests",
+      "get_file_contents",
+      "list_issues",
+    ],
+  }),
+);
+```
+
+Remove write tools (`create_pr`, `create_issue`) to keep the agent read-only.
+
+### FilesystemMCP — Directory-Scoped Access
+
+```ts
+import { FilesystemMCP } from "@deskcreate/agentcraft/mcp";
+
+agent.use(
+  FilesystemMCP.connect({
+    roots: ["/home/user/projects/myapp/src"],
+    allowedTools: ["read_file", "list_directory", "search_files"],
+  }),
+);
+```
+
+### FirecrawlMCP — Web Research
+
+```ts
+import { FirecrawlMCP } from "@deskcreate/agentcraft/mcp";
+
+agent.use(
+  FirecrawlMCP.connect({
+    apiKey: process.env.FIRECRAWL_API_KEY!,
+    allowedTools: ["scrape", "search"],
+  }),
+);
+```
+
+### SlackMCP — Channel Monitoring
+
+```ts
+import { SlackMCP } from "@deskcreate/agentcraft/mcp";
+
+agent.use(
+  SlackMCP.connect({
+    token: process.env.SLACK_BOT_TOKEN!,
+    allowedTools: ["get_channel_history", "list_channels"],
+  }),
+);
+```
+
+### PostgresMCP — Read-Only SQL
+
+```ts
+import { PostgresMCP } from "@deskcreate/agentcraft/mcp";
+
+agent.use(
+  PostgresMCP.connect({
+    allowedTools: ["query"], // exclude "execute" to prevent writes
+  }),
+);
+// DATABASE_URL is read from environment by the server
+```
+
+## Generic Adapters (Non-Wrapper)
+
+For any MCP server without a built-in wrapper, use `MCP.connect()` or `MCPAdapter` directly.
+
+```ts
+import { MCP, MCPAdapter } from "@deskcreate/agentcraft/mcp";
+
+// MCP.connect() — higher-level factory (command, url, or package transport)
+agent.use(
+  MCP.connect({
+    command: "npx",
+    args: [
+      "-y",
+      "@modelcontextprotocol/server-filesystem@0.6.2",
+      "/path/to/dir",
+    ],
+    allowedTools: ["read_file", "list_directory"],
+  }),
+);
+
+// MCP.connect() — HTTP with bearer auth
+agent.use(
+  MCP.connect({
+    url: "https://mcp.internal.company.com/mcp",
+    auth: { type: "bearer", token: process.env.MCP_TOKEN! },
+    allowedTools: ["search_docs", "get_runbook"],
+  }),
+);
+
+// MCPAdapter — lower-level, direct transport config
+agent.use(
+  MCPAdapter.connect({
+    transport: "http",
+    url: "https://mcp.internal.company.com/mcp",
+    allowedTools: ["search_docs"],
+  }),
+);
+```
+
+See [MCP Custom](../mcp/custom.md) for the full `MCP.connect()` API including `timeoutMs`, `name`, and auth options.
 
 ## Production Guidance
 
-- Prefer native adapters when you want typed config, fixed tool contracts, and narrower blast radius.
-- Prefer MCP when the ecosystem server already exists or tool discovery matters.
-- Pin stdio package versions.
-- Use `allowedTools`, `allowedResources`, and `roots` before production.
-- Treat MCP output as untrusted external data.
-- Use `toolPolicy.readOnly` or approval callbacks around write-capable MCPs.
+- **Always use `allowedTools`** — never expose the full tool surface of a server you did not write.
+- **Pin stdio package versions** — use `package@x.y.z`, not `package@latest`, to prevent silent tool-surface changes.
+- **Treat MCP output as untrusted external data** — validate or redact before using in prompts or downstream systems.
+- **Prefer native adapters** when you want typed config, fixed tool contracts, and a narrower blast radius.
+- **Use `toolPolicy.readOnly: true`** or `onApprovalRequired` around write-capable MCPs.
+- **Set `roots`** for filesystem and resource servers to scope their access.
+- **Rotate credentials** on the same schedule as other API keys.
+
+More detail: [MCP Config](../configuration/mcp-config.md), [MCP Overview](../mcp/overview.md), [MCP Security](../production/security-model.md), [MCP cookbook](../examples-cookbook/mcp.md).

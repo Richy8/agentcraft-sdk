@@ -1,29 +1,13 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ConfigurationError, ToolExecutionError } from '../../../errors/index.js';
-import { MCPAdapter, createAdapter, redactSecrets, runToolWithPolicy, tool } from '../index.js';
+import { MCPAdapter } from '../mcp.adapter.js';
+import { createAdapter } from '../types.js';
+import { defineAdapter, redactSecrets, runToolWithPolicy, tool } from '../index.js';
 import { blockPromptInjectionGuardrail } from '../../guardrails.js';
 import {
-  ApifyAdapter,
   DatabaseAdapter,
-  EmailAdapter,
-  ElevenLabsAdapter,
   FetchAdapter,
-  FileSystemAdapter,
-  FirecrawlAdapter,
-  GitHubAdapter,
-  GoogleCalendarAdapter,
-  GoogleSheetsAdapter,
   ImageGenerationAdapter,
-  NotionAdapter,
-  PineconeAdapter,
-  PlaywrightAdapter,
-  RedisAdapter,
-  SlackAdapter,
-  StorageAdapter,
-  SupabaseAdapter,
   TavilySearchAdapter,
 } from '../index.js';
 
@@ -33,8 +17,7 @@ describe('adapter helpers', () => {
   });
 
   it('builds tools with inferred required params and enum options', async () => {
-    const search = tool({
-      name: 'search',
+    const search = tool('search', {
       description: 'Search things',
       params: {
         query: { type: 'string', description: 'Query' },
@@ -52,12 +35,54 @@ describe('adapter helpers', () => {
     );
   });
 
+  it('maps sideEffect and requiresConfirmation into tool security', () => {
+    const t = tool('write_item', {
+      description: 'Writes an item',
+      params: {},
+      sideEffect: 'write',
+      requiresConfirmation: true,
+      run: async () => 'ok',
+    });
+    expect(t.security).toMatchObject({ sideEffect: 'write', requiresConfirmation: true });
+  });
+
+  it('defineAdapter creates an adapter with named tools', async () => {
+    const adapter = defineAdapter('my-api', {
+      search: {
+        description: 'Search the API',
+        params: { query: { type: 'string', description: 'Search query' } },
+        run: async ({ query }) => `result for ${query}`,
+      },
+      ping: {
+        description: 'Ping the API',
+        params: {},
+        run: async () => 'pong',
+      },
+    });
+
+    expect(adapter.name).toBe('my-api');
+    expect(adapter.declaredToolNames).toEqual(['search', 'ping']);
+    expect(adapter.metadata?.kind).toBe('custom');
+    const tools = await adapter.getTools!();
+    await expect(tools.find((t) => t.name === 'search')!.execute({ query: 'agents' })).resolves.toBe('result for agents');
+    await expect(tools.find((t) => t.name === 'ping')!.execute({})).resolves.toBe('pong');
+  });
+
+  it('defineAdapter accepts auth and scopes options', () => {
+    const adapter = defineAdapter(
+      'secure-api',
+      { noop: { description: 'noop', params: {}, run: async () => null } },
+      { auth: 'custom', scopes: ['read:data'] }
+    );
+    expect(adapter.metadata?.auth).toBe('custom');
+    expect(adapter.metadata?.scopes).toEqual(['read:data']);
+  });
+
   it('auto-populates declared tool names from createAdapter tools', () => {
     const adapter = createAdapter({
       name: 'custom',
       tools: [
-        tool({
-          name: 'custom_tool',
+        tool('custom_tool', {
           description: 'Custom tool',
           params: {},
           run: async () => 'ok',
@@ -102,50 +127,18 @@ describe('adapter helpers', () => {
     ).toThrow(ConfigurationError);
   });
 
-  it('creates built-in adapter tool catalogs', async () => {
+  it('creates built-in adapter tool catalogs', () => {
     expect(TavilySearchAdapter.connect({ apiKey: 'key' }).declaredToolNames).toEqual([
       'web_search',
       'get_page_content',
     ]);
-    expect(GitHubAdapter.connect({ token: 'token' }).declaredToolNames).toContain('commit_file');
-    expect(
-      StorageAdapter.connect({ provider: 's3', bucket: 'b', region: 'us-east-1' }).declaredToolNames
-    ).toContain('get_signed_url');
-    const storageTools = await StorageAdapter.connect({
-      provider: 's3',
-      bucket: 'b',
-      region: 'us-east-1',
-    }).getTools?.();
-    expect(storageTools?.find((item) => item.name === 'delete_file')?.security).toMatchObject({
-      sideEffect: 'write',
-      requiresConfirmation: true,
-    });
   });
 
   it('exposes adapter maturity metadata and declared tools for every built-in adapter', () => {
     const adapters = [
-      ApifyAdapter.connect({ token: 'key' }),
       DatabaseAdapter.connect({ connectionString: 'postgres://localhost/db' }),
-      EmailAdapter.connect({ provider: 'sendgrid', apiKey: 'key', from: 'from@example.test' }),
-      ElevenLabsAdapter.connect({ apiKey: 'key' }),
       FetchAdapter.connect({ allowedDomains: ['example.test'] }),
-      FileSystemAdapter.connect({ rootPath: os.tmpdir() }),
-      FirecrawlAdapter.connect({ apiKey: 'key' }),
-      GitHubAdapter.connect({ token: 'token' }),
-      GoogleCalendarAdapter.connect({
-        credentials: { clientEmail: 'me@example.test', privateKey: 'key' },
-      }),
-      GoogleSheetsAdapter.connect({
-        credentials: { clientEmail: 'me@example.test', privateKey: 'key' },
-      }),
       ImageGenerationAdapter.connect({ provider: 'openai', apiKey: 'key' }),
-      NotionAdapter.connect({ token: 'token' }),
-      PineconeAdapter.connect({ apiKey: 'key', indexName: 'idx' }),
-      PlaywrightAdapter.connect(),
-      RedisAdapter.connect({ url: 'redis://localhost:6379' }),
-      SlackAdapter.connect({ botToken: 'token' }),
-      StorageAdapter.connect({ provider: 's3', bucket: 'b', region: 'us-east-1' }),
-      SupabaseAdapter.connect({ url: 'https://example.supabase.co', key: 'key' }),
       TavilySearchAdapter.connect({ apiKey: 'key' }),
     ];
 
@@ -154,73 +147,6 @@ describe('adapter helpers', () => {
       expect(adapter.metadata?.kind).toBeTruthy();
       expect(adapter.metadata?.sideEffects?.length).toBeGreaterThan(0);
       expect(adapter.metadata?.scopes?.length).toBeGreaterThan(0);
-    }
-  });
-
-  it('executes filesystem tools inside a sandbox', async () => {
-    const rootPath = await mkdtemp(path.join(os.tmpdir(), 'agentcraft-fs-'));
-    try {
-      await writeFile(path.join(rootPath, 'notes.txt'), 'hello', 'utf8');
-      const events: string[] = [];
-      const adapter = FileSystemAdapter.connect({
-        rootPath,
-        allowedExtensions: ['.txt'],
-        onAuditEvent: (event) => events.push(event.type),
-      });
-      const tools = await adapter.getTools?.();
-      const readFileTool = tools?.find((item) => item.name === 'read_file');
-      const writeFileTool = tools?.find((item) => item.name === 'write_file');
-      const listDirectoryTool = tools?.find((item) => item.name === 'list_directory');
-      const searchFilesTool = tools?.find((item) => item.name === 'search_files');
-
-      expect(writeFileTool?.security).toMatchObject({
-        sideEffect: 'write',
-        requiresConfirmation: true,
-      });
-      await expect(readFileTool?.execute({ path: 'notes.txt' })).resolves.toBe('hello');
-      await expect(
-        writeFileTool?.execute({ path: 'draft.txt', content: 'draft' })
-      ).resolves.toMatchObject({
-        path: 'draft.txt',
-      });
-      await expect(readFile(path.join(rootPath, 'draft.txt'), 'utf8')).resolves.toBe('draft');
-      await expect(listDirectoryTool?.execute({})).resolves.toEqual(
-        expect.arrayContaining([expect.objectContaining({ path: 'notes.txt', type: 'file' })])
-      );
-      await expect(searchFilesTool?.execute({ query: 'draft' })).resolves.toEqual([
-        { path: 'draft.txt', type: 'file' },
-      ]);
-      expect(events).toContain('adapter_tool_start');
-      expect(events).toContain('adapter_tool_success');
-      expect(adapter.metadata).toMatchObject({ kind: 'native-sdk', readOnly: false });
-    } finally {
-      await rm(rootPath, { recursive: true, force: true });
-    }
-  });
-
-  it('enforces filesystem traversal, extension, and read-only policies', async () => {
-    const rootPath = await mkdtemp(path.join(os.tmpdir(), 'agentcraft-fs-policy-'));
-    try {
-      const adapter = FileSystemAdapter.connect({
-        rootPath,
-        allowedExtensions: ['.txt'],
-        readOnly: true,
-      });
-      const tools = await adapter.getTools?.();
-      const readFileTool = tools?.find((item) => item.name === 'read_file');
-      const writeFileTool = tools?.find((item) => item.name === 'write_file');
-
-      await expect(readFileTool?.execute({ path: '../secret.txt' })).rejects.toThrow(
-        ToolExecutionError
-      );
-      await expect(readFileTool?.execute({ path: 'secret.env' })).rejects.toThrow(
-        ToolExecutionError
-      );
-      await expect(writeFileTool?.execute({ path: 'ok.txt', content: 'nope' })).rejects.toThrow(
-        ToolExecutionError
-      );
-    } finally {
-      await rm(rootPath, { recursive: true, force: true });
     }
   });
 
@@ -291,48 +217,6 @@ describe('adapter helpers', () => {
     );
   });
 
-  it('executes GitHub tools through mocked API requests with repo allowlists', async () => {
-    const requests: Array<{ url: string; method?: string; body?: string }> = [];
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
-        requests.push({ url, method: init?.method, body: String(init?.body ?? '') });
-        return {
-          ok: true,
-          status: init?.method === 'PUT' ? 201 : 200,
-          json: async () => ({ ok: true, url, method: init?.method }),
-        } as Response;
-      })
-    );
-
-    const adapter = GitHubAdapter.connect({
-      token: 'token',
-      defaultOwner: 'acme',
-      defaultRepo: 'docs',
-      allowedRepos: ['acme/docs'],
-      apiBaseUrl: 'https://api.github.test',
-    });
-    const tools = await adapter.getTools?.();
-    const getRepo = tools?.find((item) => item.name === 'get_repo');
-    const commitFile = tools?.find((item) => item.name === 'commit_file');
-
-    await expect(getRepo?.execute({})).resolves.toMatchObject({ ok: true });
-    await expect(
-      commitFile?.execute({
-        path: 'README.md',
-        message: 'Update docs',
-        content: 'hello',
-        branch: 'main',
-      })
-    ).resolves.toMatchObject({ ok: true });
-    await expect(getRepo?.execute({ owner: 'evil', repo: 'repo' })).rejects.toThrow(
-      ToolExecutionError
-    );
-    expect(commitFile?.security).toMatchObject({ sideEffect: 'write', requiresConfirmation: true });
-    expect(requests[0]?.url).toBe('https://api.github.test/repos/acme/docs');
-    expect(requests[1]?.body).toContain(Buffer.from('hello', 'utf8').toString('base64'));
-  });
-
   it('executes database tools through an injected query executor with read-only safety', async () => {
     const queries: Array<{ query: string; params: unknown[] }> = [];
     const adapter = DatabaseAdapter.connect({
@@ -389,193 +273,23 @@ describe('adapter helpers', () => {
     });
   });
 
-  it('runs Playwright browser tools with lifecycle, allowlists, screenshots, and cleanup', async () => {
-    const calls: string[] = [];
-    const page = {
-      goto: vi.fn(async () => calls.push('goto')),
-      click: vi.fn(async () => calls.push('click')),
-      fill: vi.fn(async () => calls.push('fill')),
-      screenshot: vi.fn(async () => Buffer.from('png')),
-      textContent: vi.fn(async () => 'Hello page'),
-      waitForSelector: vi.fn(async () => calls.push('wait')),
-      close: vi.fn(async () => calls.push('page-close')),
-    };
-    const browser = {
-      newPage: vi.fn(async () => page),
-      close: vi.fn(async () => calls.push('browser-close')),
-    };
-    const adapter = PlaywrightAdapter.connect({
-      allowedDomains: ['example.test'],
-      launch: async () => browser,
-    });
-    const tools = await adapter.getTools?.();
-    const browseUrl = tools?.find((item) => item.name === 'browse_url');
-    const clickElement = tools?.find((item) => item.name === 'click_element');
-    const takeScreenshot = tools?.find((item) => item.name === 'take_screenshot');
-    const extractText = tools?.find((item) => item.name === 'extract_text');
-
-    await expect(browseUrl?.execute({ url: 'https://example.test' })).resolves.toEqual({
-      url: 'https://example.test/',
-    });
-    await expect(browseUrl?.execute({ url: 'https://evil.test' })).rejects.toThrow(
-      ToolExecutionError
-    );
-    await expect(clickElement?.execute({ selector: '#save' })).resolves.toEqual({
-      clicked: '#save',
-    });
-    await expect(takeScreenshot?.execute({})).resolves.toEqual({
-      mimeType: 'image/png',
-      base64: 'cG5n',
-    });
-    await expect(extractText?.execute({ selector: 'main' })).resolves.toEqual({
-      selector: 'main',
-      text: 'Hello page',
-    });
-    expect(clickElement?.security).toMatchObject({
-      sideEffect: 'write',
-      requiresConfirmation: true,
-    });
-    await adapter.cleanup?.();
-    expect(calls).toContain('browser-close');
-  });
-
-  it('executes remaining built-in service adapters through mocked APIs or injected clients', async () => {
-    const requests: Array<{ url: string; method?: string; body?: string }> = [];
+  it('executes remaining built-in service adapters through mocked APIs', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
-        requests.push({ url, method: init?.method, body: String(init?.body ?? '') });
-        return {
-          ok: true,
-          status: 200,
-          headers: new Headers({ 'content-type': 'application/json' }),
-          json: async () => ({ ok: true, url, method: init?.method }),
-          text: async () => JSON.stringify({ ok: true }),
-        } as Response;
-      })
+      vi.fn(async (url: string, init?: RequestInit) => ({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ ok: true, url, method: init?.method }),
+        text: async () => JSON.stringify({ ok: true }),
+      }))
     );
 
-    const redisClient = {
-      get: vi.fn(async () => 'value'),
-      set: vi.fn(async () => 'OK'),
-      del: vi.fn(async () => 1),
-      keys: vi.fn(async () => ['app:key']),
-      expire: vi.fn(async () => 1),
-      lpush: vi.fn(async () => 1),
-      rpop: vi.fn(async () => 'item'),
-      lrange: vi.fn(async () => ['item']),
-    };
-    const storageClient = {
-      upload: vi.fn(async () => ({ uploaded: true })),
-      download: vi.fn(async () => 'content'),
-      list: vi.fn(async () => ['a.txt']),
-      delete: vi.fn(async () => ({ deleted: true })),
-      signedUrl: vi.fn(async () => 'https://signed.example.test/a.txt'),
-      copy: vi.fn(async () => ({ copied: true })),
-    };
-
     const adapters = [
-      {
-        adapter: SlackAdapter.connect({
-          token: 'token',
-          defaultChannel: 'C1',
-          apiBaseUrl: 'https://slack.test',
-        }),
-        tool: 'send_message',
-        args: { text: 'hi' },
-      },
-      {
-        adapter: EmailAdapter.connect({
-          provider: 'sendgrid',
-          apiKey: 'key',
-          from: 'me@example.test',
-          apiBaseUrl: 'https://email.test',
-        }),
-        tool: 'send_email',
-        args: { to: ['you@example.test'], subject: 'Hi', text: 'Hello' },
-      },
-      {
-        adapter: GoogleCalendarAdapter.connect({
-          credentials: { accessToken: 'token' },
-          apiBaseUrl: 'https://calendar.test',
-        }),
-        tool: 'create_event',
-        args: { event: { summary: 'Meet' } },
-      },
-      {
-        adapter: GoogleSheetsAdapter.connect({
-          credentials: { accessToken: 'token' },
-          spreadsheetId: 'sheet1',
-          apiBaseUrl: 'https://sheets.test',
-        }),
-        tool: 'write_range',
-        args: { range: 'A1', values: [['x']] },
-      },
-      {
-        adapter: NotionAdapter.connect({
-          token: 'token',
-          defaultParentId: 'parent',
-          apiBaseUrl: 'https://notion.test',
-        }),
-        tool: 'create_page',
-        args: { title: 'Page' },
-      },
-      {
-        adapter: SupabaseAdapter.connect({ url: 'https://supabase.test', key: 'key' }),
-        tool: 'insert_record',
-        args: { table: 'books', record: { title: 'T' } },
-      },
-      {
-        adapter: PineconeAdapter.connect({
-          apiKey: 'key',
-          indexName: 'idx',
-          apiBaseUrl: 'https://pinecone.test',
-        }),
-        tool: 'query_vectors',
-        args: { vector: [1, 2, 3] },
-      },
-      {
-        adapter: RedisAdapter.connect({
-          url: 'redis://local',
-          keyPrefix: 'app:',
-          client: redisClient,
-        }),
-        tool: 'set_value',
-        args: { key: 'key', value: 'value' },
-      },
-      {
-        adapter: StorageAdapter.connect({
-          provider: 's3',
-          bucket: 'b',
-          region: 'us',
-          client: storageClient,
-        }),
-        tool: 'upload_file',
-        args: { key: 'a.txt', content: 'hello' },
-      },
       {
         adapter: TavilySearchAdapter.connect({ apiKey: 'key', apiBaseUrl: 'https://tavily.test' }),
         tool: 'web_search',
         args: { query: 'agentcraft' },
-      },
-      {
-        adapter: FirecrawlAdapter.connect({ apiKey: 'key', apiBaseUrl: 'https://firecrawl.test' }),
-        tool: 'scrape_url',
-        args: { url: 'https://example.test' },
-      },
-      {
-        adapter: ApifyAdapter.connect({ token: 'key', apiBaseUrl: 'https://apify.test' }),
-        tool: 'run_actor',
-        args: { actorId: 'actor', input: { url: 'https://example.test' } },
-      },
-      {
-        adapter: ElevenLabsAdapter.connect({
-          apiKey: 'key',
-          defaultVoiceId: 'voice',
-          apiBaseUrl: 'https://eleven.test',
-        }),
-        tool: 'text_to_speech',
-        args: { text: 'hello' },
       },
       {
         adapter: ImageGenerationAdapter.connect({
@@ -593,9 +307,6 @@ describe('adapter helpers', () => {
       await expect(selectedTool?.execute(args)).resolves.toBeDefined();
       expect(adapter.metadata?.kind).toBe('native-sdk');
     }
-    expect(redisClient.set).toHaveBeenCalledWith('app:key', 'value', { ttl: undefined });
-    expect(storageClient.upload).toHaveBeenCalledWith('a.txt', 'hello');
-    expect(requests.length).toBeGreaterThan(10);
   });
 
   it('leaves MCP tool discovery dynamic for deferred conflict checks', () => {
@@ -876,10 +587,9 @@ describe('adapter helpers', () => {
   });
 
   it('enforces tool policy timeout, redaction, and output guardrails', async () => {
-    const sensitiveTool = tool({
-      name: 'secret_lookup',
+    const sensitiveTool = tool('secret_lookup', {
       description: 'Returns a secret',
-      security: { sideEffect: 'read' },
+      sideEffect: 'read',
       params: {},
       run: async () => ({ token: 'abc', text: 'Bearer sk-secret123456' }),
     });
@@ -908,10 +618,10 @@ describe('adapter helpers', () => {
   it('supports dry-run, read-only, retries, audit events, and warning guardrail mode', async () => {
     const events: string[] = [];
     let attempts = 0;
-    const mutatingTool = tool({
-      name: 'update_item',
+    const mutatingTool = tool('update_item', {
       description: 'Updates item',
-      security: { sideEffect: 'write', requiresConfirmation: true },
+      sideEffect: 'write',
+      requiresConfirmation: true,
       params: {},
       run: async () => {
         attempts++;

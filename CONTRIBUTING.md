@@ -4,7 +4,7 @@ Thanks for helping improve AgentCraft. This project aims to stay small enough to
 
 ## Prerequisites
 
-- Node.js 20 or newer.
+- Node.js 22.12 or newer.
 - npm with lockfile installs.
 - A local clone of the repository.
 
@@ -80,4 +80,4 @@ Avoid past-tense messages such as `Added` or `Fixed`.
 
 Use GitHub Discussions for design questions, usage help, and roadmap proposals:
 
-https://github.com/agentcraft-ai/agentcraft/discussions
+https://github.com/Richy8/agentcraft-sdk/discussions

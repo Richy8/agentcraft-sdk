@@ -10,20 +10,23 @@ import type {
 import type { CostOptions } from "../cost-calculator/index.js";
 import type { Agent } from "./agent.js";
 import type { AgentAdapter } from "./adapters/types.js";
-import type { CreatorPack } from "./creator/types.js";
 import type { ToolPolicy } from "./adapters/tool-policy.js";
 import type { TraceSink, TraceSpan } from "./observability.js";
-import type { AgentSkill } from "./skills/types.js";
+import type { AgentMemoryStore, MemoryRetrievalOptions } from "./memory/index.js";
 import type { AgentWorkspaceInstance } from "./workspace.js";
+import type { CacheEfficiencySummary } from "./cache/index.js";
 import type {
   StructuredOutputOptions,
   StructuredOutputSchema,
 } from "./structured-output.js";
 
+export type ReasoningEffort = 'none' | 'low' | 'medium' | 'high' | 'xhigh';
+
 export interface TokenUsage {
   prompt: number;
   completion: number;
   total: number;
+  reasoning?: number;
 }
 
 export interface RetryConfig {
@@ -60,11 +63,13 @@ export interface AgentFile {
   data: string;
 }
 
+
 export interface AgentResponse {
   content: string;
   structuredResponse?: unknown;
   tokensUsed: TokenUsage;
   cost: number;
+  costReport?: CostReport;
   finishReason: FinishReason;
   toolCalls?: ToolCall[];
   model: string;
@@ -78,11 +83,20 @@ export interface AgentResponse {
     assembled: boolean;
   };
   selection?: {
-    skillActivation: "always" | "auto" | "directive-only";
     toolSelection: "all" | "auto";
-    activeSkills: string[];
+    activeTraits: string[];
+    activationReasons?: readonly { readonly trait: string; readonly reason: string; readonly confidence: number; readonly matched?: string }[];
     exposedTools: string[];
     executedToolCalls?: number;
+  };
+  measurement?: {
+    promptChars: number;
+    systemChars: number;
+    assembledPromptChars: number;
+    estimatedPromptTokens: number;
+    exposedToolCount: number;
+    modelToolCount: number;
+    promptMinified: boolean;
   };
   cache?: {
     hits: number;
@@ -95,8 +109,10 @@ export interface AgentResponse {
     oversized: number;
     toolCallsAvoided: number;
     estimatedSavedTokens: number;
+    summary?: CacheEfficiencySummary;
   };
 }
+
 
 export interface CachePolicy {
   /**
@@ -107,7 +123,14 @@ export interface CachePolicy {
   requireCachedFor?: string[];
 }
 
+export type BudgetMode =
+  | "fail-closed"
+  | "prefer-cache"
+  | "downgrade-model"
+  | "request-approval";
+
 export interface RunBudget {
+  mode?: BudgetMode;
   maxRuns?: number;
   maxTokens?: number;
   maxInputTokens?: number;
@@ -117,6 +140,29 @@ export interface RunBudget {
   costOptions?: CostOptions;
   cachePolicy?: CachePolicy;
 }
+
+export interface CostReport {
+  readonly scope: "run" | "team" | "workflow";
+  readonly provider: string;
+  readonly model: string;
+  readonly tokens: {
+    readonly estimated?: TokenUsage;
+    readonly actual: TokenUsage;
+  };
+  readonly costs: {
+    readonly estimatedModelCost?: number;
+    readonly actualModelCost: number;
+    readonly toolCostEstimate: number;
+    readonly searchCostEstimate: number;
+    readonly cacheSavingsEstimate: number;
+    readonly totalEstimate: number;
+  };
+  readonly cache?: CacheEfficiencySummary;
+  readonly stalePricing: boolean;
+  readonly budgetMode: BudgetMode;
+}
+
+export type PromptCompressionMode = "none" | "safe" | "balanced" | "aggressive";
 
 export interface AgentRunParams {
   prompt?: string;
@@ -136,6 +182,7 @@ export interface AgentRunParams {
     allowOutsideRoot?: boolean;
     loader?: IPromptLoader;
   };
+  promptCompression?: PromptCompressionMode;
   system?: string;
   temperature?: number;
   maxTokens?: number;
@@ -145,17 +192,18 @@ export interface AgentRunParams {
   stopSequences?: string[];
   tools?: ToolDefinition[];
   /**
-   * Attach skills, adapters, or creator packs for this run only.
+   * Attach adapters for this run only.
    *
-   * Use this when a tool/skill should be available to one prompt without
+   * Use this when a tool/adapter should be available to one prompt without
    * becoming part of the agent's global context or default tool surface.
    */
-  use?: AgentRunAttachment | readonly AgentRunAttachment[];
+  use?: AgentAdapter | readonly AgentAdapter[];
   toolPolicy?: ToolPolicy;
   images?: AgentImage[];
   audio?: AgentAudio[];
   video?: AgentVideo[];
   files?: AgentFile[];
+  reasoning?: ReasoningEffort;
   responseFormat?: ResponseFormat;
   responseSchema?: StructuredOutputSchema;
   structuredOutput?: StructuredOutputOptions;
@@ -164,9 +212,16 @@ export interface AgentRunParams {
   budget?: RunBudget;
   replay?: AgentResponse | { responses: AgentResponse[]; index?: number };
   cache?: false | { bypass?: boolean };
+  memory?:
+    | false
+    | AgentMemoryStore
+    | (MemoryRetrievalOptions & {
+        readonly store?: AgentMemoryStore;
+        readonly includeContext?: boolean;
+      });
 }
 
-export type AgentRunAttachment = AgentAdapter | CreatorPack;
+export type AgentRunAttachment = AgentAdapter;
 
 export interface AgentPoolOptions {
   strategy:
@@ -195,6 +250,12 @@ export interface ModelInfo {
     tools: boolean;
     streaming: boolean;
     jsonMode: boolean;
+    reasoning: boolean;
+    reasoningEffortLevels?: ReadonlyArray<'none' | 'low' | 'medium' | 'high' | 'xhigh'>;
+    structuredOutput: boolean;
+    parallelToolCalls: boolean;
+    supportsNativeWebSearch: boolean;
+    supportsNativeFileSearch: boolean;
   };
   pricing: {
     inputPerM: number;
@@ -243,7 +304,6 @@ export interface AgentTeamConfig {
    * sharedAdapters is ignored with a warning.
    */
   readonly sharedAdapters?: AgentAdapter[];
-  readonly sharedSkills?: AgentSkill[];
   /**
    * @deprecated Include memory as an MCP adapter in workspace.mcps instead.
    */

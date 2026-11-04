@@ -10,8 +10,8 @@ Tools let the model ask the application to do work. Guardrails and policy decide
 | `description`                   | Model-facing selection hint | Better descriptions reduce wrong tool calls.                                              | [Custom adapter](../../examples.md#custom-adapter)                     |
 | `parameters`                    | Tool argument schema        | Constrains arguments and improves provider tool calling.                                  | [Streaming with tools](../../examples.md#streaming-with-tools)         |
 | `security.sideEffect`           | Risk label                  | Drives read-only blocking and audit context. Values: `none`, `read`, `write`, `external`. | [Guardrails and approvals](../../examples.md#guardrails-and-approvals) |
-| `security.requiresConfirmation` | Approval gate               | Forces approval unless policy explicitly allows the tool.                                 | [Filesystem safe agent](../../examples.md#filesystem-safe-agent)       |
-| `security.scopes`               | Permission labels           | Makes tool access reviewable and policy-friendly.                                         | [GitHub review agent](../../examples.md#github-review-agent)           |
+| `security.requiresConfirmation` | Approval gate               | Forces approval unless policy explicitly allows the tool.                                 | [Guardrails and approvals](../../examples.md#guardrails-and-approvals) |
+| `security.scopes`               | Permission labels           | Makes tool access reviewable and policy-friendly.                                         | [Custom adapter](../../examples.md#custom-adapter)                     |
 
 ## Tool Policy
 

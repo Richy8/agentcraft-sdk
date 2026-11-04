@@ -1,13 +1,29 @@
 import { ContextWindowError, QuotaExceededError } from '../errors/index.js';
+import { MODEL_CATALOG } from '../model-registry/catalog.js';
 import type { ModelCapabilities } from '../types/provider.types.js';
 import type { CostOptions, TokensUsed } from '../cost-calculator/index.js';
 import { costCalculator } from '../cost-calculator/index.js';
-import type { AgentResponse, AgentRunParams, RunBudget } from './types.js';
+import type { AgentResponse, AgentRunParams, CostReport, RunBudget } from './types.js';
 
 export interface CostEstimate {
   tokens: TokensUsed;
   estimatedCost: number;
   stalePricing: boolean;
+}
+
+export interface PricingStalenessReport {
+  readonly generatedAt: string;
+  readonly thresholdDays: number;
+  readonly totalModels: number;
+  readonly staleModels: number;
+  readonly freshModels: number;
+  readonly entries: readonly {
+    readonly model: string;
+    readonly provider: string;
+    readonly updatedAt?: string;
+    readonly stale: boolean;
+    readonly reason: 'missing' | 'local' | 'invalid' | 'expired' | 'fresh';
+  }[];
 }
 
 export function estimateTokens(params: Pick<AgentRunParams, 'prompt' | 'system' | 'maxTokens' | 'tools'>, caps: ModelCapabilities): TokensUsed {
@@ -45,7 +61,15 @@ export function enforcePreflight(params: AgentRunParams, caps: ModelCapabilities
     throw new QuotaExceededError(provider, { budget: 'maxTokens', limit: budget.maxTokens, estimated: estimate.tokens.total });
   }
   if (budget?.maxCost !== undefined && estimate.estimatedCost > budget.maxCost) {
-    throw new QuotaExceededError(provider, { budget: 'maxCost', limit: budget.maxCost, estimated: estimate.estimatedCost });
+    throw new QuotaExceededError(provider, {
+      budget: 'maxCost',
+      limit: budget.maxCost,
+      estimated: estimate.estimatedCost,
+      mode: budget.mode ?? 'fail-closed',
+      preferCache: budget.mode === 'prefer-cache',
+      downgradeRecommended: budget.mode === 'downgrade-model',
+      approvalRecommended: budget.mode === 'request-approval',
+    });
   }
 }
 
@@ -64,6 +88,90 @@ export function isPricingStale(updatedAt: string | undefined, now = new Date()):
   const updated = new Date(updatedAt);
   if (Number.isNaN(updated.getTime())) return true;
   return now.getTime() - updated.getTime() > 1000 * 60 * 60 * 24 * 90;
+}
+
+export function createPricingStalenessReport(config: {
+  catalog?: Record<string, ModelCapabilities>;
+  now?: Date;
+  thresholdDays?: number;
+} = {}): PricingStalenessReport {
+  const now = config.now ?? new Date();
+  const thresholdDays = config.thresholdDays ?? 90;
+  const thresholdMs = 1000 * 60 * 60 * 24 * thresholdDays;
+  const entries = Object.entries(config.catalog ?? MODEL_CATALOG).map(
+    ([modelKey, caps]) => {
+      const updatedAt = caps.pricingMetadata?.updatedAt;
+      const provider = modelKey.split(':')[0] ?? 'unknown';
+      const parsed = updatedAt ? new Date(updatedAt) : undefined;
+      const reason: PricingStalenessReport['entries'][number]['reason'] =
+        !updatedAt
+          ? 'missing'
+          : updatedAt === 'local' || updatedAt === 'package-default'
+            ? 'local'
+            : !parsed || Number.isNaN(parsed.getTime())
+              ? 'invalid'
+              : now.getTime() - parsed.getTime() > thresholdMs
+                ? 'expired'
+                : 'fresh';
+      const stale = reason !== 'fresh';
+      return {
+        model: modelKey,
+        provider,
+        ...(updatedAt !== undefined && { updatedAt }),
+        stale,
+        reason,
+      };
+    },
+  );
+  const staleModels = entries.filter((entry) => entry.stale).length;
+  return {
+    generatedAt: now.toISOString(),
+    thresholdDays,
+    totalModels: entries.length,
+    staleModels,
+    freshModels: entries.length - staleModels,
+    entries,
+  };
+}
+
+export function createRunCostReport(config: {
+  scope: CostReport['scope'];
+  provider: string;
+  model: string;
+  caps: ModelCapabilities;
+  response: Pick<AgentResponse, 'tokensUsed' | 'cost' | 'cache' | 'selection'>;
+  budget?: RunBudget;
+  estimate?: CostEstimate;
+}): CostReport {
+  const options = config.budget?.costOptions ?? {};
+  const executedToolCalls = config.response.selection?.executedToolCalls ?? 0;
+  const exposedTools = config.response.selection?.exposedTools ?? [];
+  const searchCount = exposedTools.filter((name) => /search|serp/i.test(name)).length;
+  const breakdown = costCalculator.calculateBreakdown(config.response.tokensUsed, config.caps, {
+    ...options,
+    toolCalls: options.toolCalls ?? executedToolCalls,
+    searches: options.searches ?? searchCount,
+  });
+  return {
+    scope: config.scope,
+    provider: config.provider,
+    model: config.model,
+    tokens: {
+      ...(config.estimate !== undefined && { estimated: config.estimate.tokens }),
+      actual: config.response.tokensUsed,
+    },
+    costs: {
+      ...(config.estimate !== undefined && { estimatedModelCost: config.estimate.estimatedCost }),
+      actualModelCost: config.response.cost,
+      toolCostEstimate: breakdown.toolCost,
+      searchCostEstimate: breakdown.searchCost,
+      cacheSavingsEstimate: config.response.cache?.summary?.estimatedCostSaved ?? 0,
+      totalEstimate: config.response.cost + breakdown.toolCost + breakdown.searchCost,
+    },
+    ...(config.response.cache?.summary !== undefined && { cache: config.response.cache.summary }),
+    stalePricing: config.estimate?.stalePricing ?? isPricingStale(config.caps.pricingMetadata?.updatedAt),
+    budgetMode: config.budget?.mode ?? 'fail-closed',
+  };
 }
 
 function estimateTextTokens(text: string): number {

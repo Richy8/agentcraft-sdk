@@ -1,11 +1,12 @@
 import { spawnSync } from "node:child_process";
 
 const allowedAdvisories = new Set([
-  // VitePress 1.6.4 currently depends on Vite <=6.4.1 and has no upstream fix.
-  // This is scoped to local docs/dev-server exposure; CI still fails on any other
-  // moderate/high/critical advisory.
-  "https://github.com/advisories/GHSA-4w7w-66w2-5vf9",
-  "https://github.com/advisories/GHSA-67mh-4wv8-2f99",
+  // minimatch <11.0.1 ReDoS via attacker-controlled glob patterns. Only reached
+  // through TypeDoc at docs-build time with this repo's own patterns. TypeDoc
+  // 0.28.x requires minimatch ^10 and breaks on 11. Remove once TypeDoc ships
+  // a release on minimatch 11. VitePress's Vite is pinned to a patched 6.4.x
+  // release through package.json overrides, so it needs no exception.
+  "https://github.com/advisories/GHSA-g3hv-75wg-m249",
 ]);
 
 const result = spawnSync("npm", ["audit", "--audit-level=moderate", "--json"], {
@@ -21,7 +22,11 @@ for (const vulnerability of Object.values(report.vulnerabilities ?? {})) {
       unapproved.push(`${vulnerability.name}: ${via.title} (${via.url})`);
     }
   }
-  if (vulnerability.fixAvailable !== false && vulnerability.via?.length > 0) {
+  if (
+    vulnerability.fixAvailable !== false &&
+    vulnerability.via?.length > 0 &&
+    !onlyAllowedAdvisories(vulnerability.name)
+  ) {
     unapproved.push(
       `${vulnerability.name}: fix is available and must be applied`,
     );
@@ -50,4 +55,19 @@ function parseAuditReport(stdout) {
     console.error(stdout);
     throw error;
   }
+}
+
+// True when every advisory reachable from this package (directly or through
+// the packages it is flagged "via") is explicitly allowed. npm still reports a
+// "fix" for these, usually a nonsensical major downgrade, which we ignore.
+function onlyAllowedAdvisories(name, seen = new Set()) {
+  if (seen.has(name)) return true;
+  seen.add(name);
+  const vulnerability = report.vulnerabilities?.[name];
+  if (!vulnerability) return true;
+  return (vulnerability.via ?? []).every((via) =>
+    typeof via === "string"
+      ? onlyAllowedAdvisories(via, seen)
+      : allowedAdvisories.has(via.url),
+  );
 }

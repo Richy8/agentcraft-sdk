@@ -2,17 +2,19 @@ import { describe, expect, it } from "vitest";
 import {
   Agent,
   AgentCache,
+  AgentEval,
   AgentPool,
+  AgentReports,
   AgentWorkflow,
+  AgentMemory,
   AgentWorkspace,
+  ApprovalQueue,
   ApprovalStep,
   ArtifactRegistry,
   BestFitResolver,
   CustomStep,
   DeterministicFakeProvider,
   FileArtifactStore,
-  FileSystemAnalyticsHistoryStore,
-  FileSystemCreatorMemoryStore,
   MemoryArtifactStore,
   Provider,
   PromptAssembler,
@@ -22,23 +24,18 @@ import {
   estimateTokens,
 } from "../index.js";
 import {
-  CitationManagerAdapter,
-  LinkCheckerAdapter,
-  SeoAdapter,
+  DatabaseAdapter,
+  FetchAdapter,
+  ImageGenerationAdapter,
   TavilySearchAdapter,
+  defineAdapter,
   tool,
 } from "../adapters.js";
-import {
-  BlogWriterSkill,
-  GitHubSkillLoader,
-  HumanizerSkill,
-} from "../skills.js";
-import { CreatorPacks } from "../packs.js";
-import { LinearMCP } from "../mcp.js";
+import { GitHubMCP, MCP } from "../mcp.js";
 import { AgentTeam } from "../team.js";
 
 describe("public entry points", () => {
-  it("exports the core API and subpath barrels", () => {
+  it("exports the core API and subpath barrels", async () => {
     expect(Agent).toBeDefined();
     expect(AgentPool).toBeDefined();
     expect(Provider.ollama["llama3.2"]).toBe("ollama:llama3.2");
@@ -46,12 +43,13 @@ describe("public entry points", () => {
     expect(
       TavilySearchAdapter.connect({ apiKey: "key" }).declaredToolNames,
     ).toEqual(["web_search", "get_page_content"]);
-    expect(CitationManagerAdapter.connect().name).toBe("citation-manager");
-    expect(LinkCheckerAdapter.connect().name).toBe("link-checker");
-    expect(SeoAdapter.connect().name).toBe("seo");
+    expect(FetchAdapter.connect().name).toBe("fetch");
+    expect(DatabaseAdapter.connect({ connectionString: "postgres://localhost/db" }).name).toBe("database");
+    expect(ImageGenerationAdapter.connect({ provider: "openai", apiKey: "key" }).name).toBe("image-generation");
     expect(tool).toBeDefined();
-    expect(HumanizerSkill.create().directive).toBe("humanizer");
-    expect(LinearMCP.connect({ apiKey: "key" }).name).toBe("linear-mcp");
+    expect(defineAdapter).toBeDefined();
+    expect(GitHubMCP.connect({ token: "token", packageSpec: "@artificable/github-mcp-server@0.1.0" }).name).toBe("github-mcp");
+    expect(MCP.connect({ url: "https://example.com" }).name).toBe("mcp");
     expect(AgentTeam).toBeDefined();
     expect(DeterministicFakeProvider).toBeDefined();
     expect(costCalculator).toBeDefined();
@@ -59,6 +57,11 @@ describe("public entry points", () => {
     expect(estimateTokens).toBeDefined();
     expect(AgentCache.disabled().config.type).toBe("disabled");
     expect(AgentCache.memory().config.type).toBe("memory");
+    expect(AgentCache.fromUrl("redis://localhost:6379").config.type).toBe("redis");
+    expect(AgentMemory.local).toBeDefined();
+    expect(AgentEval).toBeDefined();
+    expect(AgentReports.eventCollector).toBeDefined();
+    await expect(ApprovalQueue.memory().list()).resolves.toEqual([]);
     expect(AgentWorkspace.create({}).events).toBeDefined();
     expect(AgentWorkflow.create({ steps: [] }).inspect().steps).toEqual([]);
     expect(CustomStep({ id: "x", run: async () => "ok" }).type).toBe("custom");
@@ -67,17 +70,6 @@ describe("public entry points", () => {
     expect(MemoryArtifactStore()).toBeDefined();
     expect(FileArtifactStore({ root: "/tmp/agentcraft-artifacts" })).toBeDefined();
     expect(SQLiteArtifactStore).toBeDefined();
-    expect(ArtifactRegistry.lookup("Draft")).toBeDefined();
-    expect(
-      new FileSystemCreatorMemoryStore("/tmp/agentcraft-memory").root,
-    ).toContain("agentcraft-memory");
-    expect(
-      new FileSystemAnalyticsHistoryStore("/tmp/agentcraft-analytics").root,
-    ).toContain("agentcraft-analytics");
-    expect(CreatorPacks.blog().type).toBe("creator-pack");
-    expect(BlogWriterSkill.create().skillMetadata?.creator?.name).toBe(
-      "blog-writer",
-    );
-    expect(GitHubSkillLoader).toBeDefined();
+    expect(ArtifactRegistry.list()).toBeDefined();
   });
 });

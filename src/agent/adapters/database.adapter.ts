@@ -52,10 +52,10 @@ export class DatabaseAdapter {
         readOnly,
       },
       tools: [
-        tool({
-          name: 'execute_query',
+        tool('execute_query', {
           description: 'Execute a parameterized SQL query through the configured database executor.',
-          security: { sideEffect: readOnly ? 'read' : 'write', requiresConfirmation: !readOnly, scopes: ['database:query'] },
+          sideEffect: readOnly ? 'read' : 'write',
+          requiresConfirmation: !readOnly,
           params: {
             query: { type: 'string', description: 'SQL query text. Use placeholders and params instead of string interpolation.' },
             params: { type: 'array', description: 'Parameterized query values.', required: false },
@@ -67,10 +67,9 @@ export class DatabaseAdapter {
               return limitRows(result, rowLimit);
             }),
         }),
-        tool({
-          name: 'fetch_records',
+        tool('fetch_records', {
           description: 'Fetch rows from a table with an optional WHERE clause and parameter values.',
-          security: { sideEffect: 'read', scopes: ['database:read'] },
+          sideEffect: 'read',
           params: {
             table: { type: 'string', description: 'Table name.' },
             where: { type: 'string', description: 'Optional SQL WHERE expression without the WHERE keyword.', required: false },
@@ -82,10 +81,10 @@ export class DatabaseAdapter {
               return execute(query, params, signal).then((result) => limitRows(result, rowLimit));
             }),
         }),
-        tool({
-          name: 'insert_record',
+        tool('insert_record', {
           description: 'Insert one record into a table.',
-          security: { sideEffect: 'write', requiresConfirmation: true, scopes: ['database:write'] },
+          sideEffect: 'write',
+          requiresConfirmation: true,
           params: { table: { type: 'string', description: 'Table name.' }, record: { type: 'object', description: 'Record fields.' } },
           run: async ({ table, record }) =>
             run('insert_record', (signal) => {
@@ -96,10 +95,10 @@ export class DatabaseAdapter {
               return execute(`INSERT INTO ${quoteIdentifier(table)} (${columns}) VALUES (${placeholders}) RETURNING *`, entries.map(([, value]) => value), signal);
             }),
         }),
-        tool({
-          name: 'update_record',
+        tool('update_record', {
           description: 'Update records in a table with a parameterized WHERE clause.',
-          security: { sideEffect: 'write', requiresConfirmation: true, scopes: ['database:write'] },
+          sideEffect: 'write',
+          requiresConfirmation: true,
           params: {
             table: { type: 'string', description: 'Table name.' },
             record: { type: 'object', description: 'Fields to update.' },
@@ -118,10 +117,10 @@ export class DatabaseAdapter {
               );
             }),
         }),
-        tool({
-          name: 'delete_record',
+        tool('delete_record', {
           description: 'Delete records from a table with a parameterized WHERE clause.',
-          security: { sideEffect: 'write', requiresConfirmation: true, scopes: ['database:write'] },
+          sideEffect: 'write',
+          requiresConfirmation: true,
           params: {
             table: { type: 'string', description: 'Table name.' },
             where: { type: 'string', description: 'SQL WHERE expression without the WHERE keyword.' },
@@ -133,10 +132,9 @@ export class DatabaseAdapter {
               return execute(`DELETE FROM ${quoteIdentifier(table)} WHERE ${where} RETURNING *`, params, signal);
             }),
         }),
-        tool({
-          name: 'list_tables',
+        tool('list_tables', {
           description: 'List tables in the configured database schema.',
-          security: { sideEffect: 'read', scopes: ['database:schema'] },
+          sideEffect: 'read',
           params: {},
           run: async () =>
             run('list_tables', (signal) =>

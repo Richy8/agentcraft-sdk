@@ -14,27 +14,45 @@ Adapter config tells AgentCraft how to connect and what boundaries to enforce.
 ## Required Config Examples
 
 ```ts
-GitHubAdapter.connect({
-  token: process.env.GITHUB_TOKEN!,
-  allowedRepos: ["owner/repo"],
+import {
+  FetchAdapter,
+  TavilySearchAdapter,
+  DatabaseAdapter,
+} from "@deskcreate/agentcraft/adapters";
+import { GitHubMCP, FilesystemMCP } from "@deskcreate/agentcraft/mcp";
+
+FetchAdapter.connect({
+  allowedDomains: ["api.github.com"],
+  maxResponseBytes: 500_000,
 });
 
-FileSystemAdapter.connect({
-  rootPath: "./docs",
-  readOnly: true,
+TavilySearchAdapter.connect({
+  apiKey: process.env.TAVILY_API_KEY!,
+});
+
+// For filesystem access, use FilesystemMCP:
+FilesystemMCP.connect({
+  allowedPaths: ["./docs"],
+});
+
+// For GitHub, use GitHubMCP:
+GitHubMCP.connect({
+  token: process.env.GITHUB_TOKEN!,
+  allowedTools: ["list_issues", "get_file_contents"],
 });
 ```
 
 ## Optional Defaults Example
 
 ```ts
-GoogleCalendarAdapter.connect({
-  accessToken: process.env.GOOGLE_ACCESS_TOKEN!,
-  defaultCalendarId: "primary",
-  timezone: "UTC",
+DatabaseAdapter.connect({
+  connectionString: process.env.DATABASE_URL!,
+  readOnly: true,
+  rowLimit: 100,
+  timeoutMs: 5000,
 });
 ```
 
 ## Full Catalog
 
-Use [Built-In Adapters Reference](../reference/built-in-adapters.md) for adapter-by-adapter config.
+Use [Adapters Overview](./overview.md) for adapter-by-adapter config.

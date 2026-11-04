@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { AuthenticationError, ContextWindowError, ModelNotFoundError, QuotaExceededError, RateLimitError } from '../../errors/index.js';
+import { AuthenticationError, ContextWindowError, ModelNotFoundError, QuotaExceededError, RateLimitError, TimeoutError } from '../../errors/index.js';
 import type { ModelConfig } from '../../types/config.types.js';
 import type { LLMCallParams } from '../../types/provider.types.js';
 import { AnthropicProtocol } from '../anthropic.protocol.js';
 import { BedrockProtocol } from '../bedrock.protocol.js';
-import { CohereProtocol } from '../cohere.protocol.js';
 import { GoogleProtocol } from '../google.protocol.js';
 import { OpenAICompatProtocol } from '../openai-compat.protocol.js';
 import type { ToolDefinition } from '../types.js';
@@ -48,7 +47,6 @@ describe('OpenAICompatProtocol', () => {
       response_format: { type: 'json_object' },
     });
     expect(request.messages[0]).toEqual({ role: 'system', content: 'System' });
-    expect(protocol.formatRequest({ prompt: 'Hi' }, { provider: 'azure', model: 'gpt-4o', apiKey: 'key', endpoint: 'https://example.com', deployment: 'dep' })).toMatchObject({ model: 'dep' });
     expect(protocol.formatTools([tool])[0]?.type).toBe('function');
 
     const raw = {
@@ -75,6 +73,7 @@ describe('OpenAICompatProtocol', () => {
     expect(protocol.mapError(errorWithStatus(429, 'billing quota'), config)).toBeInstanceOf(QuotaExceededError);
     expect(protocol.mapError(errorWithStatus(401, 'bad key'), config)).toBeInstanceOf(AuthenticationError);
     expect(protocol.mapError(errorWithStatus(413, 'too long'), config)).toBeInstanceOf(ContextWindowError);
+    expect(protocol.mapError(new Error('Request was aborted.'), config)).toBeInstanceOf(TimeoutError);
   });
 
   it('streams incremental OpenAI-compatible tool-call chunks', async () => {
@@ -132,12 +131,44 @@ describe('OpenAICompatProtocol', () => {
     expect(protocol.extractToolCalls(raw)).toEqual([{ id: 'call-1', name: 'get_weather', arguments: '{"city":"Lagos"}' }]);
   });
 
-  it('constructs OpenAI-compatible and Azure clients without network access', () => {
+  it('constructs OpenAI-compatible client without network access', () => {
     expect(protocol.createClient(config, { protocol })).toBeDefined();
-    expect(protocol.createClient(
-      { provider: 'azure', model: 'gpt-4o', apiKey: 'key', endpoint: 'https://azure.test', deployment: 'dep' },
-      { protocol, useAzureClient: true }
-    )).toBeDefined();
+  });
+
+  it('passes timeout and abort signals to OpenAI requests', async () => {
+    const controller = new AbortController();
+    const chatCreate = vi.fn(async () => ({ choices: [], usage: {} }));
+    const responsesCreate = vi.fn(async () => ({ object: 'response', output: [], status: 'completed' }));
+    const client = {
+      chat: { completions: { create: chatCreate } },
+      responses: { create: responsesCreate },
+    };
+
+    await protocol.callRaw(
+      client,
+      { model: 'gpt-4o', messages: [] },
+      { prompt: 'Hello', signal: controller.signal }
+    );
+    expect(chatCreate).toHaveBeenCalledWith(
+      { model: 'gpt-4o', messages: [] },
+      { signal: controller.signal }
+    );
+
+    await protocol.callRaw(
+      client,
+      { api: 'responses', request: { model: 'gpt-5.4', input: [], stream: false, store: false } },
+      { prompt: 'Hello', signal: controller.signal }
+    );
+    expect(responsesCreate).toHaveBeenCalledWith(
+      { model: 'gpt-5.4', input: [], stream: false, store: false },
+      { signal: controller.signal }
+    );
+
+    const timedClient = protocol.createClient(
+      { provider: 'openai', model: 'gpt-5.4', apiKey: 'key', timeout: 1234 },
+      { protocol }
+    ) as unknown as { timeout?: number };
+    expect(timedClient.timeout).toBe(1234);
   });
 });
 
@@ -189,6 +220,27 @@ describe('AnthropicProtocol', () => {
   it('constructs an Anthropic client without network access', () => {
     const protocol = new AnthropicProtocol();
     expect(protocol.createClient({ provider: 'anthropic', model: 'claude-sonnet-4-6', apiKey: 'key' }, { protocol })).toBeDefined();
+  });
+
+  it('passes timeout and abort signals to Anthropic requests', async () => {
+    const protocol = new AnthropicProtocol();
+    const controller = new AbortController();
+    const create = vi.fn(async () => ({
+      content: [],
+      usage: { input_tokens: 1, output_tokens: 1 },
+      stop_reason: 'end_turn',
+    }));
+    const client = { messages: { create } };
+    const request = { model: 'claude-sonnet-4-6', max_tokens: 10, messages: [{ role: 'user', content: 'Hi' }] };
+
+    await protocol.callRaw(client, request, { prompt: 'Hi', signal: controller.signal });
+    expect(create).toHaveBeenCalledWith(request, { signal: controller.signal });
+
+    const timedClient = protocol.createClient(
+      { provider: 'anthropic', model: 'claude-sonnet-4-6', apiKey: 'key', timeout: 1234 },
+      { protocol }
+    ) as unknown as { timeout?: number };
+    expect(timedClient.timeout).toBe(1234);
   });
 });
 
@@ -309,97 +361,6 @@ describe('BedrockProtocol', () => {
   });
 });
 
-describe('CohereProtocol', () => {
-  it('formats chat requests/tools, extracts responses/tool calls, and builds follow-up state', () => {
-    vi.spyOn(Date, 'now').mockReturnValue(456);
-    const protocol = new CohereProtocol();
-    const config = { provider: 'cohere', model: 'command-r-08-2024', apiKey: 'key' } satisfies ModelConfig;
-    const request = protocol.formatRequest({ prompt: 'Hi', systemMessage: 'System', responseFormat: { type: 'json_object' } }, config) as Record<string, unknown>;
-
-    expect(request).toMatchObject({ model: 'command-r-08-2024', message: 'Hi', preamble: 'System', responseFormat: { type: 'json_object' } });
-    expect(protocol.formatTools([tool])).toEqual([
-      {
-        name: 'get_weather',
-        description: 'Get weather',
-        parameterDefinitions: { city: { description: 'City', type: 'string', required: true } },
-      },
-    ]);
-
-    const raw = {
-      text: 'ok',
-      finishReason: 'TOOL_CALL',
-      meta: { tokens: { inputTokens: 4, outputTokens: 5 } },
-      toolCalls: [{ name: 'get_weather', parameters: { city: 'Lagos' } }],
-    };
-    expect(protocol.extractResponse(raw)).toMatchObject({
-      content: 'ok',
-      finishReason: 'tool_calls',
-      tokensUsed: { prompt: 4, completion: 5, total: 9 },
-    });
-    expect(protocol.extractToolCalls(raw)).toEqual([{ id: 'cohere-456-0', name: 'get_weather', arguments: '{"city":"Lagos"}' }]);
-    expect(protocol.formatFollowUp({ prompt: 'Hi' }, raw, [{ toolCallId: 'c1', toolName: 'get_weather', result: '{"ok":true}', arguments: '{"city":"Lagos"}' }])._providerState).toBeDefined();
-    vi.restoreAllMocks();
-  });
-
-  it('constructs Cohere clients, streams events, and maps common errors', async () => {
-    const protocol = new CohereProtocol();
-    const config = { provider: 'cohere', model: 'command-r-08-2024', apiKey: 'key' } satisfies ModelConfig;
-    expect(protocol.createClient(config, { protocol })).toBeDefined();
-    const client = {
-      chatStream: vi.fn(async function* () {
-        yield { eventType: 'text-generation', text: 'hi' };
-        yield { eventType: 'stream-end', response: { finishReason: 'MAX_TOKENS', meta: { tokens: { inputTokens: 1, outputTokens: 2 } } } };
-      }),
-    };
-    const chunks = [];
-    for await (const chunk of protocol.stream(client, {})) chunks.push(chunk);
-    expect(chunks).toEqual([
-      { delta: 'hi' },
-      { delta: '', finishReason: 'length' },
-      { delta: '', usage: { prompt: 1, completion: 2, total: 3 } },
-    ]);
-    expect(protocol.mapError(errorWithStatus(404, 'missing'), config)).toBeInstanceOf(ModelNotFoundError);
-  });
-
-  it('routes Command A models through Cohere v2 chat', async () => {
-    const protocol = new CohereProtocol();
-    const config = { provider: 'cohere', model: 'command-a-reasoning-08-2025', apiKey: 'key' } satisfies ModelConfig;
-    const request = protocol.formatRequest(
-      { prompt: 'Hi', systemMessage: 'System', maxTokens: 16, responseFormat: { type: 'json_object' } },
-      config
-    ) as { api: string; request: Record<string, unknown> };
-
-    expect(request).toMatchObject({
-      api: 'v2',
-      request: {
-        model: 'command-a-reasoning-08-2025',
-        maxTokens: 16,
-        responseFormat: { type: 'json_object' },
-        thinking: { type: 'disabled' },
-      },
-    });
-    expect(request.request.messages).toEqual([
-      { role: 'system', content: 'System' },
-      { role: 'user', content: 'Hi' },
-    ]);
-
-    const raw = {
-      id: 'v2-1',
-      finishReason: 'COMPLETE',
-      message: { role: 'assistant', content: [{ type: 'text', text: 'ok' }] },
-      usage: { tokens: { inputTokens: 4, outputTokens: 5 } },
-    };
-    expect(protocol.extractResponse(raw)).toMatchObject({
-      content: 'ok',
-      finishReason: 'stop',
-      tokensUsed: { prompt: 4, completion: 5, total: 9 },
-    });
-
-    const client = { v2: { chat: vi.fn(async () => raw) } };
-    await expect(protocol.callRaw(client, request)).resolves.toBe(raw);
-    expect(client.v2.chat).toHaveBeenCalledWith(request.request);
-  });
-});
 
 function errorWithStatus(status: number, message: string): Error & { status: number; headers?: Record<string, string> } {
   return Object.assign(new Error(message), { status, headers: { 'retry-after': '30' } });

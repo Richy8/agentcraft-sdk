@@ -23,6 +23,8 @@ export type {
   WorkflowResult,
   WorkflowRunArtifact,
   WorkflowRunOptions,
+  WorkflowResumeState,
+  RetryStepConfig,
   WorkflowStep,
   WorkflowStepResult,
   WorkflowStepStatus,

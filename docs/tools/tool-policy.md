@@ -79,10 +79,10 @@ When a tool has `requiresConfirmation: true`, it is blocked by default. Provide 
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { tool } from "@deskcreate/agentcraft/adapters";
 
-const publishDraft = tool({
-  name: "publish_draft",
+const publishDraft = tool("publish_draft", {
   description: "Publish a draft to the CMS.",
-  security: { sideEffect: "write", requiresConfirmation: true },
+  sideEffect: "write",
+  requiresConfirmation: true,
   params: { draftId: { type: "string", description: "Draft ID to publish." } },
   run: async ({ draftId }) => cms.publish(draftId),
 });
@@ -127,10 +127,10 @@ const agent = Agent.create({
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { tool } from "@deskcreate/agentcraft/adapters";
 
-const deleteRecord = tool({
-  name: "delete_record",
+const deleteRecord = tool("delete_record", {
   description: "Delete a database record.",
-  security: { sideEffect: "write", requiresConfirmation: true },
+  sideEffect: "write",
+  requiresConfirmation: true,
   params: { id: { type: "string", description: "Record ID." } },
   run: async ({ id }) => db.delete(id),
 });

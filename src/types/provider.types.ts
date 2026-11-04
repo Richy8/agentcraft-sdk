@@ -17,6 +17,8 @@ export interface ToolCallResult {
   success: boolean;
 }
 
+export type ReasoningEffort = 'none' | 'low' | 'medium' | 'high' | 'xhigh';
+
 export interface LLMCallParams {
   prompt: string;
   systemMessage?: string;
@@ -27,6 +29,7 @@ export interface LLMCallParams {
   presencePenalty?: number;
   stopSequences?: string[];
   responseFormat?: ResponseFormat;
+  reasoning?: ReasoningEffort;
   signal?: AbortSignal;
   _providerState?: unknown;
 }
@@ -48,7 +51,7 @@ export interface LLMResponse {
 }
 
 export interface StreamChunk {
-  type?: 'model_delta' | 'tool_call' | 'tool_result' | 'final';
+  type?: 'model_delta' | 'tool_call' | 'tool_result' | 'final' | 'metadata';
   runId?: string;
   spanId?: string;
   parentSpanId?: string;
@@ -61,13 +64,18 @@ export interface StreamChunk {
   };
   toolCall?: ToolCall;
   toolResult?: ToolCallResult;
+  promptAssembly?: {
+    readonly mode: string;
+    readonly records: readonly object[];
+  };
 }
 
 export type StreamEvent =
   | (StreamChunk & { type: 'model_delta'; delta: string })
   | (StreamChunk & { type: 'tool_call'; toolCall: ToolCall })
   | (StreamChunk & { type: 'tool_result'; toolResult: ToolCallResult })
-  | (StreamChunk & { type: 'final'; finishReason: FinishReason });
+  | (StreamChunk & { type: 'final'; finishReason: FinishReason })
+  | (StreamChunk & { type: 'metadata'; delta: '' });
 
 export interface ModelCapabilities {
   maxContextLength: number;
@@ -80,6 +88,12 @@ export interface ModelCapabilities {
   supportsAudio: boolean;
   supportsVideo: boolean;
   supportsFiles: boolean;
+  supportsReasoning?: boolean;
+  reasoningEffortLevels?: ReadonlyArray<'none' | 'low' | 'medium' | 'high' | 'xhigh'>;
+  supportsStructuredOutput?: boolean;
+  supportsParallelToolCalls?: boolean;
+  supportsNativeWebSearch?: boolean;
+  supportsNativeFileSearch?: boolean;
 
   optimizedFor: ReadonlyArray<'reasoning' | 'code' | 'creative' | 'speed' | 'cost' | 'quality'>;
   qualityScore: number;

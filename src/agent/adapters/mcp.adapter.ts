@@ -183,10 +183,10 @@ export class MCPAdapter {
   }
 
   static placeholderTool(name: string): ToolDefinition {
-    return tool({
-      name,
+    return tool(name, {
       description: `Tool discovered from an MCP server: ${name}.`,
-      security: { sideEffect: 'external', requiresConfirmation: true },
+      sideEffect: 'external',
+      requiresConfirmation: true,
       params: {},
       run: async () => {
         throw new Error('MCP tool execution requires a live MCP transport implementation.');

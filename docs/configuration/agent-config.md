@@ -26,14 +26,12 @@
 | `responseFormat`   | `{ type: "text" }` | `"text"` or `"json_object"` output format. |
 | `timeout`          | `120000` ms        | Per-request timeout in milliseconds.       |
 
-### Tools and Skills
+### Tools
 
-| Field             | Default    | Purpose                                                                                             |
-| ----------------- | ---------- | --------------------------------------------------------------------------------------------------- |
-| `tools`           | `[]`       | Static tool definitions available on every run.                                                     |
-| `toolPolicy`      | Permissive | Controls approval, read-only mode, guardrails, result truncation, and secret redaction.             |
-| `skillActivation` | `"always"` | `"always"` — all skills active. `"auto"` — keyword-activated. `"directive-only"` — `/name` trigger. |
-| `toolSelection`   | `"all"`    | `"all"` — all adapters expose tools. `"auto"` — only adapters relevant to active skills.            |
+| Field        | Default    | Purpose                                                                                 |
+| ------------ | ---------- | --------------------------------------------------------------------------------------- |
+| `tools`      | `[]`       | Static tool definitions available on every run.                                         |
+| `toolPolicy` | Permissive | Controls approval, read-only mode, guardrails, result truncation, and secret redaction. |
 
 ### Retry
 
@@ -58,12 +56,14 @@ Backoff options: `"exponential"` (doubles delay), `"linear"` (adds delay linearl
 | `project`         | Vertex             | GCP project ID.                                      |
 | `location`        | Vertex             | GCP location (e.g. `"us-central1"`).                 |
 
-### Cache and Logging
+### Workspace, Cache, Memory, and Logging
 
-| Field    | Default  | Purpose                                              |
-| -------- | -------- | ---------------------------------------------------- |
-| `cache`  | Disabled | `AgentCacheController` from `AgentCache.file()` etc. |
-| `logger` | Console  | Custom logger implementing the `Logger` interface.   |
+| Field       | Default  | Purpose                                                                  |
+| ----------- | -------- | ------------------------------------------------------------------------ |
+| `workspace` | None     | Shared cache, memory, store, adapters, policies, trace sink, and events. |
+| `cache`     | Disabled | `AgentCacheController` from `AgentCache.file()` etc.                     |
+| `memory`    | None     | `AgentMemoryStore` used for bounded semantic retrieval.                  |
+| `logger`    | Console  | Custom logger implementing the `Logger` interface.                       |
 
 ## Examples
 
@@ -108,7 +108,7 @@ import { Agent, Provider } from "@deskcreate/agentcraft";
 
 // System prompt is prepended to every run — good for role/persona
 const agent = Agent.create({
-  model: Provider.anthropic["claude-3-5-haiku-20241022"],
+  model: Provider.anthropic["claude-haiku-4-5"],
   apiKey: process.env.ANTHROPIC_API_KEY!,
   name: "support-bot",
   system: [
@@ -191,37 +191,40 @@ console.log(response.cache?.hits); // cache hits this run
 console.log(response.cache?.toolCallsAvoided); // avoided tool calls
 ```
 
-### With Skill Activation Modes
+### With Workspace Memory
 
 ```ts
-import { Agent, Provider } from "@deskcreate/agentcraft";
-import { SomeSkill } from "./skills/some-skill.js";
+import {
+  Agent,
+  AgentMemory,
+  AgentWorkspace,
+  Provider,
+} from "@deskcreate/agentcraft";
 
-// "always": skill is always active (default) — good for single-purpose agents
-const always = Agent.create({
+const workspace = AgentWorkspace.create({
+  memory: AgentMemory.local({
+    root: ".agentcraft/memory",
+    namespace: "support-agent",
+    writes: { requireApproval: false },
+  }),
+});
+
+await workspace.memory?.add({
+  scope: "customer",
+  text: "Customer prefers concise updates with implementation examples.",
+  source: "onboarding",
+});
+
+const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "always",
-}).use(SomeSkill.create());
+  workspace,
+});
 
-// "auto": skill activates when prompt keywords match — good for multi-skill agents
-const auto = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "auto",
-  toolSelection: "auto", // pair with "auto" so only relevant tools are exposed
-}).use(SomeSkill.create());
-
-// "directive-only": skill activates only when prompt contains /skill-name
-const directive = Agent.create({
-  model: Provider.openai["gpt-4o-mini"],
-  apiKey: process.env.OPENAI_API_KEY!,
-  skillActivation: "directive-only",
-}).use(SomeSkill.create());
-
-const r1 = await always.run({ prompt: "Do the thing." });
-const r2 = await auto.run({ prompt: "Do something related to some-skill." });
-const r3 = await directive.run({ prompt: "/some-skill do the thing." });
+const response = await agent.run({
+  prompt: "Draft a customer update about the cache rollout.",
+});
+console.log(response.content);
 ```
 
 ### Azure OpenAI Provider

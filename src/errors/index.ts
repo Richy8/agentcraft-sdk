@@ -201,7 +201,7 @@ export class UnsupportedInputError extends AgentCraftError {
   }
 }
 
-export class SkillNotAttachedError extends AgentCraftError {
+export class TraitNotAttachedError extends AgentCraftError {
   readonly code = 'SKILL_NOT_ATTACHED';
   readonly retryable = false;
 
@@ -229,6 +229,32 @@ export class UnsupportedOperationError extends AgentCraftError {
       provider,
       ...context,
     });
+  }
+}
+
+export class UnsupportedCapabilityError extends AgentCraftError {
+  readonly code = 'UNSUPPORTED_CAPABILITY';
+  readonly retryable = false;
+
+  constructor(capability: string, provider: string, model: string) {
+    super(
+      `Model '${model}' on provider '${provider}' does not support '${capability}'. ` +
+      `Use a model with supportsNativeSkills: true (e.g. anthropic:claude-opus-4-7, openai:gpt-4o).`,
+      { capability, provider, model },
+    );
+  }
+}
+
+export class UnsupportedReasoningError extends AgentCraftError {
+  readonly code = 'UNSUPPORTED_REASONING';
+  readonly retryable = false;
+
+  constructor(model: string, effort?: string, validLevels?: readonly string[]) {
+    const message = effort && validLevels
+      ? `Model '${model}' does not support reasoning effort '${effort}'. Valid levels: ${validLevels.join(', ')}.`
+      : `Model '${model}' does not support reasoning effort control. ` +
+        `Use a reasoning-capable model such as openai:o3, openai:gpt-5.4, openai:o4-mini, or anthropic:claude-sonnet-4-6.`;
+    super(message, { model, ...(effort !== undefined && { effort }), ...(validLevels !== undefined && { validLevels }) });
   }
 }
 

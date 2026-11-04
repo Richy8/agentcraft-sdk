@@ -30,6 +30,7 @@ const draft = await workspace.store.get("Draft", draftId);
 const drafts = await workspace.store.query("Draft", { status: "draft" });
 
 await workspace.store.update(draftId, { status: "in_review" });
+await workspace.store.updateByType("Draft", draftId, { status: "reviewed" });
 
 const reviewId = await workspace.store.put("EditorialReview", {
   verdict: "needs_revision",
@@ -42,21 +43,25 @@ await workspace.store.link(
 );
 
 console.log(draft, drafts.length);
+console.log(await workspace.store.listLinks({ type: "Draft", id: draftId }));
+console.log(workspace.store.capabilities());
 ```
 
 ## Configuration
 
 ### `FileArtifactStore(options)`
 
-| Field / Option | Required | Default | Purpose                                                              |
-| -------------- | -------- | ------- | -------------------------------------------------------------------- |
-| `root`         | Yes      | None    | Directory where artifact JSON files are written. Created if missing. |
+| Field / Option    | Required | Default | Purpose                                                                      |
+| ----------------- | -------- | ------- | ---------------------------------------------------------------------------- |
+| `root`            | Yes      | None    | Directory where artifact JSON files are written. Created if missing.         |
+| `validateSchemas` | No       | `false` | Validate registered artifact types through `ArtifactRegistry` on put/update. |
 
 ### `SQLiteArtifactStore(options)`
 
-| Field / Option | Required | Default | Purpose                                                                |
-| -------------- | -------- | ------- | ---------------------------------------------------------------------- |
-| `dbPath`       | Yes      | None    | Path to the SQLite database file. Use `:memory:` for in-process tests. |
+| Field / Option    | Required | Default | Purpose                                                                      |
+| ----------------- | -------- | ------- | ---------------------------------------------------------------------------- |
+| `dbPath`          | Yes      | None    | Path to the SQLite database file. Use `:memory:` for in-process tests.       |
+| `validateSchemas` | No       | `false` | Validate registered artifact types through `ArtifactRegistry` on put/update. |
 
 `SQLiteArtifactStore` requires `better-sqlite3` as an optional peer dependency:
 
@@ -66,16 +71,74 @@ npm install better-sqlite3
 
 ### `ArtifactStore` Interface
 
-| Method                       | Returns                      | Purpose                                        |
-| ---------------------------- | ---------------------------- | ---------------------------------------------- |
-| `put(type, artifact)`        | `Promise<string>`            | Persist an artifact. Returns the generated ID. |
-| `get(type, id)`              | `Promise<unknown>`           | Retrieve by type and ID.                       |
-| `query(type, filter?)`       | `Promise<unknown[]>`         | List artifacts with optional filters.          |
-| `update(id, patch)`          | `Promise<void>`              | Shallow-merge patch onto a stored artifact.    |
-| `delete(type, id)`           | `Promise<boolean>`           | Remove an artifact. Returns true if deleted.   |
-| `listTypes()`                | `Promise<string[]>`          | All types with at least one artifact.          |
-| `history(type, id)`          | `Promise<ArtifactHistory[]>` | All revisions when the store supports history. |
-| `link(sourceRef, targetRef)` | `Promise<void>`              | Create a directed link between two artifacts.  |
+| Method                          | Returns                      | Purpose                                               |
+| ------------------------------- | ---------------------------- | ----------------------------------------------------- |
+| `put(type, artifact)`           | `Promise<string>`            | Persist an artifact. Returns the generated ID.        |
+| `get(type, id)`                 | `Promise<unknown>`           | Retrieve by type and ID.                              |
+| `query(type, filter?)`          | `Promise<unknown[]>`         | List artifacts with optional filters.                 |
+| `update(id, patch)`             | `Promise<void>`              | Shallow-merge patch onto a stored artifact.           |
+| `updateByType(type, id, patch)` | `Promise<void>`              | Patch by type and ID to avoid duplicate-ID ambiguity. |
+| `delete(type, id)`              | `Promise<boolean>`           | Remove an artifact. Returns true if deleted.          |
+| `listTypes()`                   | `Promise<string[]>`          | All types with at least one artifact.                 |
+| `history(type, id)`             | `Promise<ArtifactHistory[]>` | All revisions when the store supports history.        |
+| `link(sourceRef, targetRef)`    | `Promise<void>`              | Create a directed link between two artifacts.         |
+| `listLinks(sourceRef?)`         | `Promise<ArtifactLink[]>`    | List links for one source or the whole store.         |
+| `capabilities()`                | `ArtifactStoreCapabilities`  | Reports backend guarantees and enabled validation.    |
+
+### Schema Validation
+
+Set `validateSchemas: true` when artifacts should match schemas registered with [`ArtifactRegistry`](../core/structured-output.md#with-artifactregistry).
+
+```ts
+import { FileArtifactStore } from "@deskcreate/agentcraft";
+
+const store = FileArtifactStore({
+  root: "./.agentcraft/artifacts",
+  validateSchemas: true,
+});
+
+await store.put("Draft", {
+  id: "draft-1",
+  type: "Draft",
+  createdAt: new Date().toISOString(),
+  sourceSkill: "blog-writer",
+  provenance: [{ kind: "model", ref: "blog-writer" }],
+  inputs: [],
+  status: "draft",
+  format: "article",
+  body: "Draft body",
+});
+```
+
+### Typed Helpers
+
+Use helpers when your app works with one artifact type repeatedly.
+
+```ts
+import {
+  createArtifactTypeHelper,
+  FileArtifactStore,
+} from "@deskcreate/agentcraft";
+
+const store = FileArtifactStore({ root: "./.agentcraft/artifacts" });
+const drafts = createArtifactTypeHelper<Record<string, unknown>>(
+  store,
+  "Draft",
+);
+
+const id = await drafts.put({ body: "v1", status: "draft" });
+await drafts.update(id, { body: "v2" });
+```
+
+### Capabilities
+
+Backends differ by deployment target:
+
+| Backend               | History | Links | Transactions | Schema validation |
+| --------------------- | ------- | ----- | ------------ | ----------------- |
+| `MemoryArtifactStore` | Yes     | Yes   | No           | Optional          |
+| `FileArtifactStore`   | Yes     | Yes   | No           | Optional          |
+| `SQLiteArtifactStore` | Yes     | Yes   | Yes          | Optional          |
 
 ### `ArtifactFilter`
 

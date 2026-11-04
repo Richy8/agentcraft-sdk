@@ -4,13 +4,15 @@ Approvals make write-capable tools safe for production. A tool that declares `re
 
 ## How It Works
 
-1. A tool is defined with `security: { requiresConfirmation: true }`.
+1. A tool is defined with `requiresConfirmation: true`.
 2. When the model calls that tool, AgentCraft checks `ToolPolicy`:
    - If the tool name is in `approvedTools` — approved.
    - If `allowSideEffects: true` — approved globally.
    - If `onApprovalRequired` is provided — calls your callback and uses its return value.
    - Otherwise — denied, and a `ToolExecutionError` is thrown.
 3. An audit event fires: `approval_required`, then `approval_granted` or `approval_denied`.
+
+For durable approvals with reviewer assignment and expiry, use [Governance Queue](../production/governance-queue.md).
 
 ## Quick Start
 
@@ -19,14 +21,11 @@ import { Agent, Provider } from "@deskcreate/agentcraft";
 import { tool } from "@deskcreate/agentcraft/adapters";
 
 // Tool that requires explicit approval before executing
-const sendEmail = tool({
-  name: "send_email",
+const sendEmail = tool("send_email", {
   description: "Send an email to a customer.",
-  security: {
-    sideEffect: "write",
-    requiresConfirmation: true, // blocked by default
-    scopes: ["email:send"],
-  },
+  sideEffect: "write",
+  requiresConfirmation: true, // blocked by default
+  scopes: ["email:send"],
   params: {
     to: { type: "string", description: "Recipient email address." },
     subject: { type: "string", description: "Email subject." },
@@ -136,6 +135,34 @@ const agent = Agent.create({
 });
 ```
 
+### Governance Queue
+
+Use `ApprovalQueue` when the approval should be recorded and approved later.
+
+```ts
+import { Agent, ApprovalQueue, Provider } from "@deskcreate/agentcraft";
+
+const approvals = ApprovalQueue.memory({
+  defaultReviewer: "editor@example.com",
+  expiresInMs: 30 * 60 * 1000,
+});
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  toolPolicy: {
+    approvalQueue: approvals,
+  },
+});
+
+const pending = await approvals.list({ status: "pending" });
+await approvals.approve({
+  id: pending[0]!.id,
+  reviewer: "editor@example.com",
+  reason: "Safe to create a draft.",
+});
+```
+
 ### Audit Approval Events
 
 ```ts
@@ -190,10 +217,10 @@ const agent = Agent.create({
 import { Agent, Provider } from "@deskcreate/agentcraft";
 import { tool } from "@deskcreate/agentcraft/adapters";
 
-const deleteDraft = tool({
-  name: "delete_draft",
+const deleteDraft = tool("delete_draft", {
   description: "Permanently delete a draft.",
-  security: { sideEffect: "write", requiresConfirmation: true },
+  sideEffect: "write",
+  requiresConfirmation: true,
   params: { draftId: { type: "string", description: "Draft ID." } },
   run: async ({ draftId }) => drafts.delete(draftId),
 });

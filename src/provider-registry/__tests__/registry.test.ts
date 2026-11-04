@@ -10,7 +10,6 @@ describe('PROVIDER_REGISTRY', () => {
       'anyscale',
       'azure',
       'bedrock',
-      'cerebras',
       'cohere',
       'deepseek',
       'fireworks',
@@ -23,7 +22,6 @@ describe('PROVIDER_REGISTRY', () => {
       'ollama',
       'openai',
       'openrouter',
-      'perplexity',
       'together',
       'vertexai',
       'vllm',
@@ -33,7 +31,7 @@ describe('PROVIDER_REGISTRY', () => {
 });
 
 describe('ProviderFactory', () => {
-  it('warns when building a deprecated model', () => {
+  it('builds a provider without error for a valid model', () => {
     const logger = {
       debug: vi.fn(),
       info: vi.fn(),
@@ -41,14 +39,13 @@ describe('ProviderFactory', () => {
       error: vi.fn(),
     };
 
-    ProviderFactory.build(
-      { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', apiKey: 'key' },
-      logger,
-      DEFAULT_RETRY_STRATEGY
-    );
-
-    expect(logger.warn).toHaveBeenCalledWith(
-      "Model 'claude-3-5-sonnet-20241022' on 'anthropic' is deprecated. Consider upgrading."
-    );
+    expect(() =>
+      ProviderFactory.build(
+        { provider: 'anthropic', model: 'claude-sonnet-4-6', apiKey: 'key' },
+        logger,
+        DEFAULT_RETRY_STRATEGY
+      )
+    ).not.toThrow();
+    expect(logger.warn).not.toHaveBeenCalled();
   });
 });

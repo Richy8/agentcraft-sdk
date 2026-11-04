@@ -174,10 +174,9 @@ describe('live provider smoke tests', () => {
         temperature: 0,
         maxTokens: 24,
         tools: [
-          tool({
-            name: 'get_smoke_value',
+          tool('get_smoke_value', {
             description: 'Return the exact smoke-test value.',
-            security: { sideEffect: 'none' },
+            sideEffect: 'none',
             params: {},
             run: async () => {
               called = true;

@@ -4,7 +4,9 @@ import type { StreamChunk } from '../types/provider.types.js';
 import { Agent } from './agent.js';
 import type { AgentAdapter } from './adapters/types.js';
 import type {
+  AgentResponse,
   AgentRunParams,
+  CostReport,
   AgentTeamConfig,
   AgentTeamSpawnConfig,
   TeamMember,
@@ -39,6 +41,11 @@ interface NormalizedTeamConfig {
   roleBudgets: Record<string, NonNullable<AgentRunParams['budget']>>;
 }
 
+interface TeamCostAccumulator {
+  cost: number;
+  tokens: NonNullable<AgentResponse['tokensUsed']>;
+}
+
 export class AgentTeam {
   private readonly cleanupHandlers: { cleanup: () => void };
   private readonly sharedLifecycle: AgentAdapter[];
@@ -70,9 +77,6 @@ export class AgentTeam {
 
     if (config.workspace) {
       applyWorkspaceToAgents(config.workspace, allAgents);
-      for (const agent of allAgents) {
-        for (const skill of config.sharedSkills ?? []) agent.use(skill);
-      }
       if (config.sharedAdapters?.length) {
         console.warn(
           '[AgentCraft] AgentTeam: workspace is present; sharedAdapters is deprecated and has been ignored. Move adapters to workspace.adapters.',
@@ -86,10 +90,8 @@ export class AgentTeam {
     } else {
       for (const member of config.members) {
         for (const adapter of config.sharedAdapters ?? []) member.agent.use(adapter);
-        for (const skill of config.sharedSkills ?? []) member.agent.use(skill);
       }
       for (const adapter of config.sharedAdapters ?? []) config.orchestrator.use(adapter);
-      for (const skill of config.sharedSkills ?? []) config.orchestrator.use(skill);
       if (config.memory) config.orchestrator.use(config.memory);
     }
 
@@ -148,7 +150,7 @@ export class AgentTeam {
     await this.initSharedAdapters();
 
     const trace: TeamTrace[] = [];
-    const total = { cost: 0 };
+    const total = { cost: 0, tokens: { prompt: 0, completion: 0, total: 0 } };
     const agentsUsed = new Set<string>();
     const callCounts = new Map<string, number>();
     const parallelContext = this.config.executionHint === 'parallel'
@@ -164,7 +166,7 @@ export class AgentTeam {
       ...withBudget(this.roleBudget('orchestrator', params.budget)),
     });
     tracer.end(orchestratorSpan);
-    total.cost += finalResponse.cost;
+    addResponseToTotal(total, finalResponse);
     pushTrace(trace, traceInput === true, 1, 'orchestrator', resolvedPrompt, finalResponse);
 
     let rounds = 1;
@@ -177,7 +179,7 @@ export class AgentTeam {
         ...withBudget(this.roleBudget('orchestrator', params.budget)),
       });
       tracer.end(nextOrchestratorSpan);
-      total.cost += finalResponse.cost;
+      addResponseToTotal(total, finalResponse);
       pushTrace(trace, traceInput === true, rounds, 'orchestrator', finalResponse.content, finalResponse);
     }
 
@@ -188,6 +190,8 @@ export class AgentTeam {
     return {
       ...teamResponseBase,
       cost: total.cost,
+      tokensUsed: total.tokens,
+      costReport: teamCostReport(finalResponse, total),
       rounds,
       agentsUsed: agentsUsed.size,
       ...(traceInput ? { trace } : {}),
@@ -223,7 +227,7 @@ export class AgentTeam {
     round: number,
     trace: TeamTrace[],
     traceEnabled: boolean,
-    total: { cost: number },
+    total: TeamCostAccumulator,
     agentsUsed: Set<string>,
     callCounts: Map<string, number>,
     tracer?: RunTracer,
@@ -255,7 +259,7 @@ export class AgentTeam {
 
         try {
           const response = await member.agent.run({ prompt: input, ...withBudget(this.roleBudget(member.role)) });
-          total.cost += response.cost;
+          addResponseToTotal(total, response);
           agentsUsed.add(member.role);
           pushTrace(trace, traceEnabled, round, member.role, input, response);
           if (memberSpan) tracer!.end(memberSpan);
@@ -264,7 +268,7 @@ export class AgentTeam {
           if (this.config.onMemberError === 'fail') throw err;
           if (this.config.onMemberError === 'retry') {
             const response = await member.agent.run({ prompt: input, ...withBudget(this.roleBudget(member.role)) });
-            total.cost += response.cost;
+            addResponseToTotal(total, response);
             agentsUsed.add(member.role);
             pushTrace(trace, traceEnabled, round, member.role, input, response);
             if (memberSpan) tracer!.end(memberSpan);
@@ -282,7 +286,7 @@ export class AgentTeam {
     draft: TeamResponse | Awaited<ReturnType<Agent['run']>>,
     trace: TeamTrace[],
     traceEnabled: boolean,
-    total: { cost: number },
+    total: TeamCostAccumulator,
     tracer?: RunTracer,
     parentSpanId?: string
   ) {
@@ -329,6 +333,7 @@ export class AgentTeam {
       });
       if (supervisorSpan) tracer!.end(supervisorSpan);
       total.cost += supervisorResponse.cost;
+      addTokensToTotal(total, supervisorResponse.tokensUsed);
       pushTrace(trace, traceEnabled, review, 'supervisor', current.content, supervisorResponse);
 
       if (approved) return current;
@@ -340,7 +345,7 @@ export class AgentTeam {
         prompt: `Revise the final output using this supervisor feedback:\n${feedback}\n\nDraft:\n${current.content}`,
         ...withBudget(this.roleBudget('orchestrator')),
       });
-      total.cost += current.cost;
+      addResponseToTotal(total, current);
       pushTrace(trace, traceEnabled, review, 'orchestrator', feedback, current);
     }
 
@@ -373,7 +378,7 @@ export class AgentTeam {
     task: string,
     trace: TeamTrace[],
     traceEnabled: boolean,
-    total: { cost: number },
+    total: TeamCostAccumulator,
     agentsUsed: Set<string>,
     tracer: RunTracer,
     parentSpanId: string
@@ -383,7 +388,7 @@ export class AgentTeam {
       const span = tracer.start('team', `team.parallel.${member.role}`, { role: member.role }, parentSpanId);
       try {
         const response = await member.agent.run({ prompt: task, ...withBudget(this.roleBudget(member.role)) });
-        total.cost += response.cost;
+        addResponseToTotal(total, response);
         agentsUsed.add(member.role);
         pushTrace(trace, traceEnabled, 0, member.role, task, response);
         tracer.end(span);
@@ -548,11 +553,7 @@ function normalizeCreateConfig(config: AgentTeamConfig): NormalizedTeamConfig {
 
 function applyWorkspaceToAgents(workspace: AgentWorkspaceInstance, agents: Agent[]): void {
   for (const agent of agents) {
-    if (workspace.cache) agent.setCache(workspace.cache);
-    agent.setEventEmitter(workspace.events);
-    agent.mergeToolPolicy(workspace.toolPolicy);
-    for (const adapter of workspace.adapters) agent.use(adapter);
-    for (const mcp of workspace.mcps) agent.use(mcp);
+    agent.applyWorkspace(workspace);
   }
 }
 
@@ -590,6 +591,38 @@ function pushTrace(
     cost: response.cost,
     tokensUsed: response.tokensUsed,
   });
+}
+
+function addResponseToTotal(total: TeamCostAccumulator, response: AgentResponse): void {
+  total.cost += response.cost;
+  addTokensToTotal(total, response.tokensUsed);
+}
+
+function addTokensToTotal(total: TeamCostAccumulator, tokens: AgentResponse['tokensUsed']): void {
+  total.tokens = {
+    prompt: total.tokens.prompt + tokens.prompt,
+    completion: total.tokens.completion + tokens.completion,
+    total: total.tokens.total + tokens.total,
+  };
+}
+
+function teamCostReport(response: AgentResponse, total: TeamCostAccumulator): CostReport {
+  return {
+    scope: 'team',
+    provider: response.provider,
+    model: response.model,
+    tokens: { actual: total.tokens },
+    costs: {
+      actualModelCost: total.cost,
+      toolCostEstimate: 0,
+      searchCostEstimate: 0,
+      cacheSavingsEstimate: response.costReport?.costs.cacheSavingsEstimate ?? 0,
+      totalEstimate: total.cost,
+    },
+    ...(response.cache?.summary !== undefined && { cache: response.cache.summary }),
+    stalePricing: response.costReport?.stalePricing ?? false,
+    budgetMode: response.costReport?.budgetMode ?? 'fail-closed',
+  };
 }
 
 function toTeamTraceSink(trace: AgentRunParams['trace']): TraceSink | undefined {

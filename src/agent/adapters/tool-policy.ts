@@ -1,4 +1,9 @@
 import { ToolExecutionError } from '../../errors/index.js';
+import {
+  defaultSecretRedactionPatterns,
+  isSecretLikeKey,
+} from '../../security/secret-patterns.js';
+import type { ApprovalQueueController } from '../governance/index.js';
 import type { ToolDefinition } from './types.js';
 
 export interface ToolGuardrailContext {
@@ -18,6 +23,8 @@ export type ToolAuditEvent =
   | { type: 'approval_required'; toolName: string; sideEffect?: string }
   | { type: 'approval_granted'; toolName: string }
   | { type: 'approval_denied'; toolName: string }
+  | { type: 'approval_queued'; toolName: string; requestId: string; reviewer?: string; expiresAt?: string }
+  | { type: 'approval_expired'; toolName: string; requestId: string }
   | { type: 'tool_start'; toolName: string }
   | { type: 'tool_success'; toolName: string; resultBytes: number }
   | { type: 'tool_error'; toolName: string; error: string }
@@ -40,17 +47,12 @@ export interface ToolPolicy {
   };
   onAuditEvent?: (event: ToolAuditEvent) => void | Promise<void>;
   onApprovalRequired?: (context: ToolGuardrailContext) => boolean | Promise<boolean>;
+  approvalQueue?: ApprovalQueueController;
   inputGuardrails?: ToolGuardrail[];
   outputGuardrails?: ToolGuardrail[];
 }
 
-const DEFAULT_SECRET_PATTERNS = [
-  /(sk-[a-zA-Z0-9_-]{8,})/g,
-  /(Bearer\s+)[a-zA-Z0-9._-]+/g,
-  /(api[_-]?key["']?\s*[:=]\s*["']?)[^"',\s}]+/gi,
-  /(token["']?\s*[:=]\s*["']?)[^"',\s}]+/gi,
-  /(secret["']?\s*[:=]\s*["']?)[^"',\s}]+/gi,
-];
+const DEFAULT_SECRET_PATTERNS = defaultSecretRedactionPatterns();
 
 export async function enforceToolPolicy(
   toolDef: ToolDefinition,
@@ -60,6 +62,38 @@ export async function enforceToolPolicy(
   const approved = new Set(policy.approvedTools ?? []);
   if (toolDef.security?.requiresConfirmation && !policy.allowSideEffects && !approved.has(toolDef.name)) {
     await emit(policy, { type: 'approval_required', toolName: toolDef.name, sideEffect: toolDef.security.sideEffect });
+    if (policy.approvalQueue) {
+      const result = await policy.approvalQueue.requestApproval({
+        tool: toolDef,
+        args,
+      });
+      if (result.approved) {
+        await emit(policy, { type: 'approval_granted', toolName: toolDef.name });
+      } else {
+        if (result.request.status === 'expired') {
+          await emit(policy, {
+            type: 'approval_expired',
+            toolName: toolDef.name,
+            requestId: result.request.id,
+          });
+        } else {
+          await emit(policy, {
+            type: 'approval_queued',
+            toolName: toolDef.name,
+            requestId: result.request.id,
+            ...(result.request.reviewer !== undefined && { reviewer: result.request.reviewer }),
+            ...(result.request.expiresAt !== undefined && { expiresAt: result.request.expiresAt }),
+          });
+        }
+        throw new ToolExecutionError(`Tool '${toolDef.name}' queued for approval before execution`, {
+          toolName: toolDef.name,
+          sideEffect: toolDef.security.sideEffect,
+          scopes: toolDef.security.scopes,
+          approvalRequestId: result.request.id,
+          approvalStatus: result.request.status,
+        });
+      }
+    } else {
     const approvedByCallback = await policy.onApprovalRequired?.({ tool: toolDef, args });
     if (!approvedByCallback) {
       await emit(policy, { type: 'approval_denied', toolName: toolDef.name });
@@ -70,6 +104,7 @@ export async function enforceToolPolicy(
       });
     }
     await emit(policy, { type: 'approval_granted', toolName: toolDef.name });
+    }
   }
 
   if (policy.readOnly && (toolDef.security?.sideEffect === 'write' || toolDef.security?.requiresConfirmation)) {
@@ -158,17 +193,13 @@ export function redactSecrets(value: unknown, patterns: RegExp[] = DEFAULT_SECRE
   return Object.fromEntries(
     Object.entries(value as Record<string, unknown>).map(([key, item]) => [
       key,
-      isSecretKey(key) ? '[REDACTED]' : redactSecrets(item, patterns),
+      isSecretLikeKey(key) ? '[REDACTED]' : redactSecrets(item, patterns),
     ])
   );
 }
 
 function redactString(value: string, patterns: RegExp[]): string {
   return patterns.reduce((current, pattern) => current.replace(pattern, (_match, prefix?: string) => `${prefix ?? ''}[REDACTED]`), value);
-}
-
-function isSecretKey(key: string): boolean {
-  return /api[_-]?key|token|secret|password|authorization/i.test(key);
 }
 
 async function runGuardrails(

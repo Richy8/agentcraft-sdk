@@ -80,11 +80,11 @@ interface AgentImage {
 
 ### Tools
 
-| Field        | Default              | Purpose                                                                        |
-| ------------ | -------------------- | ------------------------------------------------------------------------------ |
-| `tools`      | Agent attached tools | Run-specific tool definitions (merged with agent-level tools).                 |
-| `use`        | None                 | Attach adapters, skills, or creator packs for this run only. Cleaned up after. |
-| `toolPolicy` | Agent policy         | Per-run override or merge of tool approval, guardrails, and limits.            |
+| Field        | Default              | Purpose                                                             |
+| ------------ | -------------------- | ------------------------------------------------------------------- |
+| `tools`      | Agent attached tools | Run-specific tool definitions (merged with agent-level tools).      |
+| `use`        | None                 | Attach adapters for this run only. Cleaned up after.                |
+| `toolPolicy` | Agent policy         | Per-run override or merge of tool approval, guardrails, and limits. |
 
 ### Structured Output
 
@@ -120,7 +120,7 @@ interface AgentImage {
 | `runId`              | `string`       | Unique run identifier for correlation.                                                           |
 | `trace`              | `unknown[]`    | Trace spans (only populated if `trace` was enabled).                                             |
 | `promptProvenance`   | `object`       | `{ source, promptFile?, assembled }` — how the prompt was resolved.                              |
-| `selection`          | `object`       | Which skills/tools were active: `activeSkills`, `exposedTools`, `executedToolCalls`.             |
+| `selection`          | `object`       | Which tools were active: `exposedTools`, `executedToolCalls`.                                    |
 | `cache`              | `object`       | Cache stats: `hits`, `misses`, `writes`, `bypassed`, `toolCallsAvoided`, `estimatedSavedTokens`. |
 
 ## Patterns
@@ -475,8 +475,7 @@ console.log(response.runId); // unique ID for this run
 console.log(response.promptProvenance?.source); // "inline" | "file"
 console.log(response.promptProvenance?.assembled); // true if vars/config were injected
 
-// Skill and tool selection metadata
-console.log(response.selection?.activeSkills); // which skills were active
+// Tool selection metadata
 console.log(response.selection?.exposedTools); // which tools were exposed
 console.log(response.selection?.executedToolCalls); // how many tool calls were made
 

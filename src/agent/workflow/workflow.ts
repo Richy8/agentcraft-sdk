@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import type { CostReport } from '../types.js';
 import { AgentWorkspace } from '../workspace.js';
+import type { AgentWorkspaceMetricsSnapshot } from '../workspace.js';
 import type {
   AgentWorkflowConfig,
   WorkflowContext,
@@ -23,6 +25,7 @@ export const AgentWorkflow = {
     async function run(options: WorkflowRunOptions<TInput>): Promise<WorkflowResult<TInput>> {
       const startTime = Date.now();
       const startedAt = new Date().toISOString();
+      const metricsStart = workspace.metrics.snapshot();
       const validatedInput = validateInput(workflowId, config, options.input);
       const previousSteps = options._resumeFrom?.completedSteps ?? [];
       const previousById = new Map(previousSteps.map((step) => [step.stepId, step]));
@@ -62,6 +65,7 @@ export const AgentWorkflow = {
         const result = await runOneStep(step, ctx, config);
         stepResults.push(result);
         ctx.steps[step.stepId] = result;
+        const metrics = diffMetrics(metricsStart, workspace.metrics.snapshot());
 
         if (ctx.store && runArtifactId) {
           await ctx.store.update(runArtifactId, {
@@ -77,6 +81,21 @@ export const AgentWorkflow = {
 
         if (result.status === 'failed') {
           workflowStatus = 'failed';
+          break;
+        }
+        if (
+          workspace.budget?.maxCost !== undefined &&
+          metrics.cost > workspace.budget.maxCost
+        ) {
+          workflowStatus = 'failed';
+          stepResults.push({
+            stepId: 'workflow-budget',
+            status: 'failed',
+            error: `Workflow budget maxCost exceeded (${metrics.cost} > ${workspace.budget.maxCost})`,
+            durationMs: 0,
+            cost: metrics.cost,
+            tokensUsed: metrics.tokensUsed,
+          });
           break;
         }
       }
@@ -98,6 +117,7 @@ export const AgentWorkflow = {
         });
       }
 
+      const metrics = diffMetrics(metricsStart, workspace.metrics.snapshot());
       return {
         runId,
         status: workflowStatus,
@@ -105,6 +125,8 @@ export const AgentWorkflow = {
         steps: stepResults,
         totalCost: sumCost(stepResults),
         durationMs: Date.now() - startTime,
+        metrics,
+        costReport: workflowCostReport(metrics),
       };
     }
 
@@ -181,6 +203,41 @@ async function runOneStep<TInput>(
   }
 }
 
+function workflowCostReport(metrics: AgentWorkspaceMetricsSnapshot): CostReport {
+  return {
+    scope: 'workflow',
+    provider: 'workflow',
+    model: 'aggregate',
+    tokens: { actual: metrics.tokensUsed },
+    costs: {
+      actualModelCost: metrics.cost,
+      toolCostEstimate: 0,
+      searchCostEstimate: 0,
+      cacheSavingsEstimate: 0,
+      totalEstimate: metrics.cost,
+    },
+    cache: {
+      lookups: metrics.cache.hits + metrics.cache.misses,
+      hitRate:
+        metrics.cache.hits + metrics.cache.misses === 0
+          ? 0
+          : metrics.cache.hits / (metrics.cache.hits + metrics.cache.misses),
+      missRate:
+        metrics.cache.hits + metrics.cache.misses === 0
+          ? 0
+          : metrics.cache.misses / (metrics.cache.hits + metrics.cache.misses),
+      avoidedCallRate:
+        metrics.cache.hits + metrics.cache.misses === 0
+          ? 0
+          : metrics.cache.hits / (metrics.cache.hits + metrics.cache.misses),
+      estimatedSavedTokens: 0,
+      estimatedCostSaved: 0,
+    },
+    stalePricing: false,
+    budgetMode: 'fail-closed',
+  };
+}
+
 function validateInput<TInput>(
   workflowId: string,
   config: AgentWorkflowConfig<TInput>,
@@ -196,4 +253,36 @@ function validateInput<TInput>(
 
 function sumCost(results: readonly WorkflowStepResult[]): number {
   return results.reduce((total, step) => total + (step.cost ?? 0), 0);
+}
+
+function diffMetrics(
+  before: AgentWorkspaceMetricsSnapshot,
+  after: AgentWorkspaceMetricsSnapshot,
+): AgentWorkspaceMetricsSnapshot {
+  return {
+    cost: after.cost - before.cost,
+    tokensUsed: {
+      prompt: after.tokensUsed.prompt - before.tokensUsed.prompt,
+      completion: after.tokensUsed.completion - before.tokensUsed.completion,
+      total: after.tokensUsed.total - before.tokensUsed.total,
+    },
+    cache: {
+      hits: after.cache.hits - before.cache.hits,
+      misses: after.cache.misses - before.cache.misses,
+      writes: after.cache.writes - before.cache.writes,
+    },
+    toolCalls: after.toolCalls - before.toolCalls,
+    artifacts: {
+      reads: after.artifacts.reads - before.artifacts.reads,
+      writes: after.artifacts.writes - before.artifacts.writes,
+      updates: after.artifacts.updates - before.artifacts.updates,
+      deletes: after.artifacts.deletes - before.artifacts.deletes,
+    },
+    memory: {
+      reads: after.memory.reads - before.memory.reads,
+      writes: after.memory.writes - before.memory.writes,
+      deletes: after.memory.deletes - before.memory.deletes,
+      blocked: after.memory.blocked - before.memory.blocked,
+    },
+  };
 }

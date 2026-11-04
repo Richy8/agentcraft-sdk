@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import type { ArtifactFilter, ArtifactHistory, ArtifactRef, ArtifactStore } from './types.js';
+import type { ArtifactFilter, ArtifactHistory, ArtifactLink, ArtifactRef, ArtifactStore } from './types.js';
+import type { ArtifactValidationOptions } from './validation.js';
+import { validateArtifactForStore } from './validation.js';
 
 /** Create an in-memory ArtifactStore with revision history for tests and short-lived runs. */
-export function MemoryArtifactStore(): ArtifactStore {
+export function MemoryArtifactStore(options: ArtifactValidationOptions = {}): ArtifactStore {
   const store = new Map<string, Map<string, unknown>>();
   const history = new Map<string, ArtifactHistory[]>();
-  const links = new Map<string, ArtifactRef[]>();
+  const links = new Map<string, ArtifactLink[]>();
 
   function getTypeMap(type: string): Map<string, unknown> {
     const existing = store.get(type);
@@ -31,6 +33,7 @@ export function MemoryArtifactStore(): ArtifactStore {
     async put(type: string, artifact: unknown): Promise<string> {
       const id = randomUUID();
       const entry = makeArtifactEntry(type, id, artifact);
+      validateArtifactForStore(type, entry, options);
       getTypeMap(type).set(id, entry);
       recordHistory(type, id, entry);
       return id;
@@ -45,17 +48,27 @@ export function MemoryArtifactStore(): ArtifactStore {
     },
 
     async update(id: string, patch: unknown): Promise<void> {
+      let matched = 0;
+      let match: { type: string; typeMap: Map<string, unknown> } | undefined;
       for (const typeMap of store.values()) {
         if (!typeMap.has(id)) continue;
-        const existing = typeMap.get(id);
-        const existingRecord = asRecord(existing);
-        const type = String(existingRecord.type);
-        const updated = { ...existingRecord, ...asRecord(patch) };
-        typeMap.set(id, updated);
-        recordHistory(type, id, updated);
-        return;
+        matched += 1;
+        const existingRecord = asRecord(typeMap.get(id));
+        match = { type: String(existingRecord.type), typeMap };
       }
+      if (matched > 1) throw new Error(`ArtifactStore: artifact id '${id}' is ambiguous; use updateByType(type, id, patch)`);
+      if (match) return await this.updateByType(match.type, id, patch);
       throw new Error(`ArtifactStore: artifact '${id}' not found`);
+    },
+
+    async updateByType(type: string, id: string, patch: unknown): Promise<void> {
+      const typeMap = getTypeMap(type);
+      const existing = typeMap.get(id);
+      if (existing === undefined) throw new Error(`ArtifactStore: artifact '${type}:${id}' not found`);
+      const updated = { ...asRecord(existing), ...asRecord(patch), id, type };
+      validateArtifactForStore(type, updated, options);
+      typeMap.set(id, updated);
+      recordHistory(type, id, updated);
     },
 
     async delete(type: string, id: string): Promise<boolean> {
@@ -73,8 +86,23 @@ export function MemoryArtifactStore(): ArtifactStore {
     async link(source: ArtifactRef, target: ArtifactRef): Promise<void> {
       const key = artifactKey(source.type, source.id);
       const existing = links.get(key) ?? [];
-      existing.push(target);
+      existing.push({ source, target });
       links.set(key, existing);
+    },
+
+    async listLinks(source?: ArtifactRef): Promise<ArtifactLink[]> {
+      if (source) return links.get(artifactKey(source.type, source.id)) ?? [];
+      return [...links.values()].flat();
+    },
+
+    capabilities() {
+      return {
+        history: true,
+        links: true,
+        transactions: false,
+        schemaValidation: options.validateSchemas === true,
+        concurrentWrites: true,
+      };
     },
   };
 }

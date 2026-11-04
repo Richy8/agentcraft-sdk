@@ -1,45 +1,37 @@
 # Creator Memory
 
-Creator memory persists brand voice and prior-work corpus context.
+`FileSystemCreatorMemoryStore` and `CreatorResourcesAdapter` were removed in **v0.3.0**.
 
-## Quick Start
+Use [AgentMemory](../persistence/semantic-memory.md) for cross-run fact persistence, and [Skills](../skills/overview.md) to inject brand voice and content constraints at run time.
 
 ```ts
-import { Agent, Provider } from "@deskcreate/agentcraft";
-import { CreatorResourcesAdapter } from "@deskcreate/agentcraft/adapters";
-import { CreatorPacks } from "@deskcreate/agentcraft/packs";
-import { FileSystemCreatorMemoryStore } from "@deskcreate/agentcraft";
+import { Agent, AgentMemory, Provider } from "@deskcreate/agentcraft";
+import { Skill } from "@deskcreate/agentcraft/skills";
 
-const memory = new FileSystemCreatorMemoryStore(".agentcraft/memory");
+// Persist facts across runs with semantic memory
+const memory = AgentMemory.create({ backend: "local" });
 
-await memory.upsertBrandVoice({
-  id: "default",
-  tone: "practical and evidence-led",
+// Inject brand voice and constraints via a skill
+const brandVoice = Skill.define({
+  name: "brand-voice",
+  description: "Applies tone: practical, direct, evidence-led.",
+  instructions: "Lead with the claim. Active voice. No filler.",
 });
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
   apiKey: process.env.OPENAI_API_KEY!,
-})
-  .use(CreatorPacks.blog())
-  .use(CreatorResourcesAdapter.connect({ memoryStore: memory }));
+  memory,
+}).use(brandVoice);
+
+await agent.run({
+  prompt: "Remember: our primary audience is engineering leads.",
+});
 
 const response = await agent.run({
-  prompt: "Draft a post using our brand voice.",
+  prompt: "Draft a post about our caching strategy update.",
 });
 console.log(response.content);
 ```
 
-## Config
-
-| Field            | Default          | Purpose                        |
-| ---------------- | ---------------- | ------------------------------ |
-| `root`           | `content/memory` | Filesystem storage root.       |
-| brand voice `id` | Required         | Profile identifier.            |
-| corpus `tags`    | Required array   | Retrieval filters and context. |
-| search `limit`   | `5`              | Max results.                   |
-
-## More
-
-- [Creator Memory And Analytics](../creator/analytics.md)
-- [Creator Memory Store](../persistence/creator-memory-store.md)
+See [Semantic Memory](../persistence/semantic-memory.md) for backend options (Qdrant, Pinecone, Supabase) and [Skills](../skills/overview.md) for tone, format, and output contracts.

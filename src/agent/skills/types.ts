@@ -1,140 +1,83 @@
-import type { StreamChunk } from '../../types/provider.types.js';
-import type { AgentAdapter, ToolDefinition } from '../adapters/types.js';
-import type { CreatorSkillManifest } from '../creator/types.js';
-import type { AgentResponse, AgentRunParams } from '../types.js';
-
-export type AdapterRef =
-  | (new (...args: never[]) => AgentAdapter)
-  | AgentAdapter
-  | { readonly adapterName?: string; readonly skillName?: string; connect?: (...args: never[]) => AgentAdapter };
-
-export interface AgentSkill extends AgentAdapter {
-  readonly type: 'skill';
-  readonly description: string;
-  readonly directive?: string;
-  readonly dependsOn?: (AdapterRef | AdapterRef[])[];
-  readonly skillMetadata?: SkillMetadata;
-  systemPromptExtension?: string | (() => string);
-}
-
-export interface SkillPromptTemplate {
-  role: string;
-  goal: string;
-  constraints: string[];
-  toolUsePolicy: string[];
-  outputFormat: string[];
-  qualityChecklist: string[];
-  failureBehavior: string[];
-  safetyNotes: string[];
-}
-
-export interface SkillMetadata {
-  requiredCapabilities: AgentAdapter['requires'];
-  requiredAdapters: string[];
-  optionalAdapters: string[];
-  stateful: boolean;
-  sideEffectRisk: 'none' | 'read' | 'write' | 'external';
-  promptVersion: string;
-  creator?: CreatorSkillManifest;
-}
-
-export interface DefineSkillConfig {
+export interface SkillFrontmatter {
   name: string;
   description: string;
-  directive?: string;
-  requires?: AgentAdapter['requires'];
-  dependsOn?: AgentSkill['dependsOn'];
-  metadata?: SkillMetadata;
-  prompt?: SkillPromptTemplate;
-  systemPromptExtension?: string | (() => string);
-  tools?: ToolDefinition[];
-  init?: () => Promise<void>;
-  cleanup?: () => Promise<void>;
-  onBeforeRun?: (params: AgentRunParams) => AgentRunParams | Promise<AgentRunParams>;
-  onAfterRun?: (response: AgentResponse) => AgentResponse | Promise<AgentResponse>;
-  onAfterStream?: (chunks: StreamChunk[], response: AgentResponse) => AgentResponse | Promise<AgentResponse>;
+  version?: number;
 }
 
-export function defineSkill(config: DefineSkillConfig): AgentSkill {
-  const systemPromptExtension = config.systemPromptExtension ?? (config.prompt ? buildSkillPrompt(config.name, config.prompt) : undefined);
-  return {
-    type: 'skill',
-    name: config.name,
-    description: config.description,
-    requires: config.requires ?? ['tools'],
-    ...(config.directive !== undefined && { directive: config.directive }),
-    ...(config.dependsOn !== undefined && { dependsOn: config.dependsOn }),
-    ...(config.metadata !== undefined && { skillMetadata: config.metadata }),
-    ...(systemPromptExtension !== undefined && { systemPromptExtension }),
-    ...(config.tools !== undefined && {
-      declaredToolNames: config.tools.map((item) => item.name),
-      getTools: () => config.tools!,
-    }),
-    ...(config.init !== undefined && { init: config.init }),
-    ...(config.cleanup !== undefined && { cleanup: config.cleanup }),
-    ...(config.onBeforeRun !== undefined && { onBeforeRun: config.onBeforeRun }),
-    ...(config.onAfterRun !== undefined && { onAfterRun: config.onAfterRun }),
-    ...(config.onAfterStream !== undefined && { onAfterStream: config.onAfterStream }),
-  };
+export enum SkillLevel {
+  Metadata = 1,
+  Instructions = 2,
+  Files = 3,
 }
 
-export function buildSkillPrompt(name: string, prompt: SkillPromptTemplate): string {
-  validateSkillPromptTemplate(name, prompt);
-  return [
-    `# Skill: ${name}`,
-    '',
-    '## Role',
-    prompt.role,
-    '',
-    '## Goal',
-    prompt.goal,
-    '',
-    '## Constraints',
-    formatList(prompt.constraints),
-    '',
-    '## Tool Use Policy',
-    formatList(prompt.toolUsePolicy),
-    '',
-    '## Output Format',
-    formatList(prompt.outputFormat),
-    '',
-    '## Quality Checklist',
-    formatList(prompt.qualityChecklist),
-    '',
-    '## Failure Behavior',
-    formatList(prompt.failureBehavior),
-    '',
-    '## Safety Notes',
-    formatList(prompt.safetyNotes),
-  ].join('\n');
+export interface SkillDefinition {
+  name: string;
+  description: string;
+  instructions?: string;
+  files?: Record<string, string>;
+  version: number;
 }
 
-export function validateSkillPromptTemplate(name: string, prompt: SkillPromptTemplate): void {
-  const sections: Array<[keyof SkillPromptTemplate, string]> = [
-    ['role', 'Role'],
-    ['goal', 'Goal'],
-    ['constraints', 'Constraints'],
-    ['toolUsePolicy', 'Tool Use Policy'],
-    ['outputFormat', 'Output Format'],
-    ['qualityChecklist', 'Quality Checklist'],
-    ['failureBehavior', 'Failure Behavior'],
-    ['safetyNotes', 'Safety Notes'],
-  ];
+const VALID_NAME = /^[a-z0-9-]+$/;
+const NO_XML = /<[^>]+>/;
 
-  for (const [key, label] of sections) {
-    const value = prompt[key];
-    if (typeof value === 'string') {
-      if (value.trim().length === 0) {
-        throw new Error(`Skill '${name}' is missing required prompt section '${label}'`);
-      }
-      continue;
-    }
-    if (value.length === 0 || value.some((item) => item.trim().length === 0)) {
-      throw new Error(`Skill '${name}' is missing required prompt section '${label}'`);
-    }
+export function validateSkillName(name: string): void {
+  if (!VALID_NAME.test(name)) {
+    throw new Error(
+      `Skill name '${name}' is invalid. Must match /^[a-z0-9-]+$/.`,
+    );
+  }
+  if (name.length > 64) {
+    throw new Error(
+      `Skill name '${name}' exceeds 64 characters.`,
+    );
   }
 }
 
-function formatList(items: string[]): string {
-  return items.map((item) => `- ${item}`).join('\n');
+export function validateSkillDescription(description: string): void {
+  if (!description || description.trim() === '') {
+    throw new Error('Skill description must not be empty.');
+  }
+  if (description.length > 1024) {
+    throw new Error(
+      `Skill description exceeds 1024 characters (got ${description.length}).`,
+    );
+  }
+  if (NO_XML.test(description)) {
+    throw new Error('Skill description must not contain XML/HTML tags.');
+  }
+}
+
+export function parseFrontmatter(raw: string): { frontmatter: SkillFrontmatter; body: string } {
+  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+  if (!match) {
+    throw new Error(
+      'SKILL.md must start with a YAML frontmatter block delimited by ---',
+    );
+  }
+  const yamlBlock = match[1] ?? '';
+  const body = match[2] ?? '';
+  const fm: Record<string, unknown> = {};
+  for (const line of yamlBlock.split('\n')) {
+    const sep = line.indexOf(':');
+    if (sep === -1) continue;
+    const key = line.slice(0, sep).trim();
+    const value = line.slice(sep + 1).trim().replace(/^["']|["']$/g, '');
+    if (key) fm[key] = value;
+  }
+  if (typeof fm['name'] !== 'string' || !fm['name']) {
+    throw new Error("SKILL.md frontmatter must include a 'name' field.");
+  }
+  if (typeof fm['description'] !== 'string' || !fm['description']) {
+    throw new Error("SKILL.md frontmatter must include a 'description' field.");
+  }
+  const version = fm['version'] !== undefined ? Number(fm['version']) : 1;
+  const frontmatter: SkillFrontmatter = {
+    name: fm['name'] as string,
+    description: fm['description'] as string,
+    version: isNaN(version) ? 1 : version,
+  };
+  validateSkillName(frontmatter.name);
+  validateSkillDescription(frontmatter.description);
+  return { frontmatter, body: body.trim() };
 }

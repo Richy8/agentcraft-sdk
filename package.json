@@ -1,10 +1,10 @@
 {
   "name": "@deskcreate/agentcraft",
-  "version": "0.2.0",
-  "description": "Production-grade TypeScript agent runtime with provider routing, tools, MCP, skills, workflows, structured output, streaming, budgets, and observability.",
+  "version": "0.3.0",
+  "description": "Production-grade TypeScript agent runtime with provider routing, tools, MCP, workflows, structured output, streaming, budgets, caching, durable artifacts, and observability.",
   "type": "module",
   "license": "MIT",
-  "author": "AgentCraft contributors",
+  "author": "Efemena Elvis Ariawhorai (https://github.com/Richy8)",
   "keywords": [
     "ai",
     "agent",
@@ -30,7 +30,7 @@
     "url": "https://github.com/Richy8/agentcraft-sdk/issues"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.12.0"
   },
   "files": [
     "dist",
@@ -49,14 +49,6 @@
       "import": "./dist/adapters.js",
       "types": "./dist/adapters.d.ts"
     },
-    "./skills": {
-      "import": "./dist/skills.js",
-      "types": "./dist/skills.d.ts"
-    },
-    "./packs": {
-      "import": "./dist/packs.js",
-      "types": "./dist/packs.d.ts"
-    },
     "./mcp": {
       "import": "./dist/mcp.js",
       "types": "./dist/mcp.d.ts"
@@ -64,6 +56,10 @@
     "./team": {
       "import": "./dist/team.js",
       "types": "./dist/team.d.ts"
+    },
+    "./skills": {
+      "import": "./dist/skills.js",
+      "types": "./dist/skills.d.ts"
     }
   },
   "scripts": {
@@ -74,20 +70,23 @@
     "examples:check": "node ./scripts/check-examples.mjs",
     "examples:typecheck": "node ./scripts/typecheck-public-examples.mjs",
     "test": "vitest run",
-    "test:skills": "vitest run src/agent/skills/__tests__/creator-skills.test.ts src/agent/skills/__tests__/skill-quality-benchmark.test.ts src/agent/skills/__tests__/skill-comparison.test.ts src/agent/skills/__tests__/skills.test.ts src/agent/packs/__tests__/packs.test.ts",
+    "benchmark:mock": "vitest run src/agent/__tests__/benchmark.test.ts",
+    "benchmark:live:light": "INTEGRATION_TESTS=true AGENTCRAFT_LIVE_BENCHMARKS=true AGENTCRAFT_LIVE_PROVIDERS=openai vitest run --config vitest.integration.config.ts src/__tests__/integration/live-cost-cache-benchmark.test.ts",
     "test:watch": "vitest",
     "test:int": "INTEGRATION_TESTS=true vitest run --config vitest.integration.config.ts",
     "test:int:light": "INTEGRATION_TESTS=true AGENTCRAFT_LIVE_PROVIDERS=openai vitest run --config vitest.integration.config.ts",
     "test:int:full": "INTEGRATION_TESTS=true AGENTCRAFT_LIVE_FULL=true AGENTCRAFT_LIVE_PROVIDERS=all vitest run --config vitest.integration.config.ts",
-    "test:int:skills": "INTEGRATION_TESTS=true AGENTCRAFT_LIVE_SKILLS_CERTIFICATION=true AGENTCRAFT_LIVE_SKILLS_PROVIDERS=openai vitest run --config vitest.integration.config.ts src/__tests__/integration/live-skills-certification.test.ts",
-    "test:int:skills:full": "INTEGRATION_TESTS=true AGENTCRAFT_LIVE_SKILLS_CERTIFICATION=true AGENTCRAFT_LIVE_SKILLS_PROVIDERS=all vitest run --config vitest.integration.config.ts src/__tests__/integration/live-skills-certification.test.ts",
+    "test:int:certify": "INTEGRATION_TESTS=true AGENTCRAFT_LIVE_FULL_CERTIFICATION=true AGENTCRAFT_LIVE_PROVIDERS=openai vitest run --config vitest.integration.config.ts src/__tests__/integration/live-full-feature-certification.test.ts",
+    "test:int:infra": "INTEGRATION_TESTS=true AGENTCRAFT_LIVE_FULL_CERTIFICATION=true AGENTCRAFT_LIVE_PROVIDERS=openai vitest run --config vitest.integration.config.ts src/__tests__/integration/live-infrastructure-certification.test.ts",
+    "test:int:certify:all": "INTEGRATION_TESTS=true AGENTCRAFT_LIVE_FULL_CERTIFICATION=true AGENTCRAFT_LIVE_PROVIDERS=openai vitest run --config vitest.integration.config.ts src/__tests__/integration/live-full-feature-certification.test.ts src/__tests__/integration/live-infrastructure-certification.test.ts",
     "exports:smoke": "node ./scripts/smoke-exports.mjs",
     "package:size": "node ./scripts/package-size.mjs",
     "audit:ci": "node ./scripts/audit-ci.mjs",
     "release:check": "npm run typecheck && npm test && npm run build && npm run examples:check && npm run examples:typecheck && npm run exports:smoke && npm run package:size && npm run docs:build && npm run format:check && npm run audit:ci",
     "docs:api": "typedoc --options typedoc.json",
+    "docs:api:check": "node ./scripts/check-docs-api-output.mjs",
     "docs:dev": "vitepress dev docs --host 127.0.0.1",
-    "docs:build": "npm run docs:api && vitepress build docs",
+    "docs:build": "npm run docs:api && npm run docs:api:check && vitepress build docs",
     "docs:preview": "vitepress preview docs --host 127.0.0.1",
     "clean": "rm -rf dist",
     "graph:update": "graphify update .",
@@ -101,27 +100,40 @@
     "@aws-sdk/client-bedrock-runtime": "^3.0.0",
     "@google/genai": "^1.0.0",
     "cohere-ai": "^7.0.0",
-    "openai": "^4.0.0",
-    "zod": "^3.22.0"
+    "openai": "^6.49.0",
+    "zod": "^4.6.7"
   },
   "peerDependencies": {
-    "better-sqlite3": ">=9.0.0"
+    "better-sqlite3": ">=9.0.0",
+    "pg": ">=8.0.0",
+    "redis": ">=4.0.0"
   },
   "peerDependenciesMeta": {
     "better-sqlite3": {
       "optional": true
+    },
+    "pg": {
+      "optional": true
+    },
+    "redis": {
+      "optional": true
     }
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^22.0.0",
     "playwright": "^1.59.1",
     "prettier": "^3.8.3",
     "typedoc": "^0.28.19",
     "typescript": "^5.4.0",
     "vitepress": "^1.6.3",
-    "vitest": "^4.1.5"
+    "vitest": "^5.1.0"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "overrides": {
+    "vitepress": {
+      "vite": "^6.4.5"
+    }
   }
 }

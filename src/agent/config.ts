@@ -2,10 +2,12 @@ import { z } from 'zod';
 import { ProviderConfigSchema } from '../provider-registry/schema.js';
 import type { Logger } from '../types/logger.js';
 import type { ToolDefinition } from '../protocols/types.js';
-import type { ResponseFormat, RetryConfig } from './types.js';
+import type { PromptCompressionMode, ReasoningEffort, ResponseFormat, RetryConfig } from './types.js';
 import type { ToolPolicy } from './adapters/tool-policy.js';
 import type { ProviderModel } from './provider-catalog.js';
 import type { AgentCacheController } from './creator/types.js';
+import type { AgentMemoryStore } from './memory/index.js';
+import type { AgentWorkspaceInstance } from './workspace.js';
 
 export interface AgentCreateConfig {
   model: ProviderModel | (string & {});
@@ -35,8 +37,11 @@ export interface AgentCreateConfig {
   location?: string;
   baseUrl?: string;
   cache?: AgentCacheController;
-  skillActivation?: 'always' | 'auto' | 'directive-only';
+  memory?: AgentMemoryStore;
+  workspace?: AgentWorkspaceInstance;
   toolSelection?: 'all' | 'auto';
+  promptCompression?: PromptCompressionMode;
+  reasoning?: ReasoningEffort;
 }
 
 export const AGENT_DEFAULTS = {
@@ -50,8 +55,8 @@ export const AGENT_DEFAULTS = {
     maxDelay: 60_000,
   },
   tools: [],
-  skillActivation: 'always',
   toolSelection: 'all',
+  promptCompression: 'none',
 } satisfies Partial<AgentCreateConfig>;
 
 const retrySchema = z.object({
@@ -75,8 +80,11 @@ const agentLevelSchema = z.object({
   retry: retrySchema.optional(),
   toolPolicy: z.custom<ToolPolicy>().optional(),
   cache: z.custom<AgentCacheController>().optional(),
-  skillActivation: z.enum(['always', 'auto', 'directive-only']).optional(),
+  memory: z.custom<AgentMemoryStore>().optional(),
+  workspace: z.custom<AgentWorkspaceInstance>().optional(),
   toolSelection: z.enum(['all', 'auto']).optional(),
+  promptCompression: z.enum(['none', 'safe', 'balanced', 'aggressive']).optional(),
+  reasoning: z.enum(['none', 'low', 'medium', 'high', 'xhigh']).optional(),
 });
 
 export const AgentConfigSchema = ProviderConfigSchema.and(agentLevelSchema);

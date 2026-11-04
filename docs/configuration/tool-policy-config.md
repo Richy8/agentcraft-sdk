@@ -16,6 +16,7 @@
 | `secretPatterns`     | Built-in set    | Additional regex patterns for secret redaction (used with `redactSecrets`).     |
 | `guardrailMode`      | `"enforce"`     | `"enforce"` blocks tool calls that fail guardrails; `"warn"` logs and proceeds. |
 | `retry`              | None            | `{ attempts: number, delayMs?: number }` — retry failed tool calls.             |
+| `approvalQueue`      | None            | Durable approval queue for confirmation-gated write/external tools.             |
 | `onApprovalRequired` | Deny by default | `(context) => boolean` callback for dynamic per-call approval decisions.        |
 | `onAuditEvent`       | None            | Callback fired for every tool audit event (called, approved, denied, etc.).     |
 | `inputGuardrails`    | `[]`            | `ToolGuardrail[]` run before tool execution — block unsafe inputs.              |
@@ -29,7 +30,7 @@ Block all write and side-effectful tools.
 
 ```ts
 import { Agent, Provider } from "@deskcreate/agentcraft";
-import { FileSystemAdapter } from "@deskcreate/agentcraft/adapters";
+import { FetchAdapter } from "@deskcreate/agentcraft/adapters";
 
 const agent = Agent.create({
   model: Provider.openai["gpt-4o-mini"],
@@ -37,10 +38,10 @@ const agent = Agent.create({
   toolPolicy: {
     readOnly: true, // blocks all write and confirmation-gated tools
   },
-}).use(FileSystemAdapter.connect({ rootPath: "./docs", readOnly: true }));
+}).use(FetchAdapter.connect({ allowedDomains: ["docs.example.com"] }));
 
 const response = await agent.run({
-  prompt: "List all markdown files in docs.",
+  prompt: "Fetch the latest changelog from docs.example.com.",
 });
 console.log(response.content);
 ```
@@ -83,6 +84,29 @@ const agent = Agent.create({
   },
 });
 ```
+
+### Governance Queue
+
+Queue approval requests instead of resolving them inline.
+
+```ts
+import { Agent, ApprovalQueue, Provider } from "@deskcreate/agentcraft";
+
+const approvals = ApprovalQueue.memory({
+  defaultReviewer: "ops@example.com",
+  requireReason: true,
+});
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  toolPolicy: {
+    approvalQueue: approvals,
+  },
+});
+```
+
+The existing `onApprovalRequired` callback still works when no queue is configured.
 
 ### Secret Redaction
 

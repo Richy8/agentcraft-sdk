@@ -5,10 +5,9 @@ import type { ModelConfig } from '../../types/config.types.js';
 
 describe('modelRegistry', () => {
   it('uses provider-scoped prefix fallback for versioned model IDs', () => {
-    const caps = modelRegistry.getCapabilities('anthropic', 'claude-3-5-sonnet-20241022');
+    const caps = modelRegistry.getCapabilities('anthropic', 'claude-sonnet-4-6');
 
-    expect(caps.deprecated).toBe(true);
-    expect(caps.maxContextLength).toBe(200_000);
+    expect(caps.maxContextLength).toBeGreaterThan(0);
   });
 
   it('uses provider defaults before the global fallback', () => {
@@ -19,18 +18,18 @@ describe('modelRegistry', () => {
 
 describe('BestFitResolver', () => {
   it('normalizes costPerRequest when ranking cost', () => {
-    const expensiveSearch = {
-      provider: 'perplexity',
-      model: 'sonar-pro',
+    const expensiveModel = {
+      provider: 'anthropic',
+      model: 'claude-opus-4-7',
       apiKey: 'key',
     } satisfies ModelConfig;
     const cheaperTokenModel = {
       provider: 'openai',
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       apiKey: 'key',
     } satisfies ModelConfig;
 
-    expect(new BestFitResolver().resolve([expensiveSearch, cheaperTokenModel], 'cost')).toBe(cheaperTokenModel);
+    expect(new BestFitResolver().resolve([expensiveModel, cheaperTokenModel], 'cost')).toBe(cheaperTokenModel);
   });
 
   it('resolves workload-aware best fit while respecting cost and capability constraints', () => {

@@ -11,6 +11,10 @@ export interface AgentEventMap {
     toolName: string;
     key: string;
   };
+  'cache.write': {
+    toolName: string;
+    key: string;
+  };
   'cost.updated': {
     model: string;
     provider: string;
@@ -31,6 +35,16 @@ export interface AgentEventMap {
   'approval.denied': {
     toolName: string;
   };
+  'approval.queued': {
+    toolName: string;
+    requestId: string;
+    reviewer?: string;
+    expiresAt?: string;
+  };
+  'approval.expired': {
+    toolName: string;
+    requestId: string;
+  };
   'workflow.step.started': {
     stepId: string;
     type: string;
@@ -47,6 +61,34 @@ export interface AgentEventMap {
     type: string;
     id: string;
     operation: 'put' | 'update' | 'delete';
+  };
+  'memory.read': {
+    query?: string;
+    scopes?: readonly string[];
+    count: number;
+    maxContextChars?: number;
+    provider?: string;
+    connection?: string;
+  };
+  'memory.write': {
+    id: string;
+    scope: string;
+    operation: 'add';
+    source?: string;
+    provider?: string;
+    connection?: string;
+  };
+  'memory.delete': {
+    id: string;
+    scope?: string;
+    provider?: string;
+    connection?: string;
+  };
+  'memory.blocked': {
+    operation: 'write' | 'delete';
+    scope?: string;
+    reason: string;
+    preview?: string;
   };
 }
 
@@ -66,8 +108,12 @@ export interface AgentEventEmitter {
   emit<K extends AgentEventType>(event: K, data: AgentEventMap[K]): void;
 }
 
+export interface AgentEventEmitterOptions {
+  readonly onHandlerError?: (error: unknown, context: { event: AgentEventType }) => void;
+}
+
 /** Create a lightweight event emitter whose handler errors are isolated. */
-export function createAgentEventEmitter(): AgentEventEmitter {
+export function createAgentEventEmitter(options: AgentEventEmitterOptions = {}): AgentEventEmitter {
   const handlers = new Map<AgentEventType, Set<(data: unknown) => void>>();
 
   return {
@@ -92,7 +138,8 @@ export function createAgentEventEmitter(): AgentEventEmitter {
       for (const handler of handlers.get(event) ?? []) {
         try {
           handler(data);
-        } catch {
+        } catch (error) {
+          options.onHandlerError?.(error, { event });
           // Event subscribers are observers; they must not break an agent run.
         }
       }

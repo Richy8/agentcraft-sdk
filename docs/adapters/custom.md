@@ -9,10 +9,10 @@ import { Agent, Provider } from "@deskcreate/agentcraft";
 import { createAdapter, tool } from "@deskcreate/agentcraft/adapters";
 
 // Define tools
-const lookupOrder = tool({
-  name: "lookup_order",
+const lookupOrder = tool("lookup_order", {
   description: "Look up order status by ID.",
-  security: { sideEffect: "read", scopes: ["orders:read"] },
+  sideEffect: "read",
+  scopes: ["orders:read"],
   params: {
     orderId: { type: "string", description: "Order ID." },
   },
@@ -69,10 +69,9 @@ console.log(response.content);
 ```ts
 import { createAdapter, tool } from "@deskcreate/agentcraft/adapters";
 
-const getWeather = tool({
-  name: "get_weather",
+const getWeather = tool("get_weather", {
   description: "Get current weather for a city.",
-  security: { sideEffect: "external" },
+  sideEffect: "external",
   params: {
     city: { type: "string", description: "City name." },
     units: {
@@ -100,22 +99,19 @@ export const WeatherAdapter = createAdapter({
 ```ts
 import { createAdapter, tool } from "@deskcreate/agentcraft/adapters";
 
-const getTicket = tool({
-  name: "get_ticket",
+const getTicket = tool("get_ticket", {
   description: "Fetch a support ticket by ID.",
-  security: { sideEffect: "read", scopes: ["tickets:read"] },
+  sideEffect: "read",
+  scopes: ["tickets:read"],
   params: { ticketId: { type: "string", description: "Ticket ID." } },
   run: async ({ ticketId }) => tickets.get(ticketId),
 });
 
-const updateTicketStatus = tool({
-  name: "update_ticket_status",
+const updateTicketStatus = tool("update_ticket_status", {
   description: "Update the status of a ticket.",
-  security: {
-    sideEffect: "write",
-    requiresConfirmation: true,
-    scopes: ["tickets:write"],
-  },
+  sideEffect: "write",
+  requiresConfirmation: true,
+  scopes: ["tickets:write"],
   params: {
     ticketId: { type: "string", description: "Ticket ID." },
     status: {
@@ -148,12 +144,11 @@ import { createAdapter, tool } from "@deskcreate/agentcraft/adapters";
 
 let client: DatabaseClient;
 
-const queryRecords = tool({
-  name: "query_records",
+const queryRecords = tool("query_records", {
   description: "Run a safe read query.",
-  security: { sideEffect: "read" },
+  sideEffect: "read",
   params: { query: { type: "string", description: "SQL SELECT statement." } },
-  run: async ({ query }) => client.query(query), // uses the shared client
+  run: async ({ query }) => client.query(query),
 });
 
 export const DatabaseAdapter = createAdapter({
@@ -248,14 +243,13 @@ export const CostTrackingAdapter = createAdapter({
   metadata: { kind: "custom", auth: "none" },
 
   onAfterRun: async (response: AgentResponse): Promise<AgentResponse> => {
-    // Log cost to your billing system
     await billing.record({
       model: response.model,
       tokens: response.tokensUsed.total,
       cost: response.cost,
       runId: response.runId,
     });
-    return response; // must return the response unchanged (or enriched)
+    return response;
   },
 });
 ```
@@ -272,7 +266,6 @@ export const PluginAdapter = createAdapter({
   name: "plugin-registry",
   metadata: { kind: "custom", auth: "api-key" },
 
-  // Called each run to fetch available tools dynamically
   getTools: async (): Promise<ToolDefinition[]> => {
     const plugins = await pluginRegistry.list();
     return plugins.map((plugin) => ({
@@ -293,21 +286,21 @@ Use `dependsOn` when your adapter needs another adapter to be attached first.
 ```ts
 import { createAdapter, tool } from "@deskcreate/agentcraft/adapters";
 
-const summarizeDoc = tool({
-  name: "summarize_doc",
-  description: "Summarize a document fetched from the filesystem.",
-  security: { sideEffect: "read" },
-  params: { path: { type: "string", description: "File path." } },
-  run: async ({ path }) => {
-    // depends on FileSystemAdapter being available
-    const content = await fs.readFile(path, "utf8");
-    return { path, wordCount: content.split(" ").length };
+const summarizeDoc = tool("summarize_doc", {
+  description: "Summarize a document from a fetch result.",
+  sideEffect: "read",
+  params: {
+    url: { type: "string", description: "URL of document to summarize." },
+  },
+  run: async ({ url }) => {
+    const content = await fetch(url).then((r) => r.text());
+    return { url, wordCount: content.split(" ").length };
   },
 });
 
 export const SummaryAdapter = createAdapter({
   name: "summary-tools",
-  dependsOn: [{ adapterName: "filesystem" }], // throws if FileSystemAdapter not attached
+  dependsOn: [{ adapterName: "fetch" }],
   tools: [summarizeDoc],
 });
 ```

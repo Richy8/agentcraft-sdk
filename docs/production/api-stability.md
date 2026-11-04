@@ -1,30 +1,89 @@
 # API Stability
 
-AgentCraft exports stable entry points for common users and narrower subpaths for power users.
+AgentCraft follows a tiered stability model. Public entry points (`@deskcreate/agentcraft` and subpaths) are Stable. Some newer adapters are Beta. Experimental features are preview-only with no backwards-compatibility guarantee.
 
-## Import Paths
+## Entry Points
 
-| Path                  | Exports                          | Stability | Use for              |
-| --------------------- | -------------------------------- | --------- | -------------------- |
-| `agentcraft`          | Agent, cache, core utilities     | Stable    | Most apps.           |
-| `agentcraft/adapters` | Native adapters and tool helpers | Stable    | External systems.    |
-| `agentcraft/skills`   | Skills and loaders               | Stable    | Prompt capabilities. |
-| `agentcraft/mcp`      | MCP wrappers                     | Stable    | MCP servers.         |
+| Import path                       | Exports                                                                                                                                   | Stability  | Use for                         |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------- |
+| `@deskcreate/agentcraft`          | `Agent`, `AgentWorkflow`, `AgentPool`, `AgentWorkspace`, `AgentCache`, `AgentMemory`, all artifact stores, all error types                | **Stable** | Core runtime, most applications |
+| `@deskcreate/agentcraft/adapters` | `FetchAdapter`, `TavilySearchAdapter`, `DatabaseAdapter`, `ImageGenerationAdapter`, `createAdapter`, `defineAdapter`, `tool`              | **Stable** | External system integration     |
+| `@deskcreate/agentcraft/mcp`      | `GitHubMCP`, `SlackMCP`, `FilesystemMCP`, `PostgresMCP`, `SupabaseMCP`, `BraveSearchMCP`, `FirecrawlMCP`, `FetchMCP`, `MCP`, `MCPAdapter` | **Stable** | MCP server wrappers             |
+| `@deskcreate/agentcraft/team`     | `AgentTeam`                                                                                                                               | **Stable** | Multi-agent coordination        |
 
-## Additional Paths
+## Stability Tiers
 
-| Path               | Exports                       | Stability | Use for                |
-| ------------------ | ----------------------------- | --------- | ---------------------- |
-| `agentcraft/packs` | `CreatorPacks` and pack types | Stable    | Creator workflows.     |
-| `agentcraft/team`  | `AgentTeam`                   | Stable    | Multi-agent workflows. |
-| `docs/api/`        | Generated TypeDoc             | Generated | Exact signatures.      |
-| Examples           | Runnable snippets             | Checked   | Copyable patterns.     |
+| Tier             | Guarantee                                                                    | How to identify                                 |
+| ---------------- | ---------------------------------------------------------------------------- | ----------------------------------------------- |
+| **Stable**       | No breaking changes in minor releases. Deprecation before removal.           | Default for all six entry points                |
+| **Beta**         | API shape is solid but may have minor revisions. Breaking changes announced. | Some newer adapters                             |
+| **Experimental** | No stability guarantee. Can change or be removed in any release.             | Flagged in docs and source with `@experimental` |
 
-## Compatibility Notes
+## What "Stable" Means
 
-- Public examples should import from package paths, not internal `src/` files.
-- New adapters export from `agentcraft/adapters`.
-- New skills and loaders export from `agentcraft/skills`.
-- New MCP wrappers export from `agentcraft/mcp`.
+A Stable API commits to:
 
-More detail: [API reference](../api/) and [configuration overview](../configuration/overview.md).
+- No parameter renames without a deprecation period
+- No removal without a major version bump
+- No behavioral changes that break the documented contract
+- TypeScript types that remain assignable across minor releases
+
+It does **not** commit to:
+
+- Internal implementation details (private class internals, `src/` paths)
+- Output formatting (whitespace, ordering of keys in JSON)
+- Exact token counts or costs (model behavior varies)
+
+## Importing Correctly
+
+Always import from the public package paths, never from internal `src/` paths:
+
+```ts
+// ✓ Correct — stable public path
+import { Agent, Provider } from "@deskcreate/agentcraft";
+import { TavilySearchAdapter } from "@deskcreate/agentcraft/adapters";
+import { AgentTeam } from "@deskcreate/agentcraft/team";
+import { GitHubMCP } from "@deskcreate/agentcraft/mcp";
+```
+
+```text
+// ✗ Incorrect — internal path, no stability guarantee
+import { Agent } from "@deskcreate/agentcraft/src/agent/agent";
+```
+
+## Deprecation Policy
+
+When an API is deprecated:
+
+1. A deprecation notice appears in the changelog with the version it was deprecated in.
+2. The API emits a `console.warn()` in development mode.
+3. The API is removed no sooner than the next major version.
+4. The replacement API is documented in the deprecation notice.
+
+## Version History
+
+| Version | Changes                                       |
+| ------- | --------------------------------------------- |
+| 0.1.x   | Initial release — all six entry points Stable |
+
+Track changes in [CHANGELOG.md](https://github.com/deskcreate/agentcraft/blob/main/CHANGELOG.md).
+
+## Checking Your Imports
+
+Use the export smoke test to verify your code only imports from stable paths:
+
+```sh
+npm run exports:smoke
+```
+
+The type-check gate also validates that all public types remain assignable:
+
+```sh
+npm run typecheck
+```
+
+## Related
+
+- [Architecture](../architecture.md) — internal module structure (not stable)
+- [API Reference](../api/) — generated TypeDoc for all stable exports
+- [Configuration Overview](../configuration/overview.md) — config option stability

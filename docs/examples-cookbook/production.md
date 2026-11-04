@@ -34,10 +34,239 @@ const cache = AgentCache.file("./.agentcraft/cache", {
 });
 ```
 
+## Distributed Cache
+
+```ts
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
+
+const redisCache = AgentCache.redis({
+  url: process.env.REDIS_URL!,
+  namespace: "prod",
+  locking: { enabled: true, ttlMs: 30_000 },
+});
+
+const supabaseCache = AgentCache.postgres({
+  url: process.env.SUPABASE_DB_URL!,
+  tableName: "agentcraft_cache",
+});
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  cache: redisCache,
+});
+
+const warm = await AgentCache.warm(agent, [
+  "Prepare tomorrow's source-backed newsletter brief.",
+  "Summarize current cache hit-rate risks.",
+]);
+
+console.log(redisCache.config.type);
+console.log(supabaseCache.config.type);
+console.log(warm.succeeded);
+```
+
 ## Live Test Gates
 
 ```bash
 INTEGRATION_TESTS=true AGENTCRAFT_LIVE_PROVIDERS=openai npm run test:int:light
+```
+
+## Cost, Cache, and Compression Benchmark
+
+Use this when validating prompt overhead, skill activation, cache replay, and cost reports before publishing claims.
+
+```bash
+npm run benchmark:mock
+INTEGRATION_TESTS=true AGENTCRAFT_LIVE_BENCHMARKS=true AGENTCRAFT_LIVE_PROVIDERS=openai npm run benchmark:live:light
+```
+
+The live benchmark writes `reports/agentcraft-live-cost-cache-benchmark.md`. Current benchmark variants cover flat prompt, cache warm/replay, memory-informed output, and artifact-resume output.
+
+```ts
+import { Agent, AgentCache, Provider } from "@deskcreate/agentcraft";
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  cache: AgentCache.file("./.agentcraft/cache", { strategy: "auto" }),
+});
+
+const response = await agent.run({
+  prompt: "Create a compact Medium article plan about reducing token waste.",
+  budget: { mode: "prefer-cache", maxCost: 0.03, maxToolCalls: 4 },
+});
+
+console.log(response.costReport);
+console.log(response.cache?.summary);
+```
+
+## AgentEval Gate
+
+Use `AgentEval` when a prompt, adapter set, or cache strategy needs a repeatable quality and cost gate.
+
+```ts
+import { Agent, AgentEval, Provider } from "@deskcreate/agentcraft";
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+const suite = AgentEval.suite({
+  name: "Production quality gate",
+  defaults: {
+    maxCostUsd: 0.05,
+    maxTotalTokens: 8_000,
+  },
+}).case({
+  name: "cost article plan",
+  prompt: "Create a Medium article plan about reducing agent token waste.",
+  expect: {
+    maxToolCalls: 2,
+  },
+  assertions: [
+    AgentEval.assert.matches(/cache|token|cost/i),
+    AgentEval.assert.notContains("game changer"),
+  ],
+});
+
+const report = await AgentEval.run({ agent, suite });
+await AgentEval.writeMarkdown(report, "reports/evals/creator-gate.md");
+```
+
+## Observability Report
+
+Use `AgentReports` when you need a redacted artifact for CI, support, reviewer handoff, or run debugging.
+
+```ts
+import { Agent, AgentReports, Provider } from "@deskcreate/agentcraft";
+
+const collector = AgentReports.traceCollector();
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+const response = await agent.run({
+  prompt: "Audit this launch copy for unsupported claims.",
+  trace: collector,
+});
+
+await AgentReports.writeMarkdown(response, "reports/runs/launch-copy.md", {
+  title: "Launch Copy Claim Audit",
+  redact: true,
+  maxOutputChars: 1_500,
+});
+
+await AgentReports.writeJson(
+  collector.spans(),
+  "reports/runs/launch-copy-trace.json",
+);
+```
+
+## Governance Queue
+
+```ts
+import {
+  ApprovalQueue,
+  AgentReports,
+  AgentWorkspace,
+} from "@deskcreate/agentcraft";
+
+const approvals = ApprovalQueue.memory({
+  defaultReviewer: "editor@example.com",
+  requireReason: true,
+  riskPolicy: {
+    write: "queue",
+    external: "queue",
+    destructive: "block",
+  },
+});
+
+const workspace = AgentWorkspace.create({
+  toolPolicy: { approvalQueue: approvals },
+});
+
+const events = AgentReports.eventCollector(workspace.events);
+
+// Run an agent/team/workflow with workspace. Confirmation-gated tools queue.
+const pending = await approvals.list({ status: "pending" });
+console.log(pending[0]?.reviewer);
+console.log(events.events().length);
+```
+
+## Semantic Memory
+
+Use semantic memory when production agents need remembered context without loading a whole database into the prompt.
+
+```ts
+import {
+  Agent,
+  AgentMemory,
+  AgentReports,
+  AgentWorkspace,
+  Provider,
+} from "@deskcreate/agentcraft";
+
+const memory = AgentMemory.local({
+  root: ".agentcraft/memory",
+  namespace: "writing-system",
+  maxContextChars: 1_000,
+  writes: {
+    requireApproval: true,
+    approveWrite: async (request) => {
+      // Route this to your reviewer UI in production.
+      console.log(request.preview);
+      return true;
+    },
+  },
+});
+
+await memory.add({
+  scope: "brand",
+  text: "Voice: operator-led, specific, no motivational filler.",
+  source: "brand-workshop",
+});
+
+const workspace = AgentWorkspace.create({ memory });
+const events = AgentReports.eventCollector(workspace.events);
+
+const agent = Agent.create({
+  model: Provider.openai["gpt-4o-mini"],
+  apiKey: process.env.OPENAI_API_KEY!,
+  workspace,
+});
+
+const response = await agent.run({
+  prompt: "Draft three post ideas about reducing agent token waste.",
+  memory: { scopes: ["brand"], topK: 2 },
+});
+
+await AgentReports.writeMarkdown(response, "reports/memory-run.md", {
+  events: events.events(),
+});
+```
+
+## Artifact and Memory Hardening
+
+Use schema validation, artifact links, capabilities, and memory approvals when a workflow writes durable state.
+
+```ts
+import { FileArtifactStore, AgentMemory } from "@deskcreate/agentcraft";
+
+const store = FileArtifactStore({
+  root: "./.agentcraft/artifacts",
+  validateSchemas: true,
+});
+
+const memory = AgentMemory.create({
+  backend: "local",
+  scope: "session",
+});
+
+console.log(store.capabilities());
+console.log(await memory.search({ query: "brand voice", topK: 5 }));
 ```
 
 ## Replay Test

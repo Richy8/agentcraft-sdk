@@ -100,7 +100,7 @@
     "@aws-sdk/client-bedrock-runtime": "^3.0.0",
     "@google/genai": "^1.0.0",
     "cohere-ai": "^7.0.0",
-    "openai": "^6.49.0",
+    "openai": "^7.48.0",
     "zod": "^4.6.7"
   },
   "peerDependencies": {
